@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block titre %}Calendrier — {{ 'modifier' if a else 'ajouter' }}{% endblock %}
+{% block contenu %}
+{% include "synoptique_onglets.html" %}
+<div class="entete">
+  <div><h2 style="margin:0">Calendrier {{ annee_sel }} : {{ 'modification' if a else 'nouvelle ligne' }}</h2></div>
+  <div class="actions"><a class="btn sec petit" href="{{ url_for('calendrier_officiel', annee=annee_sel) }}">← Retour au calendrier</a></div>
+</div>
+<form method="post" class="carte f">
+  <input type="hidden" name="annee" value="{{ annee_sel }}">
+  <div class="ligne">
+    <div><label for="c-cat">Catégorie</label><select id="c-cat" name="categorie">{% for k, l in CATS.items() %}<option value="{{ k }}" {{ 'selected' if (v.get('categorie') or 'periode') == k }}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label for="c-ordre">Ordre d'affichage</label><input id="c-ordre" name="ordre" inputmode="numeric" value="{{ v.get('ordre') or '' }}" maxlength="5"></div>
+  </div>
+  <label for="c-int">Intitulé</label><input id="c-int" name="intitule" value="{{ v.get('intitule') or '' }}" maxlength="200" required>
+  <div class="ligne">
+    <div><label for="c-debut">Du (JJ/MM/AAAA)</label><input id="c-debut" name="debut" value="{{ fr(v.get('debut')) if v.get('debut') else '' }}" placeholder="JJ/MM/AAAA"></div>
+    <div><label for="c-fin">Au (JJ/MM/AAAA)</label><input id="c-fin" name="fin" value="{{ fr(v.get('fin')) if v.get('fin') else '' }}" placeholder="JJ/MM/AAAA"></div>
+    <div><label for="c-duree">Durée</label><input id="c-duree" name="duree" value="{{ v.get('duree') or '' }}" maxlength="80" placeholder="ex. 14 semaines de travail"></div>
+  </div>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="classe" value="1" {{ 'checked' if v.get('classe') }}> Période de classe (comptée dans les jours et demi-journées de l'année)</label>
+  <label for="c-obs">Observations</label><textarea id="c-obs" name="observations" rows="3" maxlength="500">{{ v.get('observations') or '' }}</textarea>
+  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button></p>
+</form>
+{% endblock %}

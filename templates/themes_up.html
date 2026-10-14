@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% block titre %}Thèmes d'unité pédagogique{% endblock %}
+{% block contenu %}
+{% include "synoptique_onglets.html" %}
+<div class="entete">
+  <div><h2 style="margin:0">Thèmes d'unité pédagogique {{ annee_sel }}</h2><p class="sous">Planning d'exécution : UP maternelle et primaire, conférences pédagogiques, formations groupées</p></div>
+  <div class="actions">
+    <form method="get" style="display:inline"><label for="up-annee" class="aide">Année</label>
+      <select id="up-annee" name="annee" onchange="this.form.submit()">{% for a in annees %}<option value="{{ a }}" {{ 'selected' if a == annee_sel }}>{{ a }}</option>{% endfor %}</select></form>
+    {% if ecrire %}<a class="btn" href="{{ url_for('themes_up_form', tid=0, annee=annee_sel) }}">+ Ajouter</a>{% endif %}
+    <a class="btn sec" href="{{ url_for('themes_up', annee=annee_sel) }}" title="Recharger depuis le serveur">↻ Recharger</a>
+    <a class="btn sec" href="{{ url_for('themes_up_pdf', annee=annee_sel) }}" target="_blank">PDF</a>
+    <a class="btn sec" href="{{ url_for('themes_up_xlsx', annee=annee_sel) }}">⬇ Excel</a>
+    {% if ecrire %}<form method="post" action="{{ url_for('themes_up_reinitialiser', annee=annee_sel) }}" style="display:inline" onsubmit="return confirm('Réinitialiser les thèmes {{ annee_sel }} ? Vos ajouts et modifications seront remplacés.')"><button class="btn sec">↺ Réinitialiser</button></form>{% endif %}
+  </div>
+</div>
+{% if ecrire %}
+<form method="post" action="{{ url_for('themes_up_import', annee=annee_sel) }}" enctype="multipart/form-data" class="carte" style="margin-bottom:10px">
+  <label for="up-fichier">⬆ Importer des thèmes (Excel .xlsx : Catégorie, N°, Thème, Axes, Préparation, Interprétation, Administration, Observations — modèle : l'export Excel)</label>
+  <input id="up-fichier" type="file" name="fichier" accept=".xlsx"> <button class="btn sec petit">Importer</button>
+</form>
+{% endif %}
+{% for cat, lib, lst in groupes %}
+<h3 style="color:var(--bleu);margin:16px 0 6px">{{ lib }}</h3>
+<div class="carte" style="overflow-x:auto">
+<table class="tableau">
+  <thead><tr><th>N°</th><th>Thème</th><th>Axes de réflexion / contenus indicatifs</th><th>Préparation</th><th>Interprétation</th><th>Administration</th><th>Obs.</th>{% if ecrire %}<th></th>{% endif %}</tr></thead>
+  <tbody>
+  {% for x in lst %}<tr>
+    <td>{{ x.numero }}</td><td><b>{{ x.theme }}</b></td><td style="white-space:pre-line;font-size:12px">{{ ('- ' ~ x.axes.replace(' ; ', '\n- ')) if x.axes else '' }}</td>
+    <td>{{ x.preparation }}</td><td>{{ x.interpretation }}</td><td>{{ x.administration }}</td><td>{{ x.observations }}</td>
+    {% if ecrire %}<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('themes_up_form', tid=x.id) }}">Modifier</a>
+      <form method="post" action="{{ url_for('themes_up_supprimer', tid=x.id) }}" style="display:inline" onsubmit="return confirm('Supprimer ce thème ?')"><button class="btn danger petit">Supprimer</button></form></td>{% endif %}
+  </tr>{% else %}<tr><td colspan="8" class="aide">Aucun thème dans cette rubrique.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endfor %}
+{% if note %}<p class="aide">{{ note }} Source : {{ source }}.</p>{% endif %}
+{% endblock %}

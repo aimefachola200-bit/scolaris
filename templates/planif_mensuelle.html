@@ -1,0 +1,87 @@
+{% extends "base.html" %}{% block titre %}Planification mensuelle (CE-CM){% endblock %}
+{% import "_macros.html" as M with context %}
+{% block contenu %}
+<style>
+table.pm{min-width:1100px;border-collapse:collapse}
+table.pm th{background:#1F4E79;color:#fff;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;text-align:center;vertical-align:middle;padding:5px}
+table.pm td{border:1px solid #D0D5DD;padding:2px;vertical-align:top;font-size:12px}
+table.pm td.lib{background:#F5F8FC;font-weight:600;padding:4px 6px;min-width:120px}
+table.pm td.chp{background:#EAF0F7;color:#1F4E79;font-weight:700;padding:4px 6px;writing-mode:horizontal-tb;min-width:110px}
+table.pm input{width:100%;min-width:104px;border:0;background:transparent;padding:4px;font-size:12px}
+table.pm input:focus{outline:2px solid #2B6CB0;background:#fff}
+table.pm input.lecture{background:#FFFCF2}
+.pm-id{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 0}
+.pm-pied{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+</style>
+<div class="entete">
+  <div><h1>Planification mensuelle (CE-CM){% if cl %} – {{ cl.nom }}{% endif %}</h1>
+    <p class="sous">Modèle officiel « planification du mois » : 5 semaines × champs de formation. Le calendrier scolaire propose les dates des semaines.</p></div>
+  <div class="actions"><a class="btn sec petit" href="{{ url_for('espace_enseignant') if ep_existe('espace_enseignant') else url_for('accueil') }}">← Mon espace</a></div>
+</div>
+<form method="get" class="filtres">
+  <label>Classe<br><select name="classe" onchange="this.form.submit()">{% for c in cls %}<option value="{{ c.id }}" {{ 'selected' if cl and c.id == cl.id }}>{{ c.nom }}</option>{% endfor %}</select></label>
+  <label>Mois<br><select name="mois" onchange="this.form.submit()">{% for n, nom in MOIS %}<option value="{{ n }}" {{ 'selected' if n == mois }}>{{ nom }}</option>{% endfor %}</select></label>
+  <label>Année scolaire<br><input name="annee" value="{{ annee }}" size="9" pattern="\d{4}-\d{4}" onchange="this.form.submit()"></label>
+</form>
+{% if not cl %}
+<div class="carte">{% if cls %}Choisissez une classe.{% else %}Aucune classe de CE1, CE2, CM1 ou CM2 ne vous est accessible : ce document concerne le cours élémentaire et le cours moyen.{% endif %}</div>
+{% else %}
+<form method="post" id="f-pm" data-doc="{{ cle }}" autocomplete="off" target="_blank">
+  <input type="hidden" name="classe" value="{{ cl.id }}"><input type="hidden" name="mois" value="{{ mois }}"><input type="hidden" name="annee" value="{{ annee }}">
+  {% call M.barre_doc() %}
+    <button type="submit" class="btn petit" formaction="{{ url_for('planif_mensuelle_pdf') }}">📄 PDF</button>
+    <button type="submit" class="btn sec petit" formaction="{{ url_for('planif_mensuelle_xlsx') }}">⬇ Excel</button>
+    <label class="btn sec petit" style="cursor:pointer">⬆ Importer (Excel)<input type="file" id="pm-import" accept=".xlsx" hidden></label>
+    <button type="button" class="btn sec petit" id="pm-dates" title="Remettre les dates des semaines proposées par le calendrier scolaire">📅 Dates du calendrier</button>
+  {% endcall %}
+  <div class="pm-id">
+    <div><label for="h-cs">Circonscription scolaire de</label><input id="h-cs" name="h_cs" value="{{ v.h_cs }}"></div>
+    <div><label for="h-mois">Mois</label><input id="h-mois" name="h_mois" value="{{ v.h_mois }}"></div>
+    <div><label for="h-ecole">École primaire</label><input id="h-ecole" name="h_ecole" value="{{ v.h_ecole }}"></div>
+    <div><label for="h-cours">Cours</label><input id="h-cours" name="h_cours" value="{{ v.h_cours }}"></div>
+  </div>
+  <div class="carte" style="overflow-x:auto;padding:6px">
+  <table class="pm">
+    <thead><tr><th>Champs de formation</th><th>1<sup>re</sup> semaine d'unité</th><th>2<sup>e</sup> semaine d'unité</th>
+      {% for w in SEM %}<th>{{ w }}<sup>{{ 're' if w == 1 else 'e' }}</sup> semaine<br>
+        <span style="font-weight:400">Du <input name="du_{{ w }}" value="{{ v.get('du_' ~ w, '') }}" style="width:82px;min-width:0;background:#fff;color:#111;border-radius:3px;padding:1px 3px" aria-label="Début semaine {{ w }}"></span><br>
+        <span style="font-weight:400">au <input name="au_{{ w }}" value="{{ v.get('au_' ~ w, '') }}" style="width:82px;min-width:0;background:#fff;color:#111;border-radius:3px;padding:1px 3px" aria-label="Fin semaine {{ w }}"></span></th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for code, la, lb, lec in FR %}<tr>
+      {% if loop.first %}<td class="chp" rowspan="{{ FR|length + 1 }}">FRANÇAIS</td>{% endif %}
+      <td class="lib">{{ la }}</td><td class="lib">{{ lb }}</td>
+      {% for w in SEM %}<td><input name="{{ code }}_{{ w }}" class="{{ 'lecture' if lec }}" value="{{ v.get(code ~ '_' ~ w, '') }}" placeholder="{{ 'U.. SA.. S.. E.. Texte n°..' if lec else 'U.. SA.. S.. Étape..' }}" aria-label="{{ la }} semaine {{ w }}"></td>{% endfor %}</tr>{% endfor %}
+    <tr><td class="lib" colspan="2">Dictée</td>{% for w in SEM %}<td><input name="dictee_{{ w }}" value="{{ v.get('dictee_' ~ w, '') }}" aria-label="Dictée semaine {{ w }}"></td>{% endfor %}</tr>
+    {% for code, lib in MATHS %}<tr>{% if loop.first %}<td class="chp" rowspan="{{ MATHS|length }}">MATHÉMATIQUES</td>{% endif %}<td class="lib" colspan="2">{{ lib }}</td>
+      {% for w in SEM %}<td><input name="{{ code }}_{{ w }}" value="{{ v.get(code ~ '_' ~ w, '') }}" aria-label="{{ lib }} semaine {{ w }}"></td>{% endfor %}</tr>{% endfor %}
+    {% for chp, lignes in AUTRES %}{% for code, lib, modele in lignes %}<tr>
+      {% if loop.first %}<td class="chp" rowspan="{{ lignes|length }}">{{ chp }}</td>{% endif %}<td class="lib" colspan="2">{{ lib }}</td>
+      {% for w in SEM %}<td><input name="{{ code }}_{{ w }}" value="{{ v.get(code ~ '_' ~ w, '') }}" placeholder="{{ modele }}" aria-label="{{ lib }} semaine {{ w }}"></td>{% endfor %}</tr>{% endfor %}{% endfor %}
+    </tbody>
+  </table></div>
+  <div class="pm-pied">
+    <div><label for="p-tit">Le titulaire</label><input id="p-tit" name="p_titulaire" value="{{ v.p_titulaire }}"></div>
+    <div><label for="p-dir">Le directeur</label><input id="p-dir" name="p_directeur" value="{{ v.p_directeur }}"></div>
+    <div><label for="p-fait">Fait le</label><input id="p-fait" name="p_fait" value="{{ v.p_fait }}" placeholder="JJ/MM/AAAA"></div>
+  </div>
+</form>
+<script>
+(function(){
+  var f=document.getElementById('f-pm'); if(!f) return;
+  var def={{ defauts|tojson }};
+  document.getElementById('pm-dates').addEventListener('click',function(){
+    for(var w=1;w<=5;w++){ ['du_','au_'].forEach(function(p){ var el=f.elements[p+w]; if(el) el.value=def[p+w]||''; }); }
+    window.GESCOL&&GESCOL.toast&&GESCOL.toast('Dates du calendrier rétablies.');
+  });
+  document.getElementById('pm-import').addEventListener('change',function(e){
+    var fic=e.target.files[0]; if(!fic) return;
+    var fd=new FormData(); fd.append('fichier',fic); fd.append('classe',f.elements.classe.value); fd.append('mois',f.elements.mois.value); fd.append('annee',f.elements.annee.value);
+    fetch('{{ url_for("planif_mensuelle_import") }}',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(r){
+      if(!r.ok){ alert(r.erreur||'Import impossible.'); return; }
+      GESCOL.appliquer(f,r.valeurs); alert('Planification importée : vérifiez puis cliquez sur « Sauvegarder ».');
+    }).catch(function(){ alert('Import impossible.'); }); e.target.value='';
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

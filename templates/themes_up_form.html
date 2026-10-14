@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block titre %}Thème d'UP — {{ 'modifier' if a else 'ajouter' }}{% endblock %}
+{% block contenu %}
+{% include "synoptique_onglets.html" %}
+<div class="entete">
+  <div><h2 style="margin:0">Thèmes {{ annee_sel }} : {{ 'modification' if a else 'nouveau thème' }}</h2></div>
+  <div class="actions"><a class="btn sec petit" href="{{ url_for('themes_up', annee=annee_sel) }}">← Retour aux thèmes</a></div>
+</div>
+<form method="post" class="carte f">
+  <input type="hidden" name="annee" value="{{ annee_sel }}">
+  <div class="ligne">
+    <div><label for="t-cat">Rubrique</label><select id="t-cat" name="categorie">{% for k, l in CATS.items() %}<option value="{{ k }}" {{ 'selected' if (v.get('categorie') or 'primaire') == k }}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label for="t-num">N°</label><input id="t-num" name="numero" value="{{ v.get('numero') or '' }}" maxlength="10"></div>
+    <div><label for="t-ordre">Ordre d'affichage</label><input id="t-ordre" name="ordre" inputmode="numeric" value="{{ v.get('ordre') or '' }}" maxlength="5"></div>
+  </div>
+  <label for="t-theme">Thème</label><textarea id="t-theme" name="theme" rows="2" maxlength="400" required>{{ v.get('theme') or '' }}</textarea>
+  <label for="t-axes">Axes de réflexion / contenus indicatifs (séparés par « ; »)</label><textarea id="t-axes" name="axes" rows="5" maxlength="2000">{{ v.get('axes') or '' }}</textarea>
+  <div class="ligne">
+    <div><label for="t-prep">Préparation (date ou PM)</label><input id="t-prep" name="preparation" value="{{ v.get('preparation') or '' }}" maxlength="40"></div>
+    <div><label for="t-int">Interprétation (date ou PM)</label><input id="t-int" name="interpretation" value="{{ v.get('interpretation') or '' }}" maxlength="40"></div>
+    <div><label for="t-adm">Administration (date)</label><input id="t-adm" name="administration" value="{{ v.get('administration') or '' }}" maxlength="40" placeholder="JJ/MM/AAAA"></div>
+  </div>
+  <label for="t-obs">Observations</label><textarea id="t-obs" name="observations" rows="2" maxlength="500">{{ v.get('observations') or '' }}</textarea>
+  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button></p>
+</form>
+{% endblock %}

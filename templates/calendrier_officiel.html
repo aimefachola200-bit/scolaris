@@ -1,0 +1,48 @@
+{% extends "base.html" %}{% block titre %}Calendrier scolaire{% endblock %}
+{% block contenu %}
+{% include "synoptique_onglets.html" %}
+<div class="entete">
+  <div><h2 style="margin:0">Calendrier scolaire {{ annee_sel }}</h2><p class="sous">{{ lst|length }} ligne(s) : périodes de travail, congés et jours fériés</p></div>
+  <div class="actions">
+    <form method="get" style="display:inline"><label for="cal-annee" class="aide">Année</label>
+      <select id="cal-annee" name="annee" onchange="this.form.submit()">{% for a in annees %}<option value="{{ a }}" {{ 'selected' if a == annee_sel }}>{{ a }}</option>{% endfor %}</select></form>
+    {% if ecrire %}<a class="btn" href="{{ url_for('calendrier_ligne_form', lid=0, annee=annee_sel) }}">+ Ajouter</a>{% endif %}
+    <a class="btn sec" href="{{ url_for('calendrier_officiel', annee=annee_sel) }}" title="Recharger depuis le serveur">↻ Recharger</a>
+    <a class="btn sec" href="{{ url_for('calendrier_pdf', annee=annee_sel) }}" target="_blank">PDF</a>
+    <a class="btn sec" href="{{ url_for('calendrier_xlsx', annee=annee_sel) }}">⬇ Excel</a>
+    {% if ecrire %}<form method="post" action="{{ url_for('calendrier_reinitialiser', annee=annee_sel) }}" style="display:inline" onsubmit="return confirm('Réinitialiser le calendrier {{ annee_sel }} ? Vos ajouts et modifications seront remplacés.')"><button class="btn sec">↺ Réinitialiser</button></form>{% endif %}
+  </div>
+</div>
+{% if ecrire %}
+<form method="post" action="{{ url_for('calendrier_import', annee=annee_sel) }}" enctype="multipart/form-data" class="carte" style="margin-bottom:10px">
+  <label for="cal-fichier">⬆ Importer un calendrier (Excel .xlsx : Catégorie, Intitulé, Début, Fin, Durée, Observations, Période de classe — modèle : l'export Excel)</label>
+  <input id="cal-fichier" type="file" name="fichier" accept=".xlsx"> <button class="btn sec petit">Importer</button>
+</form>
+{% endif %}
+<div class="carte" style="margin-bottom:10px">
+  <h3 style="margin:0 0 6px">Jours et demi-journées de classe {{ annee_sel }}</h3>
+  {% if dj.jours %}
+  <p style="margin:0 0 8px"><b>{{ dj.jours }}</b> jours de classe (du lundi au vendredi, congés et jours fériés déduits) =
+    <b>{{ dj.demi_journees }}</b> demi-journées (matin et après-midi).
+    Avec le mercredi après-midi libre de l'emploi du temps du primaire ({{ dj.mercredis }} mercredis) : <b>{{ dj.demi_journees_primaire }}</b> demi-journées.</p>
+  <div style="overflow-x:auto"><table class="tableau">
+    <thead><tr><th>Période de classe</th><th>Du</th><th>Au</th><th>Jours</th><th>Demi-journées</th><th>Congés déduits</th><th>Fériés déduits</th></tr></thead>
+    <tbody>{% for p in dj.par_periode %}<tr><td>{{ p.intitule }}</td><td>{{ fr(p.debut) }}</td><td>{{ fr(p.fin) }}</td><td>{{ p.jours }}</td><td>{{ p.demi }}</td><td>{{ p.conges }}</td><td>{{ p.feries }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="aide" style="margin:0">Aucune période de classe : cochez « Période de classe » sur les trimestres de cette année pour obtenir le nombre de demi-journées.</p>{% endif %}
+  <p class="aide" style="margin:6px 0 0">Les jours fériés déclarés par décret (hors arrêté) s'ajoutent au calendrier avec la catégorie « Fête / jour férié » : ils sont déduits automatiquement.</p>
+</div>
+<div class="carte" style="overflow-x:auto">
+<table class="tableau">
+  <thead><tr><th>Catégorie</th><th>Intitulé</th><th>Du</th><th>Au</th><th>Durée</th><th>Observations</th><th>Classe</th>{% if ecrire %}<th></th>{% endif %}</tr></thead>
+  <tbody>
+  {% for x in lst %}<tr>
+    <td>{{ CATS.get(x.categorie, x.categorie) }}</td><td><b>{{ x.intitule }}</b></td><td>{{ fr_long(x.debut) }}</td>
+    <td>{{ fr_long(x.fin) if x.fin and x.fin != x.debut else '—' }}</td><td>{{ x.duree }}</td><td>{{ x.observations }}</td><td>{{ 'Oui' if x.classe else '' }}</td>
+    {% if ecrire %}<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('calendrier_ligne_form', lid=x.id) }}">Modifier</a>
+      <form method="post" action="{{ url_for('calendrier_ligne_supprimer', lid=x.id) }}" style="display:inline" onsubmit="return confirm('Supprimer cette ligne ?')"><button class="btn danger petit">Supprimer</button></form></td>{% endif %}
+  </tr>{% else %}<tr><td colspan="8" class="aide">Aucune ligne pour {{ annee_sel }}. {% if ecrire %}Ajoutez les périodes de l'année ou importez un fichier Excel.{% endif %}</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% if officiel %}<p class="aide">Source : {{ source }}.</p>{% endif %}
+{% endblock %}
