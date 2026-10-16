@@ -143,8 +143,9 @@
   document.addEventListener('keydown',function(e){
     if(e.code==='Space' && flux && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)){ e.preventDefault(); bPr.click(); }
   });
-  var ouvrir={{ ouvrir|tojson }}, k0=-1;
-  if(ouvrir){ items.forEach(function(li,k){ if(+li.dataset.eid===ouvrir) k0=k; }); }
+  // v1.7 : nom distinct de la fonction ouvrir() (caméra), qu'il masquait
+  var eleveAOuvrir={{ ouvrir|tojson }}, k0=-1;
+  if(eleveAOuvrir){ items.forEach(function(li,k){ if(+li.dataset.eid===eleveAOuvrir) k0=k; }); }
   choisir(k0>=0 ? k0 : Math.max(0,suivantSansPhoto(0)));
 })();
 </script>

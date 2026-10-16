@@ -118,6 +118,7 @@ _CEP = [("CEP : candidats et résultats", "jur_cep", "jur_cep"),
         ("Bilan annuel", "bilan_annuel", None)]
 _PEDA = [("Unités pédagogiques (UP) : responsables, activités, taux d'exécution", "jur_up", "jur_up"),
          ("Conseillers pédagogiques : visites et synthèses", "jur_cp", None),
+         ("Conseillers pédagogiques : programmation, activités, bilans trimestriel et annuel", "jur_cp_accueil", "jur_cp_bilan"),
          ("Visites d'école et de classe", "jur_visites", "jur_visites"),
          ("Bilan des activités des CP et CCS", "jur_bilan_activites", None),
          ("Visites (module des écoles)", "visites_accueil", None),
@@ -160,7 +161,7 @@ _SERV = [("Services et attributions (organigramme)", "jur_organigramme", None),
 
 MODULES_PAR_DIVISION = {
     # ------------------------------------------------------------------ Circonscription scolaire
-    "ccs": _TABLEAU + _STATS + _CEP[:3] + _PEDA[:4] + _PERS[:1] + _SERV + _JUR,
+    "ccs": _TABLEAU + _STATS + _CEP[:3] + _PEDA[:5] + _PERS[:1] + _SERV + _JUR,
     "cp": _PEDA + [("Fiches des écoles (lecture)", "jur_fiches", "jur_fiches")],
     "secretariat": _SECR + _DONNEES + [("Services et attributions", "jur_organigramme", None)],
     # v1.6 : Service des Ressources Humaines (RH, ex-CSPAF) : personnel de la juridiction + personnel de l'école

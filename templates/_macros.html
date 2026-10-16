@@ -16,11 +16,11 @@
 {% for ch in champs %}
   {% if ch == 'ddemp' %}
   <div><label for="id-ddemp">DDEMP (département)</label>
-    <input id="id-ddemp" name="ddemp" data-dep list="dl-dep" value="{{ v.ddemp or v.departement or '' }}" placeholder="Choisir ou saisir">
+    <input id="id-ddemp" name="ddemp" data-geo="departement" data-dep list="dl-dep" value="{{ v.ddemp or v.departement or '' }}" placeholder="Choisir ou saisir">
     <datalist id="dl-dep">{% for d in DEPARTEMENTS %}<option value="{{ d }}">{% endfor %}</datalist></div>
   {% elif ch == 'departement' %}
   <div><label for="id-dep">Département</label>
-    <input id="id-dep" name="departement" list="dl-dep2" value="{{ v.departement or '' }}">
+    <input id="id-dep" name="departement" data-geo="departement" list="dl-dep2" value="{{ v.departement or '' }}">
     <datalist id="dl-dep2">{% for d in DEPARTEMENTS %}<option value="{{ d }}">{% endfor %}</datalist></div>
   {% elif ch == 'cs' %}
   <div><label for="id-cs">Circonscription scolaire (CS) <span class="aide nb-cs"></span></label>
@@ -32,7 +32,7 @@
   {% elif ch == 'zone' %}
   <div><label for="id-zone">Zone pédagogique</label><input id="id-zone" name="zone" value="{{ v.zone or '' }}"></div>
   {% elif ch == 'commune' %}
-  <div><label for="id-commune">Commune</label><input id="id-commune" name="commune" value="{{ v.commune or '' }}"></div>
+  <div><label for="id-commune">Commune</label><input id="id-commune" name="commune" data-geo="commune" value="{{ v.commune or '' }}"></div>
   {% elif ch == 'cours' %}
   <div><label for="id-cours">Cours / classe</label><input id="id-cours" name="cours" value="{{ v.cours or v.classe or '' }}"></div>
   {% elif ch == 'annee' %}

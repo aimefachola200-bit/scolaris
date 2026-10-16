@@ -64,7 +64,7 @@ VERSION = 1
 TYPES_ECOLE = {"EP": "École primaire", "EM": "École maternelle", "EE": "Espace enfance"}
 SECTEURS = {"public": "Public", "prive": "Privé"}
 SECTIONS_ECOLE = ("effectifs", "personnel", "visites", "cep", "recensement", "rapports", "patrimoine", "cantine")
-SECTIONS_CS = ("agents", "visites", "cep", "structure", "frais_releves")
+SECTIONS_CS = ("agents", "visites", "cep", "structure", "frais_releves", "cp_bilans")  # v1.7 : bilans des CP
 CATEGORIES = {"FE": "FE (fonctionnaire de l'État)", "ACDPE": "ACDPE", "ACDPCTD": "ACDPCTD (AME)",
               "PRIVE": "Enseignant du privé", "AUTRE": "Autre"}
 ROLES_PERSONNE = {"directeur": "Directeur", "adjoint": "Adjoint", "enseignant": "Enseignant",

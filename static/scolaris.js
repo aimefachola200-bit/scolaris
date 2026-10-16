@@ -209,6 +209,113 @@
     remplir();
   }
 
+  /* ---------------------------------------------------------------- département → commune → arrondissement → village
+     Champs repérés par data-geo="departement|commune|arrondissement|village|lieu" dans un même formulaire.
+     Référentiel : /static/referentiel_villages.json (12 départements, 77 communes, 546 arrondissements,
+     5 290 villages et quartiers de ville), chargé une seule fois et seulement si la page en a besoin. */
+  var geoPromesse = null;
+  function geoCharger() {
+    if (!geoPromesse) {
+      var base = (document.querySelector('script[src*="scolaris.js"]') || {}).src || '/static/scolaris.js';
+      geoPromesse = fetch(base.replace(/scolaris\.js.*$/, 'referentiel_villages.json'), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); }).then(function (j) {
+          var idx = { deps: [], communes: [], arr: {}, vil: {}, lieux: [] };
+          j.d.forEach(function (d) {
+            idx.deps.push(d[0]);
+            d[1].forEach(function (c) {
+              idx.communes.push({ nom: c[0], dep: d[0] });
+              c[1].forEach(function (a) {
+                (idx.arr[c[0]] = idx.arr[c[0]] || []).push(a[0]);
+                a[1].forEach(function (v) {
+                  var o = { nom: v, arr: a[0], com: c[0], dep: d[0] };
+                  (idx.vil[c[0]] = idx.vil[c[0]] || []).push(o);
+                  idx.lieux.push(o);
+                });
+              });
+            });
+          });
+          return idx;
+        });
+    }
+    return geoPromesse;
+  }
+  function geoCle(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/^(DDEMP|DEPARTEMENT|COMMUNE)\s+(DE L'|DE LA|DU|DES|DE|D')?\s*/, '').replace(/[^A-Z0-9]/g, '');
+  }
+  function initGeo(form) {
+    var ch = {};
+    $$('[data-geo]', form).forEach(function (el) { ch[el.dataset.geo] = ch[el.dataset.geo] || []; ch[el.dataset.geo].push(el); });
+    if (!Object.keys(ch).length) return;
+    var un = function (k) { return (ch[k] || [])[0]; };
+    function liste(el, options) {
+      var dl = el._geoDl;
+      if (!dl) {
+        dl = document.createElement('datalist'); dl.id = 'dl-geo-' + Math.random().toString(36).slice(2);
+        form.appendChild(dl); el.setAttribute('list', dl.id); el.setAttribute('autocomplete', 'off'); el._geoDl = dl;
+      }
+      dl.innerHTML = options.map(function (o) {
+        return '<option value="' + o[0].replace(/"/g, '&quot;') + '"' + (o[1] ? ' label="' + o[1].replace(/"/g, '&quot;') + '"' : '') + '>';
+      }).join('');
+    }
+    geoCharger().then(function (G) {
+      function depChoisi() {
+        var d = un('departement'); if (!d || !d.value) return null;
+        var k = geoCle(d.value); return G.deps.filter(function (x) { return geoCle(x) === k || k.indexOf(geoCle(x)) >= 0; })[0] || null;
+      }
+      function communeDe(v) { var k = geoCle(v); return G.communes.filter(function (c) { return geoCle(c.nom) === k; })[0] || null; }
+      function majCommunes() {
+        var dep = depChoisi();
+        (ch.commune || []).forEach(function (el) {
+          liste(el, G.communes.filter(function (c) { return !dep || c.dep === dep; })
+            .map(function (c) { return [c.nom, dep ? '' : c.nom + ' (' + c.dep + ')']; }));
+        });
+        majArr();
+      }
+      function majArr() {
+        var c = un('commune') && communeDe(un('commune').value);
+        (ch.arrondissement || []).forEach(function (el) { liste(el, c ? (G.arr[c.nom] || []).map(function (a) { return [a, '']; }) : []); });
+        majVillages();
+      }
+      function majVillages() {
+        var c = un('commune') && communeDe(un('commune').value), a = un('arrondissement') && un('arrondissement').value;
+        var lst = c ? (G.vil[c.nom] || []) : (un('commune') ? [] : G.lieux);
+        if (a) { var ka = geoCle(a), f = lst.filter(function (v) { return geoCle(v.arr) === ka; }); if (f.length) lst = f; }
+        (ch.village || []).forEach(function (el) { liste(el, lst.map(function (v) { return [v.nom, v.nom + ' – ' + v.arr + (c ? '' : ', ' + v.com)]; })); });
+      }
+      // lieu libre (lieu de naissance, résidence…) : communes et villages, « Village (Commune) »
+      (ch.lieu || []).forEach(function (el) {
+        liste(el, G.communes.map(function (c) { return [c.nom, 'Commune – ' + c.dep]; })
+          .concat(G.lieux.map(function (v) { return [v.nom + ' (' + v.com + ')', v.arr + ', ' + v.com]; })));
+      });
+      (ch.departement || []).forEach(function (el) {
+        if (!el.hasAttribute('data-dep') && el.tagName === 'INPUT') liste(el, G.deps.map(function (d) { return [d, '']; }));
+        el.addEventListener('change', majCommunes);
+      });
+      // remplir automatiquement les niveaux supérieurs quand on choisit plus bas
+      function poser(k, v) { (ch[k] || []).forEach(function (el) { if (el.value !== v) { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); } }); }
+      (ch.commune || []).forEach(function (el) {
+        el.addEventListener('change', function () {
+          var c = communeDe(el.value); if (!c) { majArr(); return; }
+          if (el.value !== c.nom) el.value = c.nom;
+          var d = un('departement');
+          if (d && d.tagName === 'INPUT' && !d.hasAttribute('data-dep') && geoCle(d.value) !== geoCle(c.dep)) poser('departement', c.dep);
+          majArr();
+        });
+      });
+      (ch.arrondissement || []).forEach(function (el) { el.addEventListener('change', majVillages); });
+      (ch.village || []).forEach(function (el) {
+        el.addEventListener('change', function () {
+          var k = geoCle(el.value), c = un('commune') && communeDe(un('commune').value);
+          var v = (c ? (G.vil[c.nom] || []) : G.lieux).filter(function (x) { return geoCle(x.nom) === k; })[0];
+          if (!v) return;
+          if (un('arrondissement') && !un('arrondissement').value) poser('arrondissement', v.arr);
+          if (un('commune') && !un('commune').value) poser('commune', v.com);
+        });
+      });
+      majCommunes();
+    }).catch(function () {});
+  }
+
   /* ---------------------------------------------------------------- en-têtes de modules : Sauvegarder / Charger / Réinitialiser
      <form data-doc="cle"> … <button data-doc-action="sauver|charger|reinit"> */
   function valeurs(form) {
@@ -291,6 +398,7 @@
     $$('.sig-pad', racine).forEach(initSignature);
     $$('.photo-capture', racine).forEach(initPhoto);
     $$('form', racine).forEach(initCascade);
+    $$('form', racine).forEach(initGeo);
     $$('form[data-doc]', racine).forEach(initDoc);
     $$('[data-coches]', racine).forEach(initCoches);
     $$('input[type=password]', racine).forEach(initOeil);

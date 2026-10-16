@@ -149,6 +149,63 @@ def _image(chemin):
     return None
 
 
+# ---------------------------------------------------------------- en-tête officiel (v1.7)
+# Armoiries de la République du Bénin et bloc « armoiries + MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE +
+# RÉPUBLIQUE DU BÉNIN » (images fournies dans static/), en tête des fiches et cartes des écoles.
+_DOSSIER_STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+_OFFICIELLES = {}
+
+
+def image_officielle(nom):
+    """« armoiries » ou « memp » (static/docs_enseignant_<nom>.png), mise en cache."""
+    if nom not in _OFFICIELLES:
+        _OFFICIELLES[nom] = _image(os.path.join(_DOSSIER_STATIC, f"docs_enseignant_{nom}.png"))
+    return _OFFICIELLES[nom]
+
+
+def armoiries(c, x, y_haut, hauteur, centre=False):
+    """Armoiries (coin supérieur gauche en x, y_haut ; ou centrées sur x si centre). Retourne la largeur dessinée."""
+    img = image_officielle("armoiries")
+    if not img:
+        return 0
+    iw, ih = img.getSize()
+    w = hauteur * iw / ih
+    c.drawImage(img, x - w / 2 if centre else x, y_haut - hauteur, w, hauteur, mask="auto")
+    return w
+
+
+def bloc_memp(c, x, y_haut, hauteur):
+    """Emblème du MEMP : armoiries + « MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE » + bande tricolore +
+    « RÉPUBLIQUE DU BÉNIN ». Retourne la largeur dessinée."""
+    img = image_officielle("memp")
+    if img:
+        iw, ih = img.getSize()
+        c.drawImage(img, x, y_haut - hauteur, hauteur * iw / ih, hauteur)
+        return hauteur * iw / ih
+    w = armoiries(c, x, y_haut, hauteur)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica", hauteur / 6.5)
+    for i, t in enumerate(("MINISTÈRE DES ENSEIGNEMENTS", "MATERNEL ET PRIMAIRE", "", "RÉPUBLIQUE DU BÉNIN")):
+        c.drawString(x + w + 4, y_haut - (i + 1) * hauteur / 4.6, t)
+    return w + 4 + c.stringWidth("MINISTÈRE DES ENSEIGNEMENTS", "Helvetica", hauteur / 6.5)
+
+
+def entete_ministere(c, x, y_haut, cycle="primaire", hauteur=34):
+    """Bloc ministère en haut à gauche d'un document : emblème du MEMP (maternelle, primaire) ou armoiries + nom du
+    ministère du secondaire. Retourne (largeur, hauteur) occupées."""
+    if (cycle or "primaire") != "secondaire":
+        return bloc_memp(c, x, y_haut, hauteur), hauteur
+    w = armoiries(c, x, y_haut, hauteur)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 7.5)
+    c.drawString(x + w + 5, y_haut - 9, "RÉPUBLIQUE DU BÉNIN")
+    c.setFont("Helvetica", 6.6)
+    for i, t in enumerate(("MINISTÈRE DES ENSEIGNEMENTS SECONDAIRE,", "TECHNIQUE ET DE LA FORMATION",
+                           "PROFESSIONNELLE")):
+        c.drawString(x + w + 5, y_haut - 19 - 8 * i, t)
+    return w + 5 + c.stringWidth("MINISTÈRE DES ENSEIGNEMENTS SECONDAIRE,", "Helvetica", 6.6), hauteur
+
+
 def _ecole_img(nom):
     if nom == "logo.png" and config.ECOLE.get("id"):
         propre = _image(os.path.join(config.ECOLE_DIR, f"logo_{config.ECOLE['id']}.png"))
@@ -252,21 +309,10 @@ def _qr(c, code, x, y, taille=22 * mm, legende=True):
 
 
 def _entete(c, cycle, titre, sous_titre=None, W=A4[0], H=A4[1], marge=15 * mm):
-    """En-tête officiel. Retourne l'ordonnée sous l'en-tête."""
+    """En-tête officiel : emblème du ministère (armoiries + MEMP) à gauche, école et logo à droite.
+    Retourne l'ordonnée sous l'en-tête."""
     haut = H - marge
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(marge, haut - 8, "RÉPUBLIQUE DU BÉNIN")
-    c.setFont("Helvetica-Oblique", 7.5)
-    c.drawString(marge, haut - 18, "Fraternité – Justice – Travail")
-    c.setFont("Helvetica", 7)
-    min_txt = MINISTERE.get(cycle, "")
-    if len(min_txt) > 60:
-        coupe = min_txt.rfind(" ", 0, 60)
-        c.drawString(marge, haut - 29, min_txt[:coupe])
-        c.drawString(marge, haut - 37, min_txt[coupe + 1:])
-    else:
-        c.drawString(marge, haut - 29, min_txt)
+    entete_ministere(c, marge, haut + 2, cycle or "primaire", hauteur=38)
 
     logo = _ecole_img("logo.png")
     if logo:
@@ -612,22 +658,35 @@ def recu(p, eleve, classe, total_paye, total_du, caissier, code, mode_libelle):
 
 # ---------------------------------------------------------------- carte d'élève
 def carte(eleve, classe, annee, code, photo):
+    """Carte d'identité scolaire de l'élève (format carte bancaire). v1.7 : en-tête officiel — armoiries à gauche,
+    République du Bénin, MEMP et école au centre, logo de l'école à droite."""
     W, H = 85.6 * mm, 54 * mm
     buf = io.BytesIO()
     c = GCanvas(buf, pagesize=(W, H))
     c.setTitle(f"Carte {eleve['matricule']}")
-    c.setFillColor(BLEU)
-    c.rect(0, H - 11 * mm, W, 11 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(3 * mm, H - 5 * mm, config.ECOLE["nom"][:44])
-    c.setFont("Helvetica", 6.5)
-    c.drawString(3 * mm, H - 9 * mm, f"CARTE D'ÉLÈVE – {annee}")
+    armoiries(c, 2.2 * mm, H - 1.6 * mm, 11.5 * mm)
     logo = _ecole_img("logo.png")
     if logo:
-        c.drawImage(logo, W - 11 * mm, H - 10.5 * mm, 9.5 * mm, 9.5 * mm, preserveAspectRatio=True, mask="auto")
+        c.drawImage(logo, W - 12 * mm, H - 12 * mm, 10 * mm, 10 * mm, preserveAspectRatio=True, mask="auto")
+    cx = W / 2 + 0.5 * mm
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 5.6)
+    c.drawCentredString(cx, H - 4 * mm, "RÉPUBLIQUE DU BÉNIN")
+    c.setFont("Helvetica", 4.6)
+    c.drawCentredString(cx, H - 6.4 * mm, "MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE")
+    for k, col in enumerate((colors.HexColor("#008751"), colors.HexColor("#FCD116"), colors.HexColor("#E8112D"))):
+        c.setFillColor(col)
+        c.rect(cx - 15 * mm + k * 10 * mm, H - 7.7 * mm, 10 * mm, 0.6 * mm, stroke=0, fill=1)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 6.2)
+    c.drawCentredString(cx, H - 10.4 * mm, (config.ECOLE["nom"] or "")[:46])
+    c.setFillColor(BLEU)
+    c.rect(0, H - 16.4 * mm, W, 4.6 * mm, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 6.6)
+    c.drawCentredString(W / 2, H - 15 * mm, f"CARTE D'IDENTITÉ SCOLAIRE  •  {annee}")
     # photo
-    px, py, pw, ph = 3 * mm, 9 * mm, 20 * mm, 25 * mm
+    px, py, pw, ph = 3 * mm, 9 * mm, 20 * mm, 26.5 * mm
     img = _image(photo)
     if img:
         c.drawImage(img, px, py, pw, ph, preserveAspectRatio=True, anchor="c")
@@ -644,18 +703,18 @@ def carte(eleve, classe, annee, code, photo):
         ("Né(e) le", f"{date_fr(eleve['date_naissance'])}"),
         ("Classe", classe["nom"] if classe else "—"), ("Matricule", eleve["matricule"]),
     ]
-    yy = H - 15 * mm
+    yy = H - 20.5 * mm
     for lab, val in lignes:
         c.setFont("Helvetica", 5.8)
         c.drawString(x, yy, lab)
         c.setFont("Helvetica-Bold", 7)
         c.drawString(x + 12 * mm, yy, str(val or "—")[:26])
-        yy -= 4.3 * mm
+        yy -= 4.1 * mm
     c.setFont("Helvetica", 5.5)
     urgence = f"{eleve['parent_nom'] or ''} {eleve['parent_telephone'] or ''}".strip()
     if urgence:
         c.drawString(3 * mm, 5 * mm, f"Urgence : {urgence}"[:60])
-    _qr(c, code, W - 17 * mm, 2 * mm, taille=15 * mm, legende=False)
+    _qr(c, code, W - 13.5 * mm, 4.4 * mm, taille=11.5 * mm, legende=False)
     c.showPage()
     _fin(c)
     return buf.getvalue()
@@ -742,7 +801,7 @@ def certificat(type_doc, eleve, classe, annee, code, situation_financiere=None, 
 
 
 # ---------------------------------------------------------------- fiche CEP
-def fiche_cep(eleve, classe, annee, code, photo):
+def fiche_cep(eleve, classe, annee, code, photo, sig_parent=None):
     W, H = A4
     m = 18 * mm
     buf = io.BytesIO()
@@ -781,6 +840,9 @@ def fiche_cep(eleve, classe, annee, code, photo):
     c.setFont("Helvetica", 9)
     c.drawString(m, y, "Pièces à joindre : copie de l'acte de naissance, photos d'identité, certificat de scolarité.")
     c.drawString(m, y - 30, "Signature du parent / tuteur :")
+    img_p = image_data_url(sig_parent) if sig_parent else None  # v1.7 : signature digitale du parent
+    if img_p:
+        c.drawImage(img_p, m + 48 * mm, y - 44, 45 * mm, 17 * mm, preserveAspectRatio=True, anchor="w", mask="auto")
     _signature(c, W - m - 35 * mm, y - 30)
     _qr(c, code, m, 20 * mm)
     c.showPage()
@@ -863,20 +925,11 @@ def bulletin_paie(b, p, mois_txt, params, code):
 
 # ---------------------------------------------------------------- documents tabulaires génériques (modules v1.3)
 def _entete_primaire(c, W, H, marge, infos_haut=None, cycle=None):
-    """En-tête des documents du primaire : République, ministère, DDEMP, CS, école (colonne gauche) ; logo à droite."""
+    """En-tête des documents du primaire : emblème du MEMP (armoiries + ministère + République) puis DDEMP, CS,
+    école (colonne gauche) ; logo de l'école à droite."""
     y = H - marge
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 8.5)
-    c.drawString(marge, y - 8, "RÉPUBLIQUE DU BÉNIN")
-    c.setFont("Helvetica", 7)
-    ministere = MINISTERE.get(cycle, MINISTERE["primaire"]).upper()
-    if len(ministere) > 75:  # secondaire : sur deux lignes
-        coupe = ministere.rfind(" ", 0, 60)
-        c.drawString(marge, y - 17, ministere[:coupe])
-        y -= 8
-        c.drawString(marge, y - 17, ministere[coupe + 1:])
-    else:
-        c.drawString(marge, y - 17, ministere)
+    _, h_bloc = entete_ministere(c, marge, y + 2, cycle or "primaire", hauteur=32)
+    y -= h_bloc - 13
     lignes = infos_haut if infos_haut is not None else [
         ("DDEMP", config.ECOLE.get("departement")), ("CS", config.ECOLE.get("cs")), ("ÉCOLE", config.ECOLE.get("nom"))]
     yy = y - 27

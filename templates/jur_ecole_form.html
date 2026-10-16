@@ -12,9 +12,9 @@
       {% for c in cs %}<option value="{{ c.id }}" {{ 'selected' if e.cs_id|string == c.id|string }}>{{ c.nom }}</option>{% endfor %}</select></div>
     <div><label for="zone">Zone pédagogique</label><select id="zone" name="zone_id"><option value="">—</option>
       {% for z in zones %}<option value="{{ z.id }}" data-cs="{{ z.cs_id }}" {{ 'selected' if e.zone_id|string == z.id|string }}>{{ z.nom }}</option>{% endfor %}</select></div>
-    <div><label for="com">Commune</label><input id="com" name="commune" value="{{ e.commune or '' }}"></div>
-    <div><label for="arr">Arrondissement</label><input id="arr" name="arrondissement" value="{{ e.arrondissement or '' }}"></div>
-    <div><label for="loc">Localité / village</label><input id="loc" name="localite" value="{{ e.localite or '' }}"></div>
+    <div><label for="com">Commune</label><input id="com" name="commune" data-geo="commune" value="{{ e.commune or '' }}"></div>
+    <div><label for="arr">Arrondissement</label><input id="arr" name="arrondissement" data-geo="arrondissement" value="{{ e.arrondissement or '' }}"></div>
+    <div><label for="loc">Localité / village</label><input id="loc" name="localite" data-geo="village" value="{{ e.localite or '' }}"></div>
     <div><label for="adr">Adresse</label><input id="adr" name="adresse" value="{{ e.adresse or '' }}"></div>
     <div><label for="dt">Titre</label><select id="dt" name="directeur_titre">{% for t in ('Directeur','Directrice') %}<option {{ 'selected' if e.directeur_titre==t }}>{{ t }}</option>{% endfor %}</select></div>
     <div><label for="dn">Nom du directeur / de la directrice</label><input id="dn" name="directeur_nom" value="{{ e.directeur_nom or '' }}"></div>

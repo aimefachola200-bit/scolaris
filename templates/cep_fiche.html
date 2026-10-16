@@ -47,7 +47,7 @@
   <div class="carte">
     <h2>Parents et dispenses</h2>
     <div class="grille-id">
-      <div><label for="f-res">Résidence des parents</label><input id="f-res" name="residence_parents" value="{{ v.residence_parents }}" maxlength="120"></div>
+      <div><label for="f-res">Résidence des parents</label><input id="f-res" name="residence_parents" data-geo="lieu" value="{{ v.residence_parents }}" maxlength="120"></div>
       <div><label for="f-lien">Degré de parenté du parent</label><input id="f-lien" name="parent_lien" list="dl-liens" value="{{ v.parent_lien }}" maxlength="30" placeholder="Père, Mère, Tuteur…">
         <datalist id="dl-liens">{% for l in liens %}<option value="{{ l }}">{% endfor %}</datalist></div>
       <div><span class="lbl"><b>Dispense d'âge</b></span><div class="cep-radio">
@@ -84,6 +84,12 @@
   <div class="carte">
     <h2>Signature du candidat</h2>
     {{ M.signature('eleve:%d' % e.id, 'Signature du (de la) candidat(e)') }}
+  </div>
+  <div class="carte">
+    <h2>Signature du parent</h2>
+    {{ M.signature('parent:%d' % e.id, 'Signature du parent ou du tuteur') }}
+    <p class="aide">Le parent signe avec le doigt (téléphone, tablette) ou la souris, puis « Enregistrer ». La signature est
+      imprimée sur la fiche d'inscription au CEP, à la ligne « Nom, prénom et signature du parent ».</p>
   </div>
 </div>
 </div>

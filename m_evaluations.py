@@ -729,14 +729,9 @@ def enregistrer(app, H):
         coef = secondaire and cl["niveau"] not in NIVEAUX_SANS_COEF
         # En-tête officiel (gauche : République, ministère, DDEMP, CS, école ; droite : logo)
         y = Hp - m_
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(m_, y - 8, "RÉPUBLIQUE DU BÉNIN")
-        c.setFont("Helvetica-Oblique", 7)
-        c.drawString(m_, y - 17, "Fraternité – Justice – Travail")
-        c.setFont("Helvetica", 7)
-        c.drawString(m_, y - 26, pdfs.MINISTERE.get(cl["cycle"], "").upper()[:95])
-        yy = y - 36
+        # v1.7 : emblème du ministère (armoiries + MEMP + République du Bénin)
+        _, hb = pdfs.entete_ministere(c, m_, y + 2, cl["cycle"], hauteur=32)
+        yy = y + 2 - hb - 9
         if secondaire:
             lignes_id = [("Département", v.get("ddemp")), ("ÉTABLISSEMENT", v.get("ecole"))]
         else:

@@ -18,9 +18,9 @@
       {% for o in ordres %}<option {{ 'selected' if f.type==o }}>{{ o }}</option>{% endfor %}</select></div>
     <div><label>Statut</label><select name="statut_etab"><option value="">— choisir —</option>
       {% for o in statuts_etab %}<option {{ 'selected' if f.statut_etab==o }}>{{ o }}</option>{% endfor %}</select></div>
-    <div><label>Département *</label><select name="departement" required><option value="">— choisir —</option>
+    <div><label>Département *</label><select name="departement" data-geo="departement" required><option value="">— choisir —</option>
       {% for o in departements %}<option {{ 'selected' if f.departement==o }}>{{ o }}</option>{% endfor %}</select></div>
-    <div><label>Commune / ville *</label><input name="commune" required value="{{ f.commune or '' }}"></div>
+    <div><label>Commune / ville *</label><input name="commune" data-geo="commune" required value="{{ f.commune or '' }}"></div>
     <div><label>Nombre d'élèves</label><input name="effectif" inputmode="numeric" value="{{ f.effectif or '' }}"></div>
     <div><label>Nombre d'enseignants</label><input name="enseignants" inputmode="numeric" value="{{ f.enseignants or '' }}"></div>
   </div>

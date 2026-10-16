@@ -334,6 +334,8 @@ def enregistrer(app, H):
         out.sort(key=lambda v: (v["date"], v["heure_debut"]), reverse=True)
         return out
 
+    H.jur_visites_collecter = collecter   # v1.7 : utilisé par le bilan trimestriel des CP (a_cp)
+
     def filtrer(visites, f):
         res = []
         for v in visites:

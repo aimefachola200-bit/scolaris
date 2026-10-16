@@ -248,15 +248,8 @@ def _fiche_page(c, d, pdfs):
         c.setFont("Times-Bold", 8.3)
         c.drawString(39, T(y1 + 10.5), titre)
 
-    # ---------------- en-tête ministère
-    dessiner_embleme(c, 52, T(24), 17)
-    c.setFillColor(TEXTE)
-    c.setFont("Helvetica", 6.3)
-    for i, t in enumerate(("MINISTÈRE", "DES ENSEIGNEMENTS", "MATERNEL ET PRIMAIRE")):
-        c.drawString(84, T(9 + 8 * i), t)
-    bande_tricolore(c, 84, T(33), 82, 1.6)
-    c.setFillColor(TEXTE)
-    c.drawString(84, T(42), "RÉPUBLIQUE DU BÉNIN")
+    # ---------------- en-tête ministère : emblème du MEMP (armoiries + ministère + République), v1.7
+    pdfs.bloc_memp(c, 30, T(5), 44)
     c.setFillColor(GRIS_T)
     c.setFont("Helvetica", 6.4)
     c.drawRightString(552, T(10), "01 BP 10 Porto-Novo")
@@ -359,7 +352,10 @@ def _fiche_page(c, d, pdfs):
     lab(311, 525, "le", 7.8, TEXTE, "Times-Roman")
     champ(325, 430, 525, d["fait_le"])
     x = lab(36, 542, "NOM, PRÉNOM ET SIGNATURE DU PARENT :")
+    sig_p = d.get("sig_parent")  # v1.7 : signature digitale du parent
     champ(x + 4, 543, 542, d["parent_nom"])
+    if sig_p is not None:
+        c.drawImage(sig_p, 452, T(546), 88, 19, preserveAspectRatio=True, anchor="e", mask="auto")
     x = lab(36, 561, "CONTACT TÉLÉPHONIQUE DU PARENT :")
     champ(x + 4, 543, 561, d["parent_contact"])
     lab(38, 571.5, "(Préciser le degré de parenté)", 5, GRIS_T, "Times-Italic")
@@ -463,7 +459,7 @@ def carte_recto(c, x, y, k, pdfs):
     c.saveState()
     c.translate(x, y)
     # --- en-tête
-    dessiner_embleme(c, 8 * mm, CH - 8.6 * mm, 4.6 * mm)
+    pdfs.armoiries(c, 8.6 * mm, CH - 2.6 * mm, 11 * mm, centre=True)  # v1.7 : armoiries à la place du logo
     dessiner_drapeau(c, CW - 14.2 * mm, CH - 11 * mm, 10.2 * mm, 6.8 * mm)
     c.setFillColor(colors.HexColor("#1C1A14"))
     c.setFont("Helvetica", 4.6)
@@ -864,6 +860,7 @@ def enregistrer(app, H):
             "dispense_age": v["dispense_age"], "dispense_sport": v["dispense_sport"],
             "fait_a": v["fait_a"], "fait_le": fait_le, "parent_nom": e["parent_nom"] or "", "parent_contact": contact,
             "photo": H.chemin_photo(e), "sig_candidat": pdfs.image_data_url(H.signature(f"eleve:{e['id']}")),
+            "sig_parent": pdfs.image_data_url(H.signature(f"parent:{e['id']}")),
             "sig_directeur": pdfs.signature_directeur(), "certifie_a": p["certifie_a"], "certifie_le": fait_le,
             "titre_directeur": titre_directeur(ecole_val("directeur_titre")), "directeur_nom": dir_nom,
         }
@@ -1700,7 +1697,7 @@ def enregistrer(app, H):
                     c.setFont("Helvetica", 8)
                     c.drawString(m + 48, yy, str(val)[:60])
                     yy -= 10
-            dessiner_embleme(c, W / 2, Hp - m - 14, 14)
+            __import__("pdfs").armoiries(c, W / 2, Hp - m + 4, 38, centre=True)
             c.setFont("Helvetica-Bold", 8)
             c.drawRightString(W - m, Hp - m, f"Année scolaire : {s['annee']}")
             c.setFont("Helvetica", 8)

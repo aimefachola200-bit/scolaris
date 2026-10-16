@@ -37,10 +37,10 @@
       <div><label for="p-session">Session de</label><input id="p-session" name="session" value="{{ p.session }}" placeholder="JUIN 2027" maxlength="40"></div>
       <div><label for="p-centre">Centre de</label><input id="p-centre" name="centre" value="{{ p.centre }}" maxlength="80" placeholder="Centre d'examen"></div>
       <div><label for="p-option">Option</label><select id="p-option" name="option">{% for o in options %}<option {{ 'selected' if o == p.option }}>{{ o }}</option>{% endfor %}</select></div>
-      <div><label for="id-ddemp">DDEMP (département)</label><input id="id-ddemp" name="ddemp" data-dep list="dl-dep" value="{{ p.ddemp }}">
+      <div><label for="id-ddemp">DDEMP (département)</label><input id="id-ddemp" name="ddemp" data-geo="departement" data-dep list="dl-dep" value="{{ p.ddemp }}">
         <datalist id="dl-dep">{% for d in DEPARTEMENTS %}<option value="{{ d }}">{% endfor %}</datalist></div>
       <div><label for="id-cs">Circonscription scolaire <span class="aide nb-cs"></span></label><input id="id-cs" name="cs" data-cs value="{{ p.cs }}"></div>
-      <div><label for="p-commune">Commune</label><input id="p-commune" name="commune" value="{{ p.commune }}"></div>
+      <div><label for="p-commune">Commune</label><input id="p-commune" name="commune" data-geo="commune" value="{{ p.commune }}"></div>
       <div><label for="p-fait">Fait à (parents)</label><input id="p-fait" name="fait_a" value="{{ p.fait_a }}"></div>
       <div><label for="p-cert">Certifié à (directeur)</label><input id="p-cert" name="certifie_a" value="{{ p.certifie_a }}"></div>
     </div>

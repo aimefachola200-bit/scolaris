@@ -95,6 +95,7 @@ DROITS = {
     "stock": {"admin", "directeur", "comptable", "secretaire"},   # vivres et stock de la cantine
     "epreuves": {"admin", "directeur", "enseignant"},             # comité d'évaluation, épreuves et grilles
     "jur_up": {"admin", "responsable", "cp", "chef_service"},     # activités des unités pédagogiques (CS / DDEMP)
+    "jur_cp_bilan": {"admin", "responsable", "cp", "chef_service"},   # v1.7 : programmation et bilans des CP
     "jur_divisions": {"admin", "responsable", "chef_service"},    # divisions, modules et attributions (CS / DDEMP)
     "calendrier_officiel": {"admin", "directeur", "secretaire", "responsable", "chef_service"},   # calendrier scolaire (MEMP)
     "themes_up": {"admin", "directeur", "responsable", "cp", "chef_service"},                     # thèmes d'UP, CP, FG
@@ -379,6 +380,8 @@ MODULES = ["m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appe
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
            "m_synoptique", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
+           "a_cp",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
@@ -764,7 +767,7 @@ def create_app(test_config=None):
             if "eleve_id" in cols:
                 db.execute(f"DELETE FROM {t} WHERE eleve_id=?", (eid,))
         db.execute("DELETE FROM documents_modules WHERE cle LIKE ?", (f"e%:carte:eleve:{eid}",))
-        db.execute("DELETE FROM signatures WHERE cle=?", (f"eleve:{eid}",))
+        db.execute("DELETE FROM signatures WHERE cle IN (?,?)", (f"eleve:{eid}", f"parent:{eid}"))
         db.execute("DELETE FROM eleves WHERE id=?", (eid,))
         db.commit()
         p = chemin_photo(e)
@@ -1147,7 +1150,8 @@ def create_app(test_config=None):
         if type_doc == "carte":
             contenu = pdfs.carte(e, cl, a, code, chemin_photo(e))
         elif type_doc == "fiche_cep":
-            contenu = pdfs.fiche_cep(e, cl, a, code, chemin_photo(e))
+            sp = q("SELECT image FROM signatures WHERE cle=?", (f"parent:{eid}",), un=True)
+            contenu = pdfs.fiche_cep(e, cl, a, code, chemin_photo(e), sig_parent=sp["image"] if sp else None)
         else:
             reste = situation(e)[2] if type_doc == "certificat_transfert" else None
             contenu = pdfs.certificat(type_doc, e, cl, a, code, situation_financiere=reste,

@@ -11,7 +11,7 @@
     <div><label>Sexe *</label><select name="sexe" required><option value="">—</option>
       <option value="M" {{ 'selected' if e.sexe=='M' }}>Masculin</option><option value="F" {{ 'selected' if e.sexe=='F' }}>Féminin</option></select></div>
     <div><label>Date de naissance</label><input type="date" name="date_naissance" value="{{ e.date_naissance or '' }}"></div>
-    <div><label>Lieu de naissance</label><input name="lieu_naissance" value="{{ e.lieu_naissance or '' }}"></div>
+    <div><label>Lieu de naissance</label><input name="lieu_naissance" data-geo="lieu" placeholder="Commune ou village" value="{{ e.lieu_naissance or '' }}"></div>
     <div><label>Nationalité</label><input name="nationalite" value="{{ e.nationalite or '' }}" placeholder="Béninoise" list="nationalites"></div>
     <datalist id="nationalites"><option value="Béninoise"><option value="Togolaise"><option value="Nigériane"><option value="Nigérienne"><option value="Burkinabè"><option value="Ghanéenne"><option value="Ivoirienne"></datalist>
   </div>
@@ -51,7 +51,7 @@
     <div><label>Nom du parent</label><input name="parent_nom" value="{{ e.parent_nom or '' }}"></div>
     <div><label>Téléphone</label><input name="parent_telephone" value="{{ e.parent_telephone or '' }}" placeholder="+229 01 …"></div>
     <div><label>WhatsApp</label><input name="parent_whatsapp" value="{{ e.parent_whatsapp or '' }}"></div>
-    <div><label>Adresse</label><input name="adresse" value="{{ e.adresse or '' }}"></div>
+    <div><label>Adresse</label><input name="adresse" data-geo="lieu" value="{{ e.adresse or '' }}"></div>
   </div>
 </div>
 <div class="actions"><button class="btn">Enregistrer</button><a class="btn sec" href="{{ url_for('eleves') }}">Annuler</a></div>

@@ -18,7 +18,7 @@ CHAMPS_ECOLE = ["nom", "sigle", "statut", "ordre", "departement", "cs", "up", "z
                 "griffe_actif", "griffe_ligne3", "griffe_couleur"]
 ORDRES = ["Maternelle", "Primaire", "Maternelle et primaire", "Secondaire (collège)", "Secondaire (collège et lycée)",
           "Complexe (maternelle, primaire, secondaire)", "Enseignement technique"]
-RE_CLE_SIGNATURE = re.compile(r"^(ecole:\d+:(directeur|admin|ccs)|classe:\d+:titulaire|eleve:\d+|cep:\d+:chef"
+RE_CLE_SIGNATURE = re.compile(r"^(ecole:\d+:(directeur|admin|ccs)|classe:\d+:titulaire|eleve:\d+|parent:\d+|cep:\d+:chef"
                               r"|enseignant:\d+"      # v1.6 : signature personnelle d'un compte enseignant (utilisateurs.id)
                               r"|jur:(service|agent|cs):\d+|jur:structure:responsable)$")
 
@@ -387,7 +387,7 @@ def enregistrer(app, H):
             abort(403)
         if cle.startswith("enseignant:") and g.user["role"] == "enseignant" and cle != f"enseignant:{g.user['id']}":
             abort(403)                      # un enseignant ne signe que pour lui-même
-        if g.user["role"] == "enseignant" and (cle.startswith(("eleve:", "cep:")) or (
+        if g.user["role"] == "enseignant" and (cle.startswith(("eleve:", "parent:", "cep:")) or (
                 cle.startswith("classe:") and int(cle.split(":")[1]) not in {c["id"] for c in classes_autorisees()})):
             abort(403)                      # … et pour les classes qui lui sont affectées
         data = request.get_json(silent=True) or {}

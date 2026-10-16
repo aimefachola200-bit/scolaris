@@ -15,13 +15,13 @@
   <h2>Localisation (DDEMP, CS)</h2>
   <div class="ligne">
     <div><label for="dep">Département (DDEMP)</label>
-      <input id="dep" name="departement" data-dep list="dl-deps" value="{{ e.departement or '' }}" placeholder="Choisir ou saisir">
+      <input id="dep" name="departement" data-geo="departement" data-dep list="dl-deps" value="{{ e.departement or '' }}" placeholder="Choisir ou saisir">
       <datalist id="dl-deps">{% for d in DEPARTEMENTS %}<option value="{{ d }}">{% endfor %}</datalist></div>
     <div><label for="cs">Circonscription scolaire <span class="aide nb-cs"></span></label><input id="cs" name="cs" data-cs value="{{ e.cs or '' }}" placeholder="Choisir ou saisir"></div>
     <div><label for="up">Unité pédagogique (UP)</label><input id="up" name="up" value="{{ e.up or '' }}"></div>
     <div><label for="zone">Zone pédagogique</label><input id="zone" name="zone" value="{{ e.zone or '' }}"></div>
-    <div><label for="commune">Commune</label><input id="commune" name="commune" value="{{ e.commune or '' }}"></div>
-    <div><label for="ville">Ville (lieu de signature)</label><input id="ville" name="ville" value="{{ e.ville or '' }}"></div>
+    <div><label for="commune">Commune</label><input id="commune" name="commune" data-geo="commune" value="{{ e.commune or '' }}"></div>
+    <div><label for="ville">Ville (lieu de signature)</label><input id="ville" name="ville" data-geo="lieu" value="{{ e.ville or '' }}"></div>
   </div>
   <p class="aide">Les 12 départements et les 118 circonscriptions scolaires du Bénin sont proposés ; vous pouvez aussi saisir librement.</p>
   <h2>Contacts</h2>

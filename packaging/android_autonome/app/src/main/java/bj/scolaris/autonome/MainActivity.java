@@ -6,6 +6,8 @@ import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.provider.MediaStore;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -52,6 +54,7 @@ public class MainActivity extends Activity {
 
     private static final int CODE_FICHIER = 41;
     private static final int CODE_STOCKAGE = 42;
+    private static final int CODE_CAMERA_FICHIER = 44;
     private static final int CODE_CAMERA = 43;
     private static final int BLEU = Color.rgb(31, 78, 121);
     private static final int FOND = Color.rgb(244, 246, 249);
@@ -59,6 +62,8 @@ public class MainActivity extends Activity {
     private WebView web;
     private String adresse;
     private ValueCallback<Uri[]> rappelFichier;
+    private Uri photoUri;
+    private WebChromeClient.FileChooserParams paramsEnAttente;
     private PermissionRequest demandeCamera;
     private String[] telechargementEnAttente;
 
@@ -222,17 +227,7 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView vue, ValueCallback<Uri[]> rappel, FileChooserParams params) {
-                if (rappelFichier != null) {
-                    rappelFichier.onReceiveValue(null);
-                }
-                rappelFichier = rappel;
-                try {
-                    startActivityForResult(params.createIntent(), CODE_FICHIER);
-                } catch (ActivityNotFoundException e) {
-                    rappelFichier = null;
-                    return false;
-                }
-                return true;
+                return ouvrirChoixFichier(rappel, params);
             }
 
             @Override
@@ -295,6 +290,14 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int code, String[] permissions, int[] resultats) {
         super.onRequestPermissionsResult(code, permissions, resultats);
+        if (code == CODE_CAMERA_FICHIER) {
+            WebChromeClient.FileChooserParams p = paramsEnAttente;
+            paramsEnAttente = null;
+            if (p != null) {
+                lancerChoix(p, true);
+            }
+            return;
+        }
         boolean ok = resultats.length > 0 && resultats[0] == PackageManager.PERMISSION_GRANTED;
         if (code == CODE_CAMERA && demandeCamera != null) {
             if (ok) {
@@ -312,12 +315,108 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** v1.7 : choix d'une photo — appareil photo (avant ou arrière, au choix dans l'appareil photo du téléphone)
+     *  ou galerie / fichiers. Indispensable quand SCOLARIS est servi en http sur le Wi-Fi de l'école : la caméra
+     *  intégrée à la page (getUserMedia) n'y est pas disponible. */
+    private boolean ouvrirChoixFichier(ValueCallback<Uri[]> rappel, WebChromeClient.FileChooserParams params) {
+        if (rappelFichier != null) {
+            rappelFichier.onReceiveValue(null);
+        }
+        rappelFichier = rappel;
+        boolean image = false;
+        String[] types = params.getAcceptTypes();
+        if (types == null || types.length == 0) {
+            image = true;
+        } else {
+            for (String t : types) {
+                if (t == null || t.isEmpty() || t.startsWith("image") || t.equals("*/*")) {
+                    image = true;
+                }
+            }
+        }
+        if (image && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            paramsEnAttente = params;
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, CODE_CAMERA_FICHIER);
+            return true;
+        }
+        return lancerChoix(params, image);
+    }
+
+    private boolean lancerChoix(WebChromeClient.FileChooserParams params, boolean image) {
+        Intent galerie = params.createIntent();
+        Intent aLancer = galerie;
+        photoUri = null;
+        if (image && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            Intent photo = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            try {
+                ContentValues v = new ContentValues();
+                v.put(MediaStore.Images.Media.DISPLAY_NAME, "scolaris_" + System.currentTimeMillis() + ".jpg");
+                v.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                if (Build.VERSION.SDK_INT >= 29) {
+                    v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/SCOLARIS");
+                }
+                photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+            } catch (Exception e) {
+                photoUri = null;
+            }
+            if (photoUri != null) {
+                photo.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                photo.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                aLancer = Intent.createChooser(galerie, "Photo : appareil photo ou galerie");
+                aLancer.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{photo});
+            }
+        }
+        try {
+            startActivityForResult(aLancer, CODE_FICHIER);
+        } catch (ActivityNotFoundException e) {
+            oublierPhoto();
+            if (rappelFichier != null) {
+                rappelFichier.onReceiveValue(null);
+            }
+            rappelFichier = null;
+            Toast.makeText(this, "Impossible d'ouvrir l'appareil photo ou la galerie", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
+    /** Photo prise par l'appareil photo : retournée à la page ; sinon, l'emplacement réservé est supprimé. */
+    private void resultatChoix(int resultat, Intent donnees) {
+        Uri[] r = null;
+        if (resultat == RESULT_OK) {
+            boolean viaGalerie = donnees != null && (donnees.getData() != null || donnees.getClipData() != null);
+            if (viaGalerie) {
+                r = WebChromeClient.FileChooserParams.parseResult(resultat, donnees);
+                oublierPhoto();
+            } else if (photoUri != null) {
+                r = new Uri[]{photoUri};
+            }
+        } else {
+            oublierPhoto();
+        }
+        photoUri = null;
+        if (rappelFichier != null) {
+            rappelFichier.onReceiveValue(r);
+        }
+        rappelFichier = null;
+    }
+
+    private void oublierPhoto() {
+        if (photoUri != null) {
+            try {
+                getContentResolver().delete(photoUri, null, null);
+            } catch (Exception ignore) {
+                // déjà supprimée
+            }
+            photoUri = null;
+        }
+    }
+
     @Override
     protected void onActivityResult(int code, int resultat, Intent donnees) {
         super.onActivityResult(code, resultat, donnees);
-        if (code == CODE_FICHIER && rappelFichier != null) {
-            rappelFichier.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultat, donnees));
-            rappelFichier = null;
+        if (code == CODE_FICHIER) {
+            resultatChoix(resultat, donnees);
         }
     }
 

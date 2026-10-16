@@ -1095,21 +1095,9 @@ def _entete_officiel(H, c, W, Hh, cl, v, marge=18):
     P = H.pdfs
     x = marge * mm
     y = Hh - (marge + 2) * mm
-    c.setFillColorRGB(0, 0, 0)
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(x, y, "RÉPUBLIQUE DU BÉNIN")
-    c.setFont("Helvetica-Oblique", 7.5)
-    c.drawString(x, y - 10, "Fraternité – Justice – Travail")
-    c.setFont("Helvetica", 7.5)
-    mini = P.MINISTERE.get(cl["cycle"], "").upper()
-    if len(mini) > 60:
-        coupe = mini.rfind(" ", 0, 60)
-        c.drawString(x, y - 20, mini[:coupe])
-        c.drawString(x, y - 29, mini[coupe + 1:])
-        yy = y - 39
-    else:
-        c.drawString(x, y - 20, mini)
-        yy = y - 30
+    # v1.7 : emblème du ministère (armoiries + MEMP + République du Bénin)
+    _, hb = P.entete_ministere(c, x, y + 8, cl["cycle"], hauteur=32)
+    yy = y + 8 - hb - 9
     for lab, val in (("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))):
         if val:
             c.setFont("Helvetica-Bold", 7.5)
