@@ -152,14 +152,33 @@ def _image(chemin):
 # ---------------------------------------------------------------- en-tête officiel (v1.7)
 # Armoiries de la République du Bénin et bloc « armoiries + MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE +
 # RÉPUBLIQUE DU BÉNIN » (images fournies dans static/), en tête des fiches et cartes des écoles.
-_DOSSIER_STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+def dossiers_static():
+    """Dossiers « static » possibles : celui de l'application web (config.WEB_DIR — sur Android autonome, les fichiers
+    web sont décompressés à part des modules Python), puis celui du code (exécution depuis les sources)."""
+    out = []
+    for d in (getattr(config, "WEB_DIR", None), getattr(config, "BASE_DIR", None),
+              os.path.dirname(os.path.abspath(__file__))):
+        if d and os.path.join(d, "static") not in out:
+            out.append(os.path.join(d, "static"))
+    return out
+
+
+def fichier_static(nom):
+    """Chemin d'un fichier de static/ (premier trouvé), ou None."""
+    for d in dossiers_static():
+        p = os.path.join(d, nom)
+        if os.path.exists(p):
+            return p
+    return None
+
+
 _OFFICIELLES = {}
 
 
 def image_officielle(nom):
-    """« armoiries » ou « memp » (static/docs_enseignant_<nom>.png), mise en cache."""
-    if nom not in _OFFICIELLES:
-        _OFFICIELLES[nom] = _image(os.path.join(_DOSSIER_STATIC, f"docs_enseignant_{nom}.png"))
+    """« armoiries » ou « memp » (static/docs_enseignant_<nom>.png), mise en cache (seulement si trouvée)."""
+    if _OFFICIELLES.get(nom) is None:
+        _OFFICIELLES[nom] = _image(fichier_static(f"docs_enseignant_{nom}.png"))
     return _OFFICIELLES[nom]
 
 

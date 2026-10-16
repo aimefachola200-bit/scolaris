@@ -6,14 +6,24 @@ import json
 import os
 import unicodedata
 
-_CHEMIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "referentiel_villages.json")
 _DATA = None
+
+
+def _chemin():
+    try:
+        import pdfs
+        p = pdfs.fichier_static("referentiel_villages.json")
+        if p:
+            return p
+    except Exception:  # noqa: BLE001
+        pass
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "referentiel_villages.json")
 
 
 def _donnees():
     global _DATA
     if _DATA is None:
-        with open(_CHEMIN, encoding="utf-8") as f:
+        with open(_chemin(), encoding="utf-8") as f:
             _DATA = json.load(f)["d"]
     return _DATA
 

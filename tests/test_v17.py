@@ -57,6 +57,26 @@ class TestReferentielVillages(unittest.TestCase):
         self.assertEqual(RV.nom_officiel_commune("SEME PODJI"), "Sèmè-Podji")
 
 
+class TestImagesHorsDuCode(unittest.TestCase):
+    """Android autonome : les fichiers web (static/) sont décompressés à part des modules Python (SCOLARIS_WEB_DIR).
+    Les armoiries et l'emblème du MEMP doivent être trouvés dans ce dossier (correctif 1.7.1)."""
+
+    def test_dossier_web_en_premier(self):
+        import shutil
+        import pdfs
+        web = tempfile.mkdtemp(prefix="web_")
+        os.makedirs(os.path.join(web, "static"))
+        shutil.copy(os.path.join(RACINE, "static", "docs_enseignant_memp.png"), os.path.join(web, "static"))
+        ancien = config.WEB_DIR
+        try:
+            config.WEB_DIR = web
+            self.assertEqual(pdfs.dossiers_static()[0], os.path.join(web, "static"))
+            self.assertEqual(pdfs.fichier_static("docs_enseignant_memp.png"),
+                             os.path.join(web, "static", "docs_enseignant_memp.png"))
+        finally:
+            config.WEB_DIR = ancien
+
+
 class TestCalculsBilan(unittest.TestCase):
     """Chiffres du canevas (CS de Pobè, trimestre 1) : totaux et pourcentages."""
 

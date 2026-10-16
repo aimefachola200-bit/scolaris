@@ -6,7 +6,7 @@ import os
 
 import sys
 
-VERSION = "1.7.0"
+VERSION = "1.7.1"
 CONCEPTEUR = "Maître Aimé FACHE"   # mention « Conception » en bas de chaque écran et document
 
 # Dossier du programme (templates, static). Dans l'exécutable Windows, PyInstaller

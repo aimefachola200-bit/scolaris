@@ -514,7 +514,7 @@ _IMAGES = {}
 def image_static(nom):
     """Image fournie avec le module (armoiries, bloc MEMP), mise en cache."""
     if nom not in _IMAGES:
-        chemin = os.path.join(DOSSIER_STATIC, nom)
+        chemin = pdfs.fichier_static(nom) or os.path.join(DOSSIER_STATIC, nom)   # v1.7 : dossier web d'Android
         _IMAGES[nom] = ImageReader(chemin) if os.path.exists(chemin) else None
     return _IMAGES[nom]
 
