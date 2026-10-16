@@ -125,34 +125,6 @@ class Calendrier:
             self._annees[annee] = (lire_date(p["rentree"]) or date(a, 9, 1), lire_date(p["fin"]) or date(a + 1, 6, 30), exc)
         return self._annees[annee]
 
-    def _officiel(self, annee):
-        """Fenêtres du calendrier scolaire officiel de l'école (module m_calendrier) : (périodes de classe, congés, fériés) ou
-        None si l'école n'a pas de période de classe renseignée pour cette année (règles par défaut ci-dessous)."""
-        cache = self.__dict__.setdefault("_off", {})
-        if annee not in cache:
-            off = None
-            f = getattr(self.H, "calendrier_officiel", None)
-            try:
-                lignes = f(annee, self.eco) if callable(f) else []
-            except Exception:  # noqa: BLE001 - table absente : on garde les règles par défaut
-                lignes = []
-            classes, conges, feries = [], [], {}
-            for x in lignes:
-                d1, d2 = lire_date(x.get("debut")), lire_date(x.get("fin") or x.get("debut"))
-                if not d1 or not d2:
-                    continue
-                if x["categorie"] == "conge":
-                    conges.append((d1 + timedelta(days=1), d2, x["intitule"]))   # le jour de début reste un jour de classe
-                elif x["categorie"] == "ferie":
-                    for d in jours_entre(d1, d2):
-                        feries[d] = x["intitule"]
-                if x.get("classe"):
-                    classes.append((d1, d2))
-            if classes:
-                off = (classes, conges, feries)
-            cache[annee] = off
-        return cache[annee]
-
     def exception(self, d):
         return self._annee(annee_de(d))[2].get(d.isoformat())
 
@@ -162,18 +134,6 @@ class Calendrier:
         e = exc.get(d.isoformat())
         if e:
             return e[0], e[1], True
-        off = self._officiel(annee_de(d))
-        if off:                                   # calendrier scolaire officiel (m_calendrier) prioritaire sur rentrée / fin
-            classes, conges, feries = off
-            if not any(a <= d <= b for a, b in classes):
-                return 0, "Hors période de classe", False
-            for a, b, intit in conges:
-                if a <= d <= b:
-                    return 0, intit, False
-            if d in feries and d.weekday() < 5:
-                return 0, feries[d], False
-            n = demi_defaut(d)
-            return n, ("" if n else ("Mercredi" if d.weekday() == 2 else "Week-end")), False
         if d < rentree:
             return 0, "Avant la rentrée", False
         if d > fin:
@@ -301,7 +261,7 @@ def releve_auto(H, cal, classe, annee, aujourdhui=None):
     """Valeurs calculées à partir du calendrier et du registre, pour chaque mois (None = mois à venir)."""
     auj = aujourdhui or date.today()
     # élèves inscrits de la classe. NB : la date d'inscription n'est pas utilisée (elle vaut souvent la date de
-    # saisie dans GESCOL, pas la date d'arrivée réelle) ; l'effectif d'un mois se corrige à la main si besoin.
+    # saisie dans SCOLARIS, pas la date d'arrivée réelle) ; l'effectif d'un mois se corrige à la main si besoin.
     eleves = {e["id"] for e in H.q("SELECT id FROM eleves WHERE classe_id=? AND statut='inscrit'", (classe["id"],))}
     a = int(annee[:4])
     rows = H.q("""SELECT r.eleve_id, r.date, r.demi FROM registre r JOIN eleves e ON e.id=r.eleve_id
@@ -642,7 +602,7 @@ def enregistrer(app, H):
         return H.pdfs.paragraphe(str(v), taille, gras, 1, 0)
 
     def signatures_pdf(cl, v):
-        img_t = H.pdfs.image_data_url(H.signature(f"classe:{cl['id']}:titulaire"))
+        img_t = H.pdfs.image_data_url(H.signature_titulaire(cl["id"]))
         img_d = H.pdfs.image_data_url(H.signature(f"ecole:{H.eco()}:directeur"))
         return [(f"{v.get('titulaire_titre') or 'Le titulaire'}".upper(), v.get("titulaire_nom", ""), img_t, False),
                 (f"{'La' if (v.get('directeur_titre') or '').startswith('Directrice') else 'Le'} "

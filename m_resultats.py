@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Exploitation des évaluations (GESCOL v1.3) :
+"""Exploitation des évaluations (SCOLARIS v1.3) :
 * Statistiques d'une évaluation (par sexe, tranches, matières, graphiques SVG, PDF, Excel) ;
 * Analyse et rapport (texte rédigé automatiquement à partir des statistiques, modifiable, PDF signé) ;
 * Tableau d'honneur (par évaluation ou bilan annuel) et certificats individuels d'honneur ;
@@ -433,7 +433,7 @@ def enregistrer(app, H):
         return [("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))]
 
     def img_titulaire(cl):
-        return H.pdfs.image_data_url(H.signature(f"classe:{cl['id']}:titulaire"))
+        return H.pdfs.image_data_url(H.signature_titulaire(cl["id"]))
 
     def img_directeur():
         return H.pdfs.image_data_url(H.signature(f"ecole:{H.eco()}:directeur")) or H.pdfs.signature_directeur()
@@ -1096,27 +1096,20 @@ def _entete_officiel(H, c, W, Hh, cl, v, marge=18):
     x = marge * mm
     y = Hh - (marge + 2) * mm
     c.setFillColorRGB(0, 0, 0)
-    w_eff, h_eff = P.entete_memp(c, x, y + 3, cl["cycle"], hauteur=16 * mm)       # effigie du MEMP (armoiries)
-    if w_eff and cl["cycle"] != "secondaire":
-        yy = y + 3 - h_eff - 12                        # l'effigie porte République + ministère
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(x, y, "RÉPUBLIQUE DU BÉNIN")
+    c.setFont("Helvetica-Oblique", 7.5)
+    c.drawString(x, y - 10, "Fraternité – Justice – Travail")
+    c.setFont("Helvetica", 7.5)
+    mini = P.MINISTERE.get(cl["cycle"], "").upper()
+    if len(mini) > 60:
+        coupe = mini.rfind(" ", 0, 60)
+        c.drawString(x, y - 20, mini[:coupe])
+        c.drawString(x, y - 29, mini[coupe + 1:])
+        yy = y - 39
     else:
-        xt = x + (w_eff + 3 if w_eff else 0)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(xt, y, "RÉPUBLIQUE DU BÉNIN")
-        c.setFont("Helvetica-Oblique", 7.5)
-        c.drawString(xt, y - 10, "Fraternité – Justice – Travail")
-        c.setFont("Helvetica", 7.5)
-        mini = P.MINISTERE.get(cl["cycle"], "").upper()
-        if len(mini) > 60:
-            coupe = mini.rfind(" ", 0, 60)
-            c.drawString(xt, y - 20, mini[:coupe])
-            c.drawString(xt, y - 29, mini[coupe + 1:])
-            yy = y - 39
-        else:
-            c.drawString(xt, y - 20, mini)
-            yy = y - 30
-        if w_eff:
-            yy = min(yy, y + 3 - h_eff - 12)
+        c.drawString(x, y - 20, mini)
+        yy = y - 30
     for lab, val in (("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))):
         if val:
             c.setFont("Helvetica-Bold", 7.5)

@@ -429,7 +429,7 @@ def pdf_fiches(liste, pdfs, titre="Fiches CEP"):
     buf = io.BytesIO()
     c = pdfs.GCanvas(buf, pagesize=A4)
     c.setTitle(titre)
-    c.setAuthor("GESCOL")
+    c.setAuthor("SCOLARIS")
     for d in liste:
         _fiche_page(c, d, pdfs)
         c.showPage()
@@ -463,8 +463,7 @@ def carte_recto(c, x, y, k, pdfs):
     c.saveState()
     c.translate(x, y)
     # --- en-tête
-    if not pdfs.armoiries(c, 3.4 * mm, CH - 4 * mm, 9.6 * mm):          # armoiries de la République (sceau du Gouvernement)
-        dessiner_embleme(c, 8 * mm, CH - 8.6 * mm, 4.6 * mm)
+    dessiner_embleme(c, 8 * mm, CH - 8.6 * mm, 4.6 * mm)
     dessiner_drapeau(c, CW - 14.2 * mm, CH - 11 * mm, 10.2 * mm, 6.8 * mm)
     c.setFillColor(colors.HexColor("#1C1A14"))
     c.setFont("Helvetica", 4.6)
@@ -566,8 +565,7 @@ def carte_recto(c, x, y, k, pdfs):
 
 
 def carte_verso(c, x, y, k, pdfs):
-    """Verso : logo et coordonnées de l'école, case « mentions de reconnaissance de l'école » (texte modifiable, modèle
-    prérempli), consignes et contact d'urgence."""
+    """Verso : données et logo de l'école, consignes, contact d'urgence."""
     _bordure(c, x, y)
     c.saveState()
     c.translate(x, y)
@@ -585,11 +583,11 @@ def carte_verso(c, x, y, k, pdfs):
     c.setFont("Helvetica", 4.3)
     sous = " · ".join(v for v in (k.get("ecole_statut"), k.get("ecole_ville")) if v)
     c.drawString(tx, CH - 10.6 * mm, sous[:80])
-    tel_bp = " · ".join(v for v in (("Tél. " + k["ecole_tel"]) if k.get("ecole_tel") else "",
-                                   ("BP " + k["ecole_bp"]) if k.get("ecole_bp") else "") if v)
-    lignes = [("Adresse", ", ".join(v for v in (k.get("ecole_adresse"), k.get("commune")) if v)), ("Contact", tel_bp),
-              ("E-mail", k.get("ecole_email")), ("DDEMP / CS", " / ".join(v for v in (k["ddemp"], k["cs"]) if v))]
-    yy = CH - 17.2 * mm
+    lignes = [("Adresse", k.get("ecole_adresse")), ("Boîte postale", k.get("ecole_bp")),
+              ("Téléphone", k.get("ecole_tel")), ("E-mail", k.get("ecole_email")),
+              ("DDEMP / CS", " / ".join(v for v in (k["ddemp"], k["cs"]) if v)),
+              ("Commune", k.get("commune")), ("Centre d'examen", k["centre_examen"])]
+    yy = CH - 17.4 * mm
     for lib, val in lignes:
         if not val:
             continue
@@ -597,29 +595,16 @@ def carte_verso(c, x, y, k, pdfs):
         c.setFont("Helvetica-Bold", 4.2)
         c.drawString(5 * mm, yy, lib)
         c.setFillColor(colors.HexColor("#111827"))
-        texte_ajuste(c, 20 * mm, yy, ": " + str(val), "Helvetica", 4.8, CW - 25 * mm)
-        yy -= 2.7 * mm
-    # case « mentions de reconnaissance de l'école » (texte modifiable depuis l'éditeur)
-    bx, by, bw, bh = 4 * mm, 14.0 * mm, CW - 8 * mm, 12.6 * mm
-    c.setStrokeColor(VERT_F)
-    c.setLineWidth(0.4)
-    c.setFillColor(colors.HexColor("#F7FAF8"))
-    c.roundRect(bx, by, bw, bh, 1 * mm, stroke=1, fill=1)
-    c.setFillColor(VERT_F)
-    c.setFont("Helvetica-Bold", 3.8)
-    c.drawString(bx + 1.6 * mm, by + bh - 3.1 * mm, "MENTIONS DE RECONNAISSANCE DE L'ÉCOLE")
-    c.setFillColor(colors.HexColor("#111827"))
-    c.setFont("Helvetica", 4.3)
-    texte = []
-    for para in str(k.get("reconnaissance") or "").splitlines() or [""]:
-        texte += _decouper(para, c, "Helvetica", 4.3, bw - 3.2 * mm) or [""]
-    for i, t in enumerate(texte[:4]):
-        c.drawString(bx + 1.6 * mm, by + bh - 6.2 * mm - i * 2.0 * mm, t)
+        texte_ajuste(c, 24 * mm, yy, ": " + str(val), "Helvetica", 4.8, CW - 30 * mm)
+        yy -= 2.9 * mm
     # consignes
+    c.setStrokeColor(OR_CLAIR)
+    c.setLineWidth(0.4)
+    c.line(4 * mm, 13.6 * mm, CW - 4 * mm, 13.6 * mm)
     c.setFillColor(colors.HexColor("#344054"))
     c.setFont("Helvetica-Oblique", 4.1)
-    for i, t in enumerate(_decouper(k.get("verso_note") or "", c, "Helvetica-Oblique", 4.1, CW - 10 * mm)[:2]):
-        c.drawString(5 * mm, 11.2 * mm - i * 1.9 * mm, t)
+    for i, t in enumerate(_decouper(k.get("verso_note") or "", c, "Helvetica-Oblique", 4.1, CW - 10 * mm)[:3]):
+        c.drawString(5 * mm, 10.9 * mm - i * 1.9 * mm, t)
     if k.get("urgence"):
         c.setFont("Helvetica-Bold", 4.2)
         c.setFillColor(DRAP_ROUGE)
@@ -1041,17 +1026,9 @@ def enregistrer(app, H):
     CHAMPS_ELEVE = ("numero_table", "matricule_educmaster", "nip", "nom", "prenoms", "sexe", "date_naissance",
                     "lieu_naissance", "centre_examen", "classe")
     CHAMPS_COMMUNS = ("ddemp", "cs", "ecole", "annee", "directeur_titre", "directeur_nom", "cachet_couleur",
-                      "cachet_sup", "cachet_inf", "cachet_centre", "verso_note", "reconnaissance")
+                      "cachet_sup", "cachet_inf", "cachet_centre", "verso_note")
     VERSO_DEFAUT = ("Cette carte est strictement personnelle. Elle doit être présentée à chaque épreuve de "
                     "l'examen. En cas de perte, la rapporter à l'école ou au centre d'examen.")
-
-    def reconnaissance_defaut():
-        """Modèle prérempli de la case « mentions de reconnaissance de l'école » (à compléter dans l'éditeur)."""
-        if (ecole_val("statut") or "").lower().startswith("pub"):
-            return ("École publique de l'État, relevant du MEMP.\nArrêté de création n° …………… du ……………\n"
-                    "Code école : ……………")
-        return ("École privée reconnue par l'arrêté n° …………… du ……………\nAutorisation d'ouverture n° …………… du ……………\n"
-                "Code école : ……………")
 
     def cle_carte_commun():
         return f"e{H.eco()}:carte:commun"
@@ -1067,8 +1044,7 @@ def enregistrer(app, H):
                 "cachet_couleur": ecole_val("cachet_couleur") or "bleu",
                 "cachet_sup": ecole_val("cachet_sup") or nom.upper()[:40],
                 "cachet_inf": ecole_val("cachet_inf") or (ecole_val("ville") or ecole_val("commune")).upper(),
-                "cachet_centre": ecole_val("cachet_centre") or "LA DIRECTION", "verso_note": VERSO_DEFAUT,
-                "reconnaissance": reconnaissance_defaut()}
+                "cachet_centre": ecole_val("cachet_centre") or "LA DIRECTION", "verso_note": VERSO_DEFAUT}
 
     def eleve_defaut(e, cl):
         return {"numero_table": e["numero_table"] or "", "matricule_educmaster": e["matricule_educmaster"] or "",
@@ -1088,8 +1064,6 @@ def enregistrer(app, H):
         """Champs de l'éditeur, nettoyés. Retourne (valeurs, erreurs)."""
         v = {k: txt(f.get(k), 120) for k in CHAMPS_ELEVE + CHAMPS_COMMUNS}
         v["verso_note"] = txt(f.get("verso_note"), 300)
-        v["reconnaissance"] = "\n".join(l.strip()[:90] for l in (f.get("reconnaissance") or "").replace("\r", "").split("\n")[:4]
-                                        if l.strip())[:300]
         err = []
         v["sexe"] = H.xlsx.sexe(v["sexe"]) if v["sexe"] else ""
         if v["date_naissance"]:

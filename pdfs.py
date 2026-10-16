@@ -49,7 +49,7 @@ def mention_concepteur(c, largeur=None):
 
 
 class GCanvas(canvas.Canvas):
-    """Canvas GESCOL : ajoute la mention du concepteur sur chaque page."""
+    """Canvas SCOLARIS : ajoute la mention du concepteur sur chaque page."""
 
     def showPage(self):
         mention_concepteur(self)
@@ -251,72 +251,22 @@ def _qr(c, code, x, y, taille=22 * mm, legende=True):
         c.drawString(x + taille + 2 * mm, y + taille - 26, url_verif(code)[:60])
 
 
-# ---------------------------------------------------------------- effigie du MEMP (armoiries / sceau du Gouvernement)
-_STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
-_IMG_STATIC = {}
-
-
-def image_static(nom):
-    """Image fournie avec l'application (static/), mise en cache ; None si absente."""
-    if nom not in _IMG_STATIC:
-        _IMG_STATIC[nom] = _image(os.path.join(_STATIC, nom))
-    return _IMG_STATIC[nom]
-
-
-def bloc_memp(c, x, y_haut, hauteur):
-    """Effigie officielle du MEMP : armoiries de la République + « MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE » +
-    « RÉPUBLIQUE DU BÉNIN » (static/docs_enseignant_memp.png). Retourne la largeur dessinée (0 si l'image manque)."""
-    img = image_static("docs_enseignant_memp.png")
-    if not img:
-        return 0
-    iw, ih = img.getSize()
-    c.drawImage(img, x, y_haut - hauteur, hauteur * iw / ih, hauteur, mask="auto")
-    return hauteur * iw / ih
-
-
-def armoiries(c, x, y_haut, hauteur):
-    """Armoiries (sceau du Gouvernement) seules ; retourne la largeur dessinée (0 si l'image manque)."""
-    img = image_static("docs_enseignant_armoiries.png")
-    if not img:
-        return 0
-    iw, ih = img.getSize()
-    c.drawImage(img, x, y_haut - hauteur, hauteur * iw / ih, hauteur, mask="auto")
-    return hauteur * iw / ih
-
-
-def entete_memp(c, x, y_haut, cycle=None, hauteur=15 * mm):
-    """Effigie en haut à gauche d'un document. Primaire / maternelle : bloc MEMP complet ; autre cycle (ex. secondaire) :
-    armoiries seules (le texte du ministère concerné est écrit à côté). Retourne (largeur, hauteur) réservées, ou
-    (0, 0) si les images manquent (l'appelant écrit alors l'en-tête texte comme avant)."""
-    if cycle in (None, "", "primaire", "maternelle"):
-        w = bloc_memp(c, x, y_haut, hauteur)
-        return (w, hauteur) if w else (0, 0)
-    w = armoiries(c, x, y_haut, hauteur)
-    return (w, hauteur) if w else (0, 0)
-
-
-
 def _entete(c, cycle, titre, sous_titre=None, W=A4[0], H=A4[1], marge=15 * mm):
     """En-tête officiel. Retourne l'ordonnée sous l'en-tête."""
     haut = H - marge
     c.setFillColor(colors.black)
-    w_eff, _h_eff = entete_memp(c, marge, haut, cycle, hauteur=17 * mm)
-    if w_eff and cycle in (None, "", "primaire", "maternelle"):
-        pass                                              # l'effigie porte déjà République + ministère
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(marge, haut - 8, "RÉPUBLIQUE DU BÉNIN")
+    c.setFont("Helvetica-Oblique", 7.5)
+    c.drawString(marge, haut - 18, "Fraternité – Justice – Travail")
+    c.setFont("Helvetica", 7)
+    min_txt = MINISTERE.get(cycle, "")
+    if len(min_txt) > 60:
+        coupe = min_txt.rfind(" ", 0, 60)
+        c.drawString(marge, haut - 29, min_txt[:coupe])
+        c.drawString(marge, haut - 37, min_txt[coupe + 1:])
     else:
-        xt = marge + (w_eff + 3 if w_eff else 0)          # texte à côté des armoiries (autres cycles)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(xt, haut - 8, "RÉPUBLIQUE DU BÉNIN")
-        c.setFont("Helvetica-Oblique", 7.5)
-        c.drawString(xt, haut - 18, "Fraternité – Justice – Travail")
-        c.setFont("Helvetica", 7)
-        min_txt = MINISTERE.get(cycle, "")
-        if len(min_txt) > 60:
-            coupe = min_txt.rfind(" ", 0, 60)
-            c.drawString(xt, haut - 29, min_txt[:coupe])
-            c.drawString(xt, haut - 37, min_txt[coupe + 1:])
-        else:
-            c.drawString(xt, haut - 29, min_txt)
+        c.drawString(marge, haut - 29, min_txt)
 
     logo = _ecole_img("logo.png")
     if logo:
@@ -913,31 +863,23 @@ def bulletin_paie(b, p, mois_txt, params, code):
 
 # ---------------------------------------------------------------- documents tabulaires génériques (modules v1.3)
 def _entete_primaire(c, W, H, marge, infos_haut=None, cycle=None):
-    """En-tête des documents du primaire : effigie du MEMP (armoiries, ministère, République) en haut à gauche, puis
-    DDEMP, CS, école ; logo de l'école à droite."""
+    """En-tête des documents du primaire : République, ministère, DDEMP, CS, école (colonne gauche) ; logo à droite."""
     y = H - marge
     c.setFillColor(colors.black)
-    w_eff, h_eff = entete_memp(c, marge, y, cycle, hauteur=16 * mm)
-    if w_eff and cycle in (None, "", "primaire", "maternelle"):
-        y_id = y - h_eff - 12                             # premier libellé d'identification sous l'effigie
+    c.setFont("Helvetica-Bold", 8.5)
+    c.drawString(marge, y - 8, "RÉPUBLIQUE DU BÉNIN")
+    c.setFont("Helvetica", 7)
+    ministere = MINISTERE.get(cycle, MINISTERE["primaire"]).upper()
+    if len(ministere) > 75:  # secondaire : sur deux lignes
+        coupe = ministere.rfind(" ", 0, 60)
+        c.drawString(marge, y - 17, ministere[:coupe])
+        y -= 8
+        c.drawString(marge, y - 17, ministere[coupe + 1:])
     else:
-        xt = marge + (w_eff + 3 if w_eff else 0)
-        c.setFont("Helvetica-Bold", 8.5)
-        c.drawString(xt, y - 8, "RÉPUBLIQUE DU BÉNIN")
-        c.setFont("Helvetica", 7)
-        ministere = MINISTERE.get(cycle, MINISTERE["primaire"]).upper()
-        if len(ministere) > 75:  # secondaire : sur deux lignes
-            coupe = ministere.rfind(" ", 0, 60)
-            c.drawString(xt, y - 17, ministere[:coupe])
-            y -= 8
-            c.drawString(xt, y - 17, ministere[coupe + 1:])
-        else:
-            c.drawString(xt, y - 17, ministere)
-        y_id = max(y - 27, y - h_eff - 12) if w_eff else y - 27
-        y = H - marge
+        c.drawString(marge, y - 17, ministere)
     lignes = infos_haut if infos_haut is not None else [
         ("DDEMP", config.ECOLE.get("departement")), ("CS", config.ECOLE.get("cs")), ("ÉCOLE", config.ECOLE.get("nom"))]
-    yy = y_id
+    yy = y - 27
     for lab, val in lignes:
         if val:
             c.setFont("Helvetica-Bold", 7.5)
@@ -1059,12 +1001,12 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
         haut_entete[0] = Hh - y
         c.setFont("Helvetica", 6.5)
         c.setFillColor(colors.grey)
-        c.drawString(marge, 7 * mm, f"GESCOL · {config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
+        c.drawString(marge, 7 * mm, f"SCOLARIS · {config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
         c.drawRightString(W - marge, 7 * mm, f"Page {doc.page} · imprimé le {date.today().strftime('%d/%m/%Y')}")
         c.setFillColor(colors.black)
 
     doc = SimpleDocTemplate(buf, pagesize=taille_page, leftMargin=marge, rightMargin=marge,
-                            topMargin=marge + 30 * mm, bottomMargin=13 * mm, title=titre, author="GESCOL")
+                            topMargin=marge + 30 * mm, bottomMargin=13 * mm, title=titre, author="SCOLARIS")
     doc.build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=GCanvas)
     return buf.getvalue()
 

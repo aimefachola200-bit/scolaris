@@ -297,14 +297,6 @@ def enregistrer(app, H):
 
     H.stock_cantine_synthese = stock_cantine_synthese
 
-    def cantine_stock_section():
-        """Section « cantine_stock » du paquet de transmission : stock de vivres de l'école courante (année active),
-        ou None s'il n'y a aucun vivre enregistré."""
-        d = stock_cantine_synthese(H.eco())
-        return d if d["vivres"] else None
-
-    H.cantine_stock_section = cantine_stock_section
-
     def etats(eid):
         mv = mouvements_par_vivre(eid)
         return [etat_vivre(v, mv.get(v["id"], [])) for v in vivres(eid)]

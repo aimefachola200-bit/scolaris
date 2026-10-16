@@ -19,12 +19,13 @@ CHAMPS_ECOLE = ["nom", "sigle", "statut", "ordre", "departement", "cs", "up", "z
 ORDRES = ["Maternelle", "Primaire", "Maternelle et primaire", "Secondaire (collège)", "Secondaire (collège et lycée)",
           "Complexe (maternelle, primaire, secondaire)", "Enseignement technique"]
 RE_CLE_SIGNATURE = re.compile(r"^(ecole:\d+:(directeur|admin|ccs)|classe:\d+:titulaire|eleve:\d+|cep:\d+:chef"
+                              r"|enseignant:\d+"      # v1.6 : signature personnelle d'un compte enseignant (utilisateurs.id)
                               r"|jur:(service|agent|cs):\d+|jur:structure:responsable)$")
 
 
 def enregistrer(app, H):
     q, ex, config = H.q, H.ex, H.config
-    # v1.6 : lien d'une école locale avec l'école de la juridiction (jur_ecoles) dans GESCOL Circonscription / DDEMP
+    # v1.6 : lien d'une école locale avec l'école de la juridiction (jur_ecoles) dans SCOLARIS Circonscription / DDEMP
     H.ajouter_colonne("ecoles", "jur_ecole_id", "INTEGER")
     # v1.6 : griffe (cachet rectangulaire du nom du directeur), composée automatiquement depuis directeur_titre / _nom
     H.ajouter_colonne("ecoles", "griffe_actif", "INTEGER DEFAULT 1")
@@ -32,11 +33,38 @@ def enregistrer(app, H):
     H.ajouter_colonne("ecoles", "griffe_couleur", "TEXT")
 
     # ------------------------------------------------------------ école courante
+    def ecole_exemple_vide():
+        """Applications CS / DDEMP : l'école n° 1 créée par défaut au premier démarrage (« Établissement Scolaire
+        CPFA ») n'est qu'un exemple tant qu'elle n'est ni reliée à la juridiction (jur_ecole_id), ni renommée,
+        ni utilisée (classes, élèves). Elle est alors cachée du sélecteur et des listes d'écoles (sans être
+        supprimée : les paramètres de l'application s'y réfèrent) et sert de première école ouverte
+        (a_integration : ``_ecole1_vierge``). Renvoie la ligne ``ecoles`` ou None."""
+        if not config.juridiction():
+            return None
+        e = q("SELECT * FROM ecoles WHERE id=1", un=True)
+        if not e or e["jur_ecole_id"] or e["nom"] != config.DEFAUTS["ecole_nom"]:
+            return None
+        if q("SELECT 1 FROM classes WHERE ecole_id=1 LIMIT 1", un=True):
+            return None
+        if q("SELECT 1 FROM eleves x JOIN classes c ON c.id=x.classe_id WHERE c.ecole_id=1 LIMIT 1", un=True):
+            return None
+        return e
+
+    H.ecole_exemple_vide = ecole_exemple_vide
+
+    def sans_exemple(liste):
+        """Retire l'école d'exemple n° 1 d'une liste d'écoles (applications CS / DDEMP)."""
+        if config.juridiction() and ecole_exemple_vide():
+            return [e for e in liste if e["id"] != 1]
+        return liste
+
+    H.ecoles_sans_exemple = sans_exemple
+
     def ecoles_accessibles():
         if not g.get("user"):
-            return q("SELECT * FROM ecoles WHERE actif=1 ORDER BY id")
+            return sans_exemple(q("SELECT * FROM ecoles WHERE actif=1 ORDER BY id"))
         if g.user["role"] in ("admin", "fondateur") or not g.user["ecole_id"]:
-            return q("SELECT * FROM ecoles WHERE actif=1 ORDER BY nom")
+            return sans_exemple(q("SELECT * FROM ecoles WHERE actif=1 ORDER BY nom"))
         return q("SELECT * FROM ecoles WHERE id=? AND actif=1", (g.user["ecole_id"],))
 
     def ecole_courante():
@@ -53,6 +81,39 @@ def enregistrer(app, H):
         return r["image"] if r else None
 
     H.signature = signature
+
+    def signature_enseignant(user_id):
+        """Signature digitale personnelle d'un compte enseignant (clé « enseignant:<user_id> »), ou None."""
+        return signature(f"enseignant:{int(user_id)}") if user_id else None
+
+    def signature_titulaire(cid):
+        """Signature du titulaire d'une classe pour les documents de la classe (bulletins, relevés, fiches…) :
+        la signature « classe:<id>:titulaire » si elle existe ; sinon la signature personnelle de l'enseignant
+        connecté s'il est affecté à la classe ; sinon celle du seul enseignant affecté à la classe."""
+        img = signature(f"classe:{int(cid)}:titulaire")
+        if img:
+            return img
+        u = g.get("user")
+        if u and u["role"] == "enseignant" and q("SELECT 1 FROM affectations WHERE user_id=? AND classe_id=?",
+                                                 (u["id"], cid), un=True):
+            return signature_enseignant(u["id"])
+        ens = q("""SELECT DISTINCT a.user_id FROM affectations a JOIN utilisateurs u ON u.id=a.user_id
+                   WHERE a.classe_id=? AND u.role='enseignant' AND u.actif=1""", (cid,))
+        return signature_enseignant(ens[0]["user_id"]) if len(ens) == 1 else None
+
+    def signature_agent(personnel_id):
+        """Signature personnelle de l'enseignant dont la fiche du personnel (personnel.user_id) est reliée à son compte."""
+        if not personnel_id:
+            return None
+        try:
+            r = q("SELECT user_id FROM personnel WHERE id=?", (personnel_id,), un=True)
+        except Exception:  # noqa: BLE001 — colonne absente tant que le module carrière n'est pas installé
+            return None
+        return signature_enseignant(r["user_id"]) if r and r["user_id"] else None
+
+    H.signature_enseignant = signature_enseignant
+    H.signature_titulaire = signature_titulaire
+    H.signature_agent = signature_agent
 
     def griffe_de(e, ligne3=None, couleur=None, titre=None, nom=None):
         """(lignes, couleur) de la griffe d'une école (ligne de la table ecoles) : « LE DIRECTEUR / LA DIRECTRICE »,
@@ -100,16 +161,39 @@ def enregistrer(app, H):
 
     H.appliquer_identite_ecole = appliquer_identite_ecole
 
+    def effacer_identite_ecole():
+        """Applications CS / DDEMP sans école ouverte : config.ECOLE ne garde rien d'une école ouverte lors d'une
+        requête précédente (cachet, griffe, signature, directeur…) ; l'identité affichée (nom, sigle, adresse…)
+        est celle de la structure, posée par m_juridiction (jur_entete)."""
+        config.ECOLE.update({"id": None, "directeur": "", "directeur_titre": "Directeur", "statut": "", "up": "",
+                             "zone": "", "bp": "", "commune": "", "admin_titre": "", "admin_nom": "", "ccs_titre": "",
+                             "ccs_nom": "", "_cachet": None, "_sig_directeur": None, "_griffe": None})
+
     @app.before_request
     def charger_ecole():
+        """École courante (g.ecole). Éditions école : l'école choisie (session), sinon la première accessible.
+        Applications CS / DDEMP : aucune école n'est ouverte tant que l'utilisateur n'en a pas choisi une
+        (session["ecole_id"]) ; un compte directeur / enseignant rattaché à une école (utilisateurs.ecole_id)
+        ouvre d'office son école. Sans école ouverte, g.ecole = None (a_integration affiche la page de choix
+        sur les modules d'école)."""
         liste = ecoles_accessibles()
         choix = session.get("ecole_id")
-        e = next((x for x in liste if x["id"] == choix), None) or (liste[0] if liste else None)
-        if e is None:
-            e = q("SELECT * FROM ecoles ORDER BY id", un=True)
+        e = next((x for x in liste if x["id"] == choix), None)
+        if config.juridiction():
+            if e is None and g.get("user") and g.user["ecole_id"]:
+                e = next((x for x in liste if x["id"] == g.user["ecole_id"]), None)
+            if e is None and choix:
+                session.pop("ecole_id", None)
+        else:
+            e = e or (liste[0] if liste else None)
+            if e is None:
+                e = q("SELECT * FROM ecoles ORDER BY id", un=True)
         g.ecole = e
         g.ecoles = liste
-        appliquer_identite_ecole(e)
+        if e is not None:
+            appliquer_identite_ecole(e)
+        else:
+            effacer_identite_ecole()
 
     @app.context_processor
     def ctx_ecoles():
@@ -142,7 +226,7 @@ def enregistrer(app, H):
                    (SELECT COUNT(*) FROM eleves x JOIN classes c ON c.id=x.classe_id WHERE c.ecole_id=e.id AND x.statut='inscrit') nb_eleves
                    FROM ecoles e WHERE ? OR e.id IN (SELECT id FROM ecoles WHERE id=?) ORDER BY e.actif DESC, e.nom""",
                 (H.peut("parametres"), ecole_id()))
-        return render_template("ecoles.html", lst=lst)
+        return render_template("ecoles.html", lst=sans_exemple(lst))
 
     @app.route("/ecoles/nouvelle", methods=["GET", "POST"])
     @app.route("/ecoles/<int:eid>/modifier", methods=["GET", "POST"])
@@ -301,6 +385,11 @@ def enregistrer(app, H):
             abort(403)
         if cle.startswith("jur:") and g.user["role"] not in ("admin", "fondateur", "responsable", "chef_service", "cp"):
             abort(403)
+        if cle.startswith("enseignant:") and g.user["role"] == "enseignant" and cle != f"enseignant:{g.user['id']}":
+            abort(403)                      # un enseignant ne signe que pour lui-même
+        if g.user["role"] == "enseignant" and (cle.startswith(("eleve:", "cep:")) or (
+                cle.startswith("classe:") and int(cle.split(":")[1]) not in {c["id"] for c in classes_autorisees()})):
+            abort(403)                      # … et pour les classes qui lui sont affectées
         data = request.get_json(silent=True) or {}
         img = data.get("image")
         if data.get("effacer"):
@@ -391,7 +480,7 @@ def enregistrer(app, H):
         if not RE_CLE_DOC.match(cle):
             abort(400)
         # en-têtes liés à une classe : un enseignant ne peut écrire/lire que ceux de ses classes
-        m_cl = re.match(r"^(releve|affichage|cantine|registre|resultats_entete|bilan|eval|planif)[a-z_]*:(\d+)", cle)
+        m_cl = re.match(r"^(releve|affichage|cantine|registre|resultats_entete|bilan|eval)[a-z_]*:(\d+)", cle)
         if m_cl:
             verifier_classe(int(m_cl.group(2)))
         cle_reelle = f"e{ecole_id()}:{cle}"

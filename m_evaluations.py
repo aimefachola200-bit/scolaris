@@ -730,20 +730,13 @@ def enregistrer(app, H):
         # En-tête officiel (gauche : République, ministère, DDEMP, CS, école ; droite : logo)
         y = Hp - m_
         c.setFillColor(colors.black)
-        w_eff, h_eff = pdfs.entete_memp(c, m_, y, cl["cycle"], hauteur=16 * mm)   # effigie du MEMP (armoiries)
-        if w_eff and not secondaire:
-            yy = y - h_eff - 12                         # l'effigie porte République + ministère
-        else:
-            xt = m_ + (w_eff + 3 if w_eff else 0)
-            c.setFont("Helvetica-Bold", 9)
-            c.drawString(xt, y - 8, "RÉPUBLIQUE DU BÉNIN")
-            c.setFont("Helvetica-Oblique", 7)
-            c.drawString(xt, y - 17, "Fraternité – Justice – Travail")
-            c.setFont("Helvetica", 7)
-            c.drawString(xt, y - 26, pdfs.MINISTERE.get(cl["cycle"], "").upper()[:95])
-            yy = y - 36
-            if w_eff:
-                yy = min(yy, y - h_eff - 12)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(m_, y - 8, "RÉPUBLIQUE DU BÉNIN")
+        c.setFont("Helvetica-Oblique", 7)
+        c.drawString(m_, y - 17, "Fraternité – Justice – Travail")
+        c.setFont("Helvetica", 7)
+        c.drawString(m_, y - 26, pdfs.MINISTERE.get(cl["cycle"], "").upper()[:95])
+        yy = y - 36
         if secondaire:
             lignes_id = [("Département", v.get("ddemp")), ("ÉTABLISSEMENT", v.get("ecole"))]
         else:
@@ -881,7 +874,7 @@ def enregistrer(app, H):
                                       cle=f"eval|{e['id']}|{ev['id']}|{ev['annee']}")
         pdfs._qr(c, code, m_, base)
         eid = H.eco()
-        tit = pdfs.image_data_url(H.signature(f"classe:{cl['id']}:titulaire"))
+        tit = pdfs.image_data_url(H.signature_titulaire(cl["id"]))
         s_adm = pdfs.image_data_url(H.signature(f"ecole:{eid}:admin"))
         s_dir = pdfs.image_data_url(H.signature(f"ecole:{eid}:directeur")) or pdfs.signature_directeur()
         blocs = [("Le Parent", "", None, False),
@@ -903,7 +896,7 @@ def enregistrer(app, H):
         buf = io.BytesIO()
         c = GCanvas(buf, pagesize=A4)
         c.setTitle(f"Bulletins – {ev['titre']} – {cl['nom']}")
-        c.setAuthor("GESCOL")
+        c.setAuthor("SCOLARIS")
         for l in lignes:
             if ids is not None and l["eleve"]["id"] not in ids:
                 continue
@@ -933,28 +926,3 @@ def enregistrer(app, H):
             return redirect(url_for("eval_saisie", ev_id=ev_id))
         nom = re.sub(r"[^A-Za-z0-9]+", "_", H.xlsx.normaliser(f"bulletin {e['nom']} {e['prenoms']} {ev['libelle']}"))
         return H.pdf_reponse(bulletins_pdf(ev, cl, {e["id"]}), f"{nom}.pdf")
-
-    def evaluations_section():
-        """Section « evaluations » du paquet de transmission : évaluations de l'école courante (année active) par classe
-        et statistiques de réussite ; None si aucune évaluation n'est enregistrée."""
-        import evaluations_core as EC
-        out = []
-        for cl in q("SELECT * FROM classes WHERE ecole_id=? ORDER BY id", (H.eco(),)):
-            evs = EC.evaluations_classe(cl["id"], H.config.ANNEE_ACTIVE)
-            lignes = []
-            for ev in evs:
-                try:
-                    mats, res = EC.resultats(ev, cl)
-                    st = EC.statistiques(mats, res)
-                except Exception:  # noqa: BLE001  (évaluation incomplète : on ne bloque pas la transmission)
-                    continue
-                lignes.append({"type": ev["type"], "numero": ev["numero"], "libelle": ev["libelle"], "date": ev.get("date") or "",
-                               "inscrits_g": st["inscrits"]["G"], "inscrits_f": st["inscrits"]["F"],
-                               "composes_g": st["composes"]["G"], "composes_f": st["composes"]["F"],
-                               "reussis_g": st["reussis"]["G"], "reussis_f": st["reussis"]["F"],
-                               "taux_reussite": st["taux_reussite"]["T"], "moyenne": st["moyenne"]["T"]})
-            if lignes:
-                out.append({"classe": cl["nom"], "niveau": cl["niveau"], "evaluations": lignes})
-        return {"annee": H.config.ANNEE_ACTIVE, "classes": out} if out else None
-
-    H.evaluations_section = evaluations_section

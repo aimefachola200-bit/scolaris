@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests du tableau synoptique de l'école (m_synoptique) et des règles de retraite / ancienneté (m_carriere).
-Lancer : python3 -m unittest tests.test_synoptique   (depuis /home/claude/gescol)
+Lancer : python3 -m unittest tests.test_synoptique   (depuis /home/claude/scolaris)
 
-L'édition testée est choisie par GESCOL_EDITION_TEST (publique par défaut) ; la suite est exécutée pour
+L'édition testée est choisie par SCOLARIS_EDITION_TEST (publique par défaut) ; la suite est exécutée pour
 l'édition « publique » et, dans un second processus, pour l'édition « privee » (voir TestEditionPrivee)."""
 import html as html_mod
 import io
@@ -15,10 +15,10 @@ from datetime import date
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, RACINE)
-EDITION = os.environ.get("GESCOL_EDITION_TEST", "publique")
-DOSSIER = tempfile.mkdtemp(prefix=f"gescol_syno_{EDITION}_")
-os.environ["GESCOL_EDITION"] = EDITION
-os.environ["GESCOL_DATA"] = DOSSIER
+EDITION = os.environ.get("SCOLARIS_EDITION_TEST", "publique")
+DOSSIER = tempfile.mkdtemp(prefix=f"scolaris_syno_{EDITION}_")
+os.environ["SCOLARIS_EDITION"] = EDITION
+os.environ["SCOLARIS_DATA"] = DOSSIER
 
 from app import app  # noqa: E402
 import config  # noqa: E402
@@ -119,11 +119,11 @@ class TestSynoptique(unittest.TestCase):
             self.assertEqual(p["date_derniere_formation"], "2024-03-15")
             self.assertEqual(p["date_naissance"], "1969-02-28")
             pid = p["id"]
-            # calculs : né le 28/02/1969, grade B (58 ans) -> 01/04/2027 ; anciennetés au 31/12 de la 2e année scolaire
+            # calculs : né le 28/02/1969, grade B (58 ans) -> 01/04/2027 ; anciennetés au 31/12 de la 1re année scolaire
             f = MC.calculer_fiche(dict(p), auj=date(2026, 10, 7))
             self.assertEqual(f["retraite_txt"], "01/04/2027")
-            self.assertEqual(f["reference"], date(int(config.ANNEE_ACTIVE[:4]) + 1, 12, 31))
-            ref_annee = int(config.ANNEE_ACTIVE[:4]) + 1
+            self.assertEqual(f["reference"], date(int(config.ANNEE_ACTIVE[:4]), 12, 31))
+            ref_annee = int(config.ANNEE_ACTIVE[:4])
             self.assertEqual(f["anc"]["generale"], (ref_annee - 2000, 3))
             self.assertEqual(f["anc"]["departement"], (ref_annee - 2010, 3))
             self.assertEqual(f["anc"]["ecole"], (ref_annee - 2019, 3))
@@ -436,7 +436,8 @@ class TestSynoptique(unittest.TestCase):
         self.assertGreater(len(self.c.get("/synoptique/synoptique.pdf").data), 30000)
 
     def test_10_droits_et_interfaces(self):
-        """Un enseignant lit le synoptique mais ne peut pas écrire ; H.synoptique_* est exposé aux autres modules."""
+        """Un enseignant lit le règlement et le comité de classe mais n'écrit pas ; le tableau synoptique et le personnel
+        relèvent du directeur (m_perimetre_enseignant) ; H.synoptique_* est exposé aux autres modules."""
         from werkzeug.security import generate_password_hash
         with app.app_context():
             from app import ex, q
@@ -445,9 +446,12 @@ class TestSynoptique(unittest.TestCase):
                    ("ens_syno", "Enseignant test", "enseignant", generate_password_hash("secret123")))
         c2 = app.test_client()
         self.assertEqual(c2.post("/login", data={"identifiant": "ens_syno", "mdp": "secret123"}).status_code, 302)
-        self.assertEqual(c2.get("/synoptique").status_code, 200)
-        self.assertEqual(c2.get("/synoptique/personnel").status_code, 200)
+        # v1.6 (m_perimetre_enseignant) : le tableau synoptique et le personnel relèvent du directeur ; l'enseignant
+        # lit le règlement intérieur, les emplois du temps / planifications de SES niveaux et le comité de classe
+        self.assertEqual(c2.get("/synoptique").status_code, 403)
+        self.assertEqual(c2.get("/synoptique/personnel").status_code, 403)
         self.assertEqual(c2.get("/synoptique/reglement").status_code, 200)
+        self.assertEqual(c2.get("/synoptique/comites/classe").status_code, 200)
         self.assertEqual(c2.post("/synoptique/identite", data={"memp": "x"}).status_code, 403)
         self.assertEqual(c2.get("/synoptique/personnel/0").status_code, 403)
         self.assertEqual(c2.post("/synoptique/reglement/retablir").status_code, 403)
@@ -472,9 +476,9 @@ class TestEditionPrivee(unittest.TestCase):
     def test_privee(self):
         if EDITION != "publique":
             self.skipTest("déjà dans l'édition secondaire")
-        env = dict(os.environ, GESCOL_EDITION_TEST="privee")
-        env.pop("GESCOL_EDITION", None)
-        env.pop("GESCOL_DATA", None)
+        env = dict(os.environ, SCOLARIS_EDITION_TEST="privee")
+        env.pop("SCOLARIS_EDITION", None)
+        env.pop("SCOLARIS_DATA", None)
         r = subprocess.run([sys.executable, "-m", "unittest", "tests.test_synoptique.TestSynoptique"], cwd=RACINE, env=env,
                            capture_output=True, text=True, timeout=600)
         self.assertEqual(r.returncode, 0, r.stderr[-4000:])

@@ -141,14 +141,14 @@ class TestCarriere(unittest.TestCase):
     def test_date_reference(self):
         from datetime import date
         from m_carriere import date_reference, anciennete
-        self.assertEqual(date_reference(annee="2026-2027"), date(2027, 12, 31))
-        self.assertEqual(date_reference(annee="2027-2028"), date(2028, 12, 31))
-        self.assertEqual(date_reference(date(2031, 3, 1), annee="n'importe quoi"), date(2032, 12, 31))
-        ref = date(2027, 12, 31)
-        self.assertEqual(anciennete("2020-01-01", ref), (8, 0))                      # 31/12 inclus
-        self.assertEqual(anciennete("2024-02-29", ref), (3, 10))
-        self.assertEqual(anciennete("2026-09-15", ref), (1, 3))
-        self.assertIsNone(anciennete("2028-01-01", ref))
+        self.assertEqual(date_reference(annee="2026-2027"), date(2026, 12, 31))
+        self.assertEqual(date_reference(annee="2027-2028"), date(2027, 12, 31))
+        self.assertEqual(date_reference(date(2031, 3, 1), annee="n'importe quoi"), date(2031, 12, 31))
+        ref = date(2026, 12, 31)
+        self.assertEqual(anciennete("2020-01-01", ref), (7, 0))                      # 31/12 inclus
+        self.assertEqual(anciennete("2024-02-29", ref), (2, 10))
+        self.assertEqual(anciennete("2026-09-15", ref), (0, 3))
+        self.assertIsNone(anciennete("2027-01-01", ref))
 
     def test_calculer_fiche(self):
         from datetime import date
@@ -162,10 +162,10 @@ class TestCarriere(unittest.TestCase):
                                auj=date(2026, 10, 7))
         finally:
             config.ANNEE_ACTIVE = ancien
-        self.assertEqual(f["reference"], date(2027, 12, 31))
+        self.assertEqual(f["reference"], date(2026, 12, 31))
         self.assertEqual(f["retraite"], date(2027, 4, 1))
         self.assertEqual(f["retraite_txt"], "01/04/2027")
         self.assertTrue(f["alerte_retraite"])
-        self.assertEqual(f["anc"]["generale"], (27, 3))
-        self.assertEqual(f["anc"]["ecole"], (8, 3))
-        self.assertEqual(f["anc_txt"]["ecole"], "8 ans 3 mois")
+        self.assertEqual(f["anc"]["generale"], (26, 3))
+        self.assertEqual(f["anc"]["ecole"], (7, 3))
+        self.assertEqual(f["anc_txt"]["ecole"], "7 ans 3 mois")

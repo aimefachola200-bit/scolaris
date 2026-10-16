@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-GESCOL – Gestion d'établissement scolaire (CPFA, Bénin)
+SCOLARIS – Gestion d'établissement scolaire (CPFA, Bénin)
 Lancement : python app.py   puis ouvrir http://localhost:5000
 Compte initial : admin / admin123 (changement demandé à la première connexion)
 """
@@ -40,23 +40,26 @@ ROLES = {
 ROLES_ECOLE = ("fondateur", "admin", "directeur", "secretaire", "comptable", "enseignant")
 ROLES_JURIDICTION = ("admin", "responsable", "cp", "chef_service", "agent",
                      # v1.6 : comptes directeur / enseignant d'une école de la juridiction (école via
-                     # utilisateurs.ecole_id, classes via affectations) – mêmes droits que dans GESCOL
+                     # utilisateurs.ecole_id, classes via affectations) – mêmes droits que dans SCOLARIS
                      "directeur", "enseignant")
-# v1.6 : dans GESCOL Circonscription / DDEMP, les modules des écoles sont ouverts aux rôles de la juridiction.
+# v1.6 : dans SCOLARIS Circonscription / DDEMP, les modules des écoles sont ouverts aux rôles de la juridiction.
 # Un rôle de juridiction non autorisé par DROITS[module] hérite des droits « école » du rôle équivalent :
 EQUIV_ROLES_JUR = {"responsable": "admin", "chef_service": "directeur", "cp": "directeur", "agent": "secretaire"}
 # le conseiller pédagogique (lecture / écriture pédagogique) n'a pas les droits financiers des écoles
 FINANCES_HORS_CP = {"paiements", "paie", "tresorerie", "depenses", "cantine", "stock"}
 # module -> rôles autorisés en écriture
 DROITS = {
-    "eleves": {"admin", "directeur", "secretaire"},
+    # v1.6 : l'enseignant a accès à son périmètre (ses classes : élèves, cantine, CEP, synthèse, messages aux parents…) ;
+    # ce qui reste du domaine du directeur (création / suppression d'élèves, configuration, finances, administration…)
+    # lui est refusé par m_perimetre_enseignant (INTERDITS), qui filtre aussi par classe.
+    "eleves": {"admin", "directeur", "secretaire", "enseignant"},
     "classes": {"admin", "directeur", "secretaire"},
     "notes": {"admin", "directeur", "enseignant"},
     "paiements": {"admin", "directeur", "comptable"},
     "documents": {"admin", "directeur", "secretaire"},
     "parametres": {"admin"},
     "parents": {"admin", "directeur", "secretaire"},
-    "communication": {"admin", "directeur", "secretaire"},
+    "communication": {"admin", "directeur", "secretaire", "enseignant"},
     "appel": {"admin", "directeur", "secretaire", "enseignant"},
     "paie": {"admin", "directeur", "comptable"},
     "tresorerie": {"admin", "directeur", "comptable"},
@@ -65,9 +68,9 @@ DROITS = {
     "evaluations": {"admin", "directeur", "enseignant"},
     "registre": {"admin", "directeur", "secretaire", "enseignant"},
     "affichage": {"admin", "directeur", "secretaire", "enseignant"},
-    "cep": {"admin", "directeur", "secretaire"},
-    "synthese": {"admin", "directeur"},
-    "cantine": {"admin", "directeur", "comptable", "secretaire"},
+    "cep": {"admin", "directeur", "secretaire", "enseignant"},
+    "synthese": {"admin", "directeur", "enseignant"},
+    "cantine": {"admin", "directeur", "comptable", "secretaire", "enseignant"},
     "donnees": {"admin", "directeur", "secretaire"},
     "ecoles": {"admin", "directeur"},
     # applications Circonscription scolaire / DDEMP
@@ -84,7 +87,7 @@ DROITS = {
     "depenses": {"admin", "directeur", "comptable"},
     "maitre_semaine": {"admin", "directeur", "secretaire", "enseignant"},
     "visites": {"admin", "directeur", "enseignant"},
-    "patrimoine": {"admin", "directeur", "secretaire"},
+    "patrimoine": {"admin", "directeur", "secretaire", "enseignant"},   # enseignant : lecture seule (m_perimetre_enseignant)
     "recensement": {"admin", "directeur", "secretaire"},
     "docs_enseignant": {"admin", "directeur", "secretaire", "enseignant"},
     # v1.6
@@ -93,6 +96,13 @@ DROITS = {
     "epreuves": {"admin", "directeur", "enseignant"},             # comité d'évaluation, épreuves et grilles
     "jur_up": {"admin", "responsable", "cp", "chef_service"},     # activités des unités pédagogiques (CS / DDEMP)
     "jur_divisions": {"admin", "responsable", "chef_service"},    # divisions, modules et attributions (CS / DDEMP)
+    "calendrier_officiel": {"admin", "directeur", "secretaire", "responsable", "chef_service"},   # calendrier scolaire (MEMP)
+    "themes_up": {"admin", "directeur", "responsable", "cp", "chef_service"},                     # thèmes d'UP, CP, FG
+    "jur_synoptique": {"admin", "responsable", "chef_service"},   # tableau synoptique de la CS / DDEMP
+    # v1.6 – comptes des directeurs et enseignants (a_integration : /juridiction/comptes) ; financement des écoles
+    # (subventions, cotisations de cantine, dépenses, bilan et budget : /juridiction/financement)
+    "jur_comptes": {"admin", "responsable", "chef_service"},
+    "jur_financement": {"admin", "responsable", "chef_service", "agent"},
 }
 TYPES_DOCS = {
     "carte": "Carte d'élève",
@@ -362,13 +372,15 @@ MODULES = ["m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appe
            # édition publique (chargés dans les deux éditions ; menus affichés en édition publique)
            "m_finances_publiques", "m_carriere", "m_maitre_semaine", "m_visites", "m_patrimoine", "m_recensement",
            "m_docs_enseignant", "m_rapports",
-           # transmission école → CS (dans GESCOL / GESCOL Public)
+           # transmission école → CS (dans SCOLARIS / SCOLARIS Public)
            "m_transmission",
            # applications Circonscription scolaire et DDEMP (chargés dans toutes les éditions, menus seulement là)
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_calendrier", "m_planif_mensuelle", "m_stock_cantine", "m_epreuves", "a_divisions", "a_up", "a_integration"]
+           "m_synoptique", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
+           "m_perimetre_enseignant"]
 
 
 def create_app(test_config=None):
@@ -408,15 +420,16 @@ def create_app(test_config=None):
                     ROLES=ROLES, peut=peut, fcfa=fcfa, date_fr=pdfs.date_fr,
                     MODES_PAIEMENT=config.MODES_PAIEMENT, TYPES_DOCS=TYPES_DOCS, VERSION=config.VERSION, AUTONOME=config.AUTONOME,
                     EDITION=config.EDITION, PUBLIQUE=config.publique(), EDITIONS=config.EDITIONS,
-                    JURIDICTION=config.juridiction(), NOM_APPLI=config.NOMS_APPLI.get(config.EDITION, "GESCOL"),
+                    JURIDICTION=config.juridiction(), NOM_APPLI=config.NOMS_APPLI.get(config.EDITION, "SCOLARIS"),
                     ROLES_EDITION={k: ROLES[k] for k in (ROLES_JURIDICTION if config.juridiction() else ROLES_ECOLE)},
                     EDITION_IMPOSEE=config.EDITION_IMPOSEE in config.EDITIONS, CONCEPTEUR=config.CONCEPTEUR,
                     ep_existe=lambda e: e in app.view_functions)
 
     @app.errorhandler(403)
     def interdit(_e):
+        # m_perimetre_enseignant pose g.message_403 (« Hors de votre périmètre d'enseignant »)
         return render_template("erreur.html", titre="Accès refusé",
-                               message="Votre rôle ne permet pas d'accéder à cette page."), 403
+                               message=g.get("message_403") or "Votre rôle ne permet pas d'accéder à cette page."), 403
 
     @app.errorhandler(404)
     def introuvable(_e):
@@ -524,6 +537,9 @@ def create_app(test_config=None):
         lst = q("""SELECT c.*, COUNT(e.id) effectif FROM classes c
                    LEFT JOIN eleves e ON e.classe_id=c.id AND e.statut='inscrit'
                    WHERE c.ecole_id=? GROUP BY c.id ORDER BY c.nom""", (eco(),))
+        if g.user["role"] == "enseignant":   # périmètre de l'enseignant : ses classes
+            mes = {c["id"] for c in H.classes_autorisees()}
+            lst = [c for c in lst if c["id"] in mes]
         return render_template("classes.html", classes=lst)
 
     @app.route("/classes/nouvelle", methods=["GET", "POST"])
@@ -597,8 +613,13 @@ def create_app(test_config=None):
         if cid:
             sql += " AND e.classe_id=?"
             args.append(cid)
+        autorisees = H.classes_autorisees()
+        if g.user["role"] == "enseignant":   # périmètre de l'enseignant : les élèves de ses classes seulement
+            ids = [c["id"] for c in autorisees] or [0]
+            sql += f" AND e.classe_id IN ({','.join('?' * len(ids))})"
+            args += ids
         lst = q(sql + " ORDER BY e.nom, e.prenoms LIMIT 500", args)
-        return render_template("eleves.html", eleves=lst, classes=H.classes_autorisees(),
+        return render_template("eleves.html", eleves=lst, classes=autorisees,
                                rech=rech, cid=cid, statut=statut)
 
     @app.route("/eleves/export.csv")
@@ -629,6 +650,9 @@ def create_app(test_config=None):
                 "nom", "prenoms", "sexe", "date_naissance", "lieu_naissance", "classe_id", "parent_nom",
                 "parent_telephone", "parent_whatsapp", "adresse", "statut", "nationalite") + CHAMPS_CARTE}
             f["nom"] = f["nom"].upper()
+            if e and g.user["role"] == "enseignant":
+                # périmètre de l'enseignant : renseignements courants seulement (ni changement de classe ni de statut)
+                f["classe_id"], f["statut"] = str(e["classe_id"] or ""), e["statut"]
             erreurs = []
             if not f["nom"] or not f["prenoms"]:
                 erreurs.append("Nom et prénoms sont obligatoires.")
@@ -1146,9 +1170,21 @@ def create_app(test_config=None):
         return render_template("verifier.html", code=code, doc=doc, eleve=eleve)
 
     # ------------------------------------------------------------ utilisateurs & journal
+    def divisions_comptes():
+        """CS / DDEMP (v1.6) : divisions / services de la structure pour le champ « Division / service » des comptes
+        chef_service / agent (utilisateurs.service_code, colonne créée par a_integration). [] hors juridiction."""
+        if not config.juridiction() or not getattr(H, "jur_services_liste", None):
+            return []
+        return H.jur_services_liste()
+
+    def service_code_saisi(divisions):
+        code = (request.form.get("service_code") or "").strip()
+        return code if code and any(d["code"] == code for d in divisions) else None
+
     @app.route("/utilisateurs", methods=["GET", "POST"])
     @connexion_requise("parametres")
     def utilisateurs():
+        divisions = divisions_comptes()
         if request.method == "POST":
             action = request.form.get("action")
             if action == "creer":
@@ -1161,9 +1197,12 @@ def create_app(test_config=None):
                 elif q("SELECT 1 FROM utilisateurs WHERE identifiant=?", (ident,), un=True):
                     flash("Cet identifiant existe déjà.", "danger")
                 else:
-                    ex("INSERT INTO utilisateurs (identifiant, nom, role, mdp_hash, doit_changer_mdp) VALUES (?,?,?,?,1)",
-                       (ident, nom, role, generate_password_hash(mdp)))
-                    journal("utilisateur_cree", f"{ident} ({role})")
+                    uid = ex("INSERT INTO utilisateurs (identifiant, nom, role, mdp_hash, doit_changer_mdp) VALUES (?,?,?,?,1)",
+                             (ident, nom, role, generate_password_hash(mdp)))
+                    code = service_code_saisi(divisions) if role in ("chef_service", "agent") else None
+                    if code:
+                        ex("UPDATE utilisateurs SET service_code=? WHERE id=?", (code, uid))
+                    journal("utilisateur_cree", f"{ident} ({role}" + (f", division {code}" if code else "") + ")")
                     flash(f"Compte {ident} créé. Mot de passe à changer à la première connexion.", "success")
             else:
                 uid = request.form.get("uid", type=int)
@@ -1179,8 +1218,24 @@ def create_app(test_config=None):
                        (generate_password_hash(nouveau), uid))
                     journal("utilisateur_reinit", u["identifiant"])
                     flash(f"Mot de passe provisoire de {u['identifiant']} : {nouveau}", "info")
+                elif action == "service" and divisions:
+                    # CS / DDEMP : division / service de rattachement (périmètre d'accès, a_integration)
+                    code = service_code_saisi(divisions)
+                    ex("UPDATE utilisateurs SET service_code=? WHERE id=?", (code, uid))
+                    journal("utilisateur_service", f"{u['identifiant']} → {code or '(aucune)'}")
+                    libelle_div = code or "aucune (accès à toute l’application)"
+                    flash(f"Division de {u['identifiant']} : {libelle_div}.", "success")
             return redirect(url_for("utilisateurs"))
-        return render_template("utilisateurs.html", users=q("SELECT * FROM utilisateurs ORDER BY nom"))
+        users = [dict(u) for u in q("SELECT * FROM utilisateurs ORDER BY nom")]
+        if divisions:   # division effective : utilisateurs.service_code, sinon celle de la fiche agent (jur_agents)
+            noms = {d["code"]: (d["sigle"] or d["code"].upper()) for d in divisions}
+            agents = {r["user_id"]: r["service_code"] for r in q("SELECT user_id, service_code FROM jur_agents "
+                                                                 "WHERE actif=1 AND user_id IS NOT NULL")}
+            for u in users:
+                code = u.get("service_code") or agents.get(u["id"])
+                u["division"] = noms.get(code, code or "")
+                u["division_origine"] = "compte" if u.get("service_code") else ("agent" if agents.get(u["id"]) else "")
+        return render_template("utilisateurs.html", users=users, divisions=divisions)
 
     @app.route("/journal")
     @connexion_requise("parametres")
@@ -1355,29 +1410,29 @@ def create_app(test_config=None):
             get_db().backup(dest)
             dest.close()
             with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-                z.write(tmp, "gescol.db")
+                z.write(tmp, "scolaris.db")
                 for sous in ("photos", "ecole", "archives"):
                     dossier = os.path.join(config.INSTANCE_DIR, sous)
                     if os.path.isdir(dossier):
                         for nom in os.listdir(dossier):
                             z.write(os.path.join(dossier, nom), f"{sous}/{nom}")
                 z.writestr("LISEZ-MOI.txt",
-                           f"Sauvegarde GESCOL du {maintenant()}.\r\n"
-                           "Pour restaurer : arretez GESCOL, copiez ces fichiers dans le dossier de donnees\r\n"
-                           f"{config.INSTANCE_DIR}\r\n(en remplacant les fichiers existants), puis relancez GESCOL.\r\n")
+                           f"Sauvegarde SCOLARIS du {maintenant()}.\r\n"
+                           "Pour restaurer : arretez SCOLARIS, copiez ces fichiers dans le dossier de donnees\r\n"
+                           f"{config.INSTANCE_DIR}\r\n(en remplacant les fichiers existants), puis relancez SCOLARIS.\r\n")
         finally:
             os.remove(tmp)
         journal("sauvegarde")
         buf.seek(0)
         return send_file(buf, mimetype="application/zip", as_attachment=True,
-                         download_name=f"sauvegarde_gescol_{date.today().isoformat()}.zip")
+                         download_name=f"sauvegarde_scolaris_{date.today().isoformat()}.zip")
 
     # ------------------------------------------------------------ application installable (PWA)
     @app.route("/manifest.webmanifest")
     def manifeste():
         import json
         m = {
-            "name": f"GESCOL – {config.ECOLE['nom']}", "short_name": "GESCOL",
+            "name": f"SCOLARIS – {config.ECOLE['nom']}", "short_name": "SCOLARIS",
             "description": "Gestion d'établissement scolaire : élèves, notes, bulletins, paiements.",
             "lang": "fr", "id": "/", "start_url": "/?source=app", "scope": "/", "display": "standalone",
             "orientation": "any", "background_color": "#F4F6F9", "theme_color": "#1F4E79",
@@ -1465,7 +1520,7 @@ def servir(host="0.0.0.0", port=5000):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n  GESCOL démarré : http://localhost:{port}\n  (Ctrl+C pour arrêter)\n")
+    print(f"\n  SCOLARIS démarré : http://localhost:{port}\n  (Ctrl+C pour arrêter)\n")
     if "--debug" in sys.argv:
         app.run(host="0.0.0.0", port=port, debug=True)
     else:
