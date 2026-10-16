@@ -382,6 +382,8 @@ MODULES = ["m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appe
            "m_synoptique", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
+           # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)
+           "m_classe", "a_alertes",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
@@ -428,7 +430,27 @@ def create_app(test_config=None):
                     JURIDICTION=config.juridiction(), NOM_APPLI=config.NOMS_APPLI.get(config.EDITION, "SCOLARIS"),
                     ROLES_EDITION={k: ROLES[k] for k in (ROLES_JURIDICTION if config.juridiction() else ROLES_ECOLE)},
                     EDITION_IMPOSEE=config.EDITION_IMPOSEE in config.EDITIONS, CONCEPTEUR=config.CONCEPTEUR,
-                    ep_existe=lambda e: e in app.view_functions)
+                    ep_existe=lambda e: e in app.view_functions, MAJ=infos_maj())
+
+    def infos_maj():
+        """v1.8 : bandeau « nouvelle version » — fichier à proposer selon l'appareil, et qui le voit."""
+        if not g.get("user"):
+            return None
+        ua = (request.headers.get("User-Agent") or "").lower()
+        exe, apk = config.FICHIERS_MAJ.get(config.EDITION, config.FICHIERS_MAJ["privee"])
+        local = request.remote_addr in ("127.0.0.1", "::1")
+        if config.AUTONOME:
+            fichier = apk                              # application Android autonome
+        elif "android" in ua:
+            fichier = config.APK_CLIENT                # application légère (ou navigateur) d'un téléphone
+        elif "windows" in ua and local:
+            fichier = exe                              # PC de l'école
+        else:
+            fichier = ""
+        responsable = g.user["role"] in ("fondateur", "admin", "directeur", "responsable", "chef_service")
+        if not (responsable or config.AUTONOME or "android" in ua):
+            return None
+        return {"depot": config.DEPOT_MAJ, "fichier": fichier}
 
     @app.errorhandler(403)
     def interdit(_e):

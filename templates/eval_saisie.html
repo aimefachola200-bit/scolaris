@@ -50,7 +50,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
   {% if not mat %}<div class="kpi"><div class="l">Moyenne de la classe</div><div class="v" id="k-moy">—</div><div class="d" id="k-ext"></div></div>{% endif %}
 </div>
 
-<form method="post" id="f-saisie" data-doc="evaluations:ev{{ ev.id }}" autocomplete="off">
+<form method="post" id="f-saisie" data-doc="evaluations:ev{{ ev.id }}" data-hors-ligne="Notes – {{ ev.titre }}" autocomplete="off">
 <input type="hidden" name="notes_json" id="notes-json" data-nosave>
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
   <button type="submit" class="btn vert petit" title="Enregistrer les notes et l'en-tête en base">💾 Sauvegarder</button>
@@ -60,6 +60,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
   <button type="button" class="btn petit" id="b-tableau" title="Tableau des inscrits, ayant composé, ayant réussi + ordre de mérite">🧮 Générer le tableau</button>
   <span class="sep"></span>
   <a class="btn sec petit ev-pdf" href="{{ url_for('eval_rapport_pdf', ev_id=ev.id) }}" target="_blank" rel="noopener">📄 Rapport PDF</a>
+  {% if ep_existe('eval_remediation') %}<a class="btn sec petit" href="{{ url_for('eval_remediation', ev_id=ev.id) }}" title="Groupes de besoin par matière après cette évaluation">🧩 Groupes de remédiation</a>{% endif %}
   <a class="btn sec petit ev-pdf" href="{{ url_for('eval_bulletins_classe', ev_id=ev.id) }}" target="_blank" rel="noopener">📄 Bulletin classe</a>
   <button form="f-publier" class="btn {{ 'sec' if publie else 'vert' }} petit" title="Rendre visibles dans les espaces élèves et parents">{{ '🔒 Masquer aux élèves/parents' if publie else '📢 Publier aux élèves et parents' }}</button>
   <span class="ev-bul"><select name="eleve" form="f-bulletin" aria-label="Élève pour le bulletin" data-nosave required>

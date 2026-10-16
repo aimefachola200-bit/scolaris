@@ -8,6 +8,17 @@
   <div class="actions"><a class="btn sec" href="{{ url_for('jur_stats_ecoles', **args) }}">📊 Statistiques détaillées</a>
     <button class="btn sec" type="button" onclick="window.print()">🖶 Imprimer</button></div></div>
 {{ T.filtres(flt, 'jur_tableau', zone=False, type_=False, secteur=False) }}
+{% set rac = raccourcis() %}
+{% if rac %}<div class="raccourcis noprint" aria-label="Actions principales">
+  {% for r in rac %}<a href="{{ r.url }}"><span class="ico" aria-hidden="true">{{ r.ico }}</span><b>{{ r.titre }}</b><span class="d">{{ r.d }}</span></a>{% endfor %}
+</div>{% endif %}
+{% set AP = alertes_pilotage() if ep_existe('jur_alertes') else none %}
+{% if AP and (AP.haute or AP.moyenne or AP.info) %}
+<div class="carte noprint"><h2 style="margin-top:0">🚨 Alertes de pilotage
+  <small>{% if AP.haute %}<span class="puce ko">{{ AP.haute }} urgente(s)</span>{% endif %} {% if AP.moyenne %}<span class="puce moy">{{ AP.moyenne }} à traiter</span>{% endif %} {% if AP.info %}<span class="puce na">{{ AP.info }} pour information</span>{% endif %}</small></h2>
+  {% for a in AP.premieres %}<div class="alerte-l {{ a.niveau }}"><span class="ico" aria-hidden="true">{{ a.ico }}</span><div><b>{{ a.titre }}</b><div class="gris" style="font-size:13px">{{ a.detail }}</div></div></div>{% endfor %}
+  <a class="btn petit" href="{{ url_for('jur_alertes', annee=flt.annee, cs=flt.cs_id if JUR_NIVEAU == 'ddemp' else none) }}">Voir toutes les alertes</a>
+</div>{% endif %}
 
 <div class="grille indicateurs">
   <div class="kpi"><div class="l">Écoles ayant transmis</div><div class="v">{{ tot.transmis }} <small>/ {{ tot.ecoles }}</small></div>

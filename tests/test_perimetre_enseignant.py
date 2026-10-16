@@ -91,7 +91,9 @@ class TestPerimetreEnseignant(unittest.TestCase):
     def test_01_accueil_redirige_vers_mon_espace(self):
         r = self.c.get("/")
         self.assertEqual(r.status_code, 302)
-        self.assertTrue(r.headers["Location"].endswith("/mon-espace"))
+        # v1.8 : le tableau de bord de l'enseignant est « Ma classe » (une seule classe : sa page directement)
+        self.assertTrue(r.headers["Location"].endswith("/ma-classe"))
+        self.assertEqual(self.c.get("/ma-classe").status_code, 302)
         r = self.c.get("/mon-espace")
         self.assertEqual(r.status_code, 200)
         t = txt(r)

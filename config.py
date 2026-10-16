@@ -6,7 +6,14 @@ import os
 
 import sys
 
-VERSION = "1.7.1"
+VERSION = "1.8.0"
+# v1.8 : vérification des nouvelles versions (page « Releases » du dépôt GitHub) et fichiers à proposer par édition
+DEPOT_MAJ = os.environ.get("SCOLARIS_DEPOT_MAJ", "aimefachola200-bit/scolaris")
+FICHIERS_MAJ = {"privee": ("SCOLARIS-Installation.exe", "SCOLARIS-Autonome.apk"),
+                "publique": ("SCOLARIS-Public-Installation.exe", "SCOLARIS-Public.apk"),
+                "cs": ("SCOLARIS-Circonscription-Installation.exe", "SCOLARIS-Circonscription.apk"),
+                "ddemp": ("SCOLARIS-DDEMP-Installation.exe", "SCOLARIS-DDEMP.apk")}
+APK_CLIENT = "SCOLARIS.apk"
 CONCEPTEUR = "Maître Aimé FACHE"   # mention « Conception » en bas de chaque écran et document
 
 # Dossier du programme (templates, static). Dans l'exécutable Windows, PyInstaller

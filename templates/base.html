@@ -42,6 +42,7 @@
     {% if not ENS %}{{ lien('accueil', 'Tableau de bord', ep=='accueil', '⌂') }}{% endif %}
     {% if PUBLIQUE %}{% if g.user.role in ('fondateur','admin','directeur') %}{{ lien('directeur_tableau', 'Tableau de bord du directeur', ep.startswith('directeur_tableau'), '📊') }}{% endif %}
     {% elif g.user.role in ('fondateur','admin') %}{{ lien('fondateur_tableau', 'Tableau du fondateur', ep.startswith('fondateur'), '📊') }}{% endif %}
+    {% if ENS and ep_existe('ma_classe') %}{{ lien('ma_classe', 'Ma classe', ep.startswith('ma_classe'), '🏫') }}{% endif %}
     {% if ENS %}{{ lien('espace_enseignant', 'Mon espace (mes classes, ma signature)', ep=='espace_enseignant', '★') }}{% endif %}
     {% call groupe('sco', 'Scolarité', ep.startswith('eleve') or ep.startswith('classe') or ep.startswith('appel') or ep.startswith('absences') or ep.startswith('registre') or ep.startswith('releve') or ep.startswith('calendrier') or ep.startswith('affichage'), '👥') %}
       {{ lien('eleves', 'Élèves de mes classes' if ENS else 'Élèves et inscriptions', ep.startswith('eleve')) }}
@@ -185,6 +186,14 @@
     <a href="{{ url_for('installer') }}" class="{{ 'actif' if ep=='installer' }}">Installer l'application</a>
   </nav>
 </header>
+{% endif %}
+{% if g.user %}
+<a id="file-attente" class="bandeau attente" href="#" hidden title="Saisies faites sans connexion : touchez pour les envoyer maintenant">⏳ <b class="fa-n">0</b> saisie(s) gardée(s) sur cet appareil, en attente d'envoi au serveur — toucher pour envoyer</a>
+{% if MAJ %}<div id="bandeau-maj" class="bandeau maj" hidden data-depot="{{ MAJ.depot }}" data-version="{{ VERSION }}" data-fichier="{{ MAJ.fichier }}">
+  <span>🆕 Nouvelle version <b class="maj-v"></b> de SCOLARIS disponible (installée : {{ VERSION }}). Installez-la par-dessus l'ancienne : vos données sont conservées.</span>
+  <a class="btn petit maj-lien" href="#" target="_blank" rel="noopener">Télécharger la mise à jour</a>
+  <button class="btn sec petit maj-plus-tard" type="button">Plus tard</button>
+</div>{% endif %}
 {% endif %}
 <div id="bandeau-install" class="bandeau" hidden>
   <span>Installez SCOLARIS sur cet appareil pour l'ouvrir comme une application.</span>

@@ -360,6 +360,97 @@
     });
   }
 
+  /* ---------------------------------------------------------------- v1.8 : saisie hors ligne
+     <form method="post" data-hors-ligne="Appel du CM2 A"> : si le serveur ne répond pas (Wi-Fi coupé, PC éteint),
+     la saisie est gardée sur l'appareil (localStorage) puis renvoyée automatiquement dès le retour du réseau
+     (événement « online » et nouvel essai toutes les 30 s). Le badge « saisies en attente » de la barre du haut
+     indique le nombre de saisies gardées. */
+  var CLE_FILE = 'scolaris-file-attente';
+  function fileLire() { try { return JSON.parse(localStorage.getItem(CLE_FILE) || '[]'); } catch (_) { return []; } }
+  function fileEcrire(l) { try { localStorage.setItem(CLE_FILE, JSON.stringify(l)); } catch (_) {} majFile(); }
+  function majFile() {
+    var b = $('#file-attente'); if (!b) return;
+    var n = fileLire().length; b.hidden = !n; var t = $('.fa-n', b); if (t) t.textContent = n;
+  }
+  function posterCorps(action, corps) {
+    return fetch(action, { method: 'POST', credentials: 'same-origin', redirect: 'follow',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corps }).then(function (r) {
+      if (r.status >= 500 || r.status === 0) throw new Error('serveur');
+      if (/\/login(\?|$)/.test(r.url || '')) throw new Error('connexion');   // session expirée : on garde la saisie
+      return r;
+    });
+  }
+  var envoiEnCours = false;
+  function viderFile() {
+    if (envoiEnCours) return;
+    var l = fileLire(); if (!l.length) return;
+    envoiEnCours = true;
+    var it = l[0];
+    posterCorps(it.action, it.corps).then(function () {
+      fileEcrire(fileLire().filter(function (x) { return x.id !== it.id; }));
+      toast((it.titre || 'Saisie') + ' : envoyée au serveur.', true);
+      envoiEnCours = false; viderFile();
+    }).catch(function () { envoiEnCours = false; });
+  }
+  window.SCOLARIS.viderFile = viderFile;
+  function initHorsLigne(form) {
+    if (form.dataset.hlPret) return; form.dataset.hlPret = 1;
+    form.addEventListener('submit', function (e) {
+      var b = e.submitter;
+      if (e.defaultPrevented || (b && b.dataset.confirmer) || form.dataset.confirmer || form.enctype === 'multipart/form-data') return;
+      e.preventDefault();
+      var fd = new FormData(form);
+      if (b && b.name) fd.append(b.name, b.value);
+      var corps = new URLSearchParams(fd).toString(), action = form.getAttribute('action') || location.pathname + location.search;
+      if (b) b.disabled = true;
+      posterCorps(action, corps).then(function (r) { location.href = r.url || location.href; }).catch(function (err) {
+        var l = fileLire();
+        l.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), action: action, corps: corps,
+                 titre: form.dataset.horsLigne || document.title, quand: new Date().toISOString() });
+        fileEcrire(l);
+        if (b) b.disabled = false;
+        // les pages qui retirent les noms des champs avant l'envoi (grille des notes) les retrouvent
+        $$('[data-nom]', form).forEach(function (el) { if (!el.name) el.name = el.dataset.nom; });
+        toast(err && err.message === 'connexion'
+          ? 'Session expirée : saisie gardée sur l\'appareil. Reconnectez-vous, elle sera envoyée automatiquement.'
+          : 'Pas de connexion au serveur : saisie gardée sur cet appareil, envoi automatique dès le retour du réseau.', true);
+      });
+    });
+  }
+  window.addEventListener('online', viderFile);
+  setInterval(viderFile, 30000);
+
+  /* ---------------------------------------------------------------- v1.8 : nouvelle version disponible
+     <div id="bandeau-maj" data-depot="compte/depot" data-version="1.8.0" data-fichier="NOM.apk|NOM.exe"> : une fois
+     par 12 h, la dernière version publiée sur GitHub est comparée à la version installée. */
+  function versionNum(v) { return String(v || '').replace(/^v/i, '').split('.').map(function (x) { return parseInt(x, 10) || 0; }); }
+  function plusRecente(a, b) {
+    var x = versionNum(a), y = versionNum(b);
+    for (var i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
+    return false;
+  }
+  function initMaj() {
+    var b = $('#bandeau-maj'); if (!b || !window.fetch) return;
+    var depot = b.dataset.depot, actuelle = b.dataset.version, cache = {};
+    try { cache = JSON.parse(localStorage.getItem('scolaris-maj') || '{}'); } catch (_) {}
+    function afficher(tag) {
+      if (!tag || !plusRecente(tag, actuelle)) return;
+      try { if (localStorage.getItem('scolaris-maj-ignore') === tag) return; } catch (_) {}
+      var f = b.dataset.fichier, lien = 'https://github.com/' + depot + '/releases/' + (f ? 'latest/download/' + f : 'latest');
+      $('.maj-v', b).textContent = tag.replace(/^v/i, '');
+      $('.maj-lien', b).href = lien;
+      b.hidden = false;
+      $('.maj-plus-tard', b).addEventListener('click', function () { b.hidden = true; try { localStorage.setItem('scolaris-maj-ignore', tag); } catch (_) {} });
+    }
+    if (cache.tag && cache.quand && Date.now() - cache.quand < 12 * 3600 * 1000) { afficher(cache.tag); return; }
+    fetch('https://api.github.com/repos/' + depot + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        if (!j || !j.tag_name) return;
+        try { localStorage.setItem('scolaris-maj', JSON.stringify({ tag: j.tag_name, quand: Date.now() })); } catch (_) {}
+        afficher(j.tag_name);
+      }).catch(function () {});
+  }
+
   /* ---------------------------------------------------------------- confirmation des boutons dangereux */
   document.addEventListener('submit', function (e) {
     var b = e.submitter, msg = (b && b.dataset.confirmer) || e.target.dataset.confirmer;
@@ -402,6 +493,9 @@
     $$('form[data-doc]', racine).forEach(initDoc);
     $$('[data-coches]', racine).forEach(initCoches);
     $$('input[type=password]', racine).forEach(initOeil);
+    $$('form[data-hors-ligne]', racine).forEach(initHorsLigne);
+    if (racine === document) { majFile(); viderFile(); initMaj();
+      var fa = $('#file-attente'); if (fa) fa.addEventListener('click', function (e) { e.preventDefault(); toast('Envoi des saisies en attente…', true); viderFile(); }); }
   }
 
   // Œil pour afficher / masquer un mot de passe (saisie sur téléphone)

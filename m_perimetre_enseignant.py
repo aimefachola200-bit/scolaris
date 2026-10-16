@@ -171,11 +171,14 @@ def enregistrer(app, H):
         if not ep or ep == "static" or request.url_rule is None:
             return None
         va = request.view_args or {}
-        # 1. tableau de bord → Mon espace (CS / DDEMP : a_integration ouvre l'école du compte)
+        # 1. tableau de bord → Ma classe (v1.8), à défaut Mon espace (CS / DDEMP : a_integration ouvre l'école du compte)
         if ep == "accueil":
-            if config.juridiction() or "espace_enseignant" not in app.view_functions:
+            if config.juridiction():
                 return None
-            return redirect(url_for("espace_enseignant"))
+            for cible in ("ma_classe", "espace_enseignant"):
+                if cible in app.view_functions:
+                    return redirect(url_for(cible))
+            return None
         # 2. domaine du directeur
         if est_interdit(ep):
             refuser()

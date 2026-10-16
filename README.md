@@ -10,6 +10,26 @@ Application web Python (Flask + SQLite) utilisable sur le réseau de l'école.
 Modules : élèves et inscriptions, classes, saisie des notes et bulletins,
 paiements et reçus, documents officiels avec QR code de vérification.
 
+## Nouveautés de la version 1.8
+
+- **Accueil par rôle** : grandes tuiles des actions principales du rôle connecté (directeur, secrétariat, comptabilité,
+  fondateur ; CCS, CP et chefs de service dans les applications CS et DDEMP), avec l'état des sauvegardes.
+- **« Ma classe »** (enseignant, ouvert directement à la connexion) : appel du jour, absences de la semaine, dernière
+  évaluation (taux de réussite, notes manquantes), prochaines évaluations, élèves à suivre (absences répétées,
+  non-maîtrise), boutons « Faire l'appel », « Saisir les notes », « Groupes de remédiation ».
+- **Appel rapide** : un toucher sur le nom fait passer présent → absent → retard ; compteurs en direct, « Tous présents ».
+- **Saisies hors ligne** : l'appel et les notes enregistrés sans réseau sont gardés sur l'appareil et envoyés
+  automatiquement au retour de la connexion (badge « saisie(s) gardée(s) »). Les pages de classe restent consultables
+  hors ligne.
+- **Mise à jour depuis l'application** : un bandeau signale la nouvelle version publiée sur GitHub et propose le
+  téléchargement de l'installateur ou de l'APK de la bonne édition.
+- **Groupes de remédiation** après chaque évaluation (/evaluations/<n>/remediation, PDF, Excel) : par matière,
+  soutien intensif (< 7), consolidation (7 à < 10), maîtrise (10 à < 15), approfondissement / tuteurs (≥ 15) ;
+  maternelle : NA / ECA / A ; activités proposées par discipline, élèves en non-maîtrise, matières à renforcer.
+- **Alertes de pilotage** (CS / DDEMP, /juridiction/alertes et résumé au tableau de bord) : écoles sans transmission
+  ou sans transmission depuis 30 jours, manque d'enseignants, classes pléthoriques, écoles non visitées ce trimestre,
+  retard des CP / CCS sur leur programmation, séances d'UP prévues et non tenues.
+
 ## Nouveautés de la version 1.7
 
 | Menu | Contenu |

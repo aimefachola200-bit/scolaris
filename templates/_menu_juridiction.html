@@ -1,6 +1,7 @@
 {# Menu des applications SCOLARIS Circonscription (CS) et SCOLARIS DDEMP — inclus par base.html #}
 {% set CS_ = JUR_NIVEAU == 'cs' %}
 {{ lien('jur_tableau', 'Tableau de bord', ep=='jur_tableau', '⌂') }}
+{% if ep_existe('jur_alertes') and (peut('jur_ecoles') or peut('jur_visites') or peut('jur_cp_bilan') or peut('jur_transmission')) %}{{ lien('jur_alertes', 'Alertes de pilotage', ep=='jur_alertes', '🚨') }}{% endif %}
 {{ lien('jur_synoptique', 'Tableau synoptique de la ' ~ ('CS' if CS_ else 'DDEMP'), ep.startswith('jur_synoptique'), '▦') }}
 {% call groupe('jstat', 'Statistiques', ep.startswith('jur_stats') or ep in ('jur_classes', 'jur_financement'), '📊') %}
   {{ lien('jur_stats_ecoles', 'Écoles (nombre, classement)', ep=='jur_stats_ecoles') }}

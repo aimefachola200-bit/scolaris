@@ -218,3 +218,39 @@ table.t.plan-m textarea{width:100%;min-width:120px;min-height:34px;font-size:12p
 table.t.plan-m input[type=date]{font-size:11px;padding:2px 3px;width:118px}
 .plan-m-sem{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-weight:400;font-size:11px}
 .logo-img{border-radius:9px;display:block;flex:none}
+
+/* ---------- v1.8 : saisies hors ligne, nouvelle version, accueil par rôle, Ma classe, appel rapide ---------- */
+.bandeau.attente{background:#FFFAEB;border-bottom-color:#FEC84B;color:#93370D;text-decoration:none;font-weight:600}
+.bandeau.maj{background:#ECFDF3;border-bottom-color:#ABEFC6;color:#067647}
+.raccourcis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin:6px 0 18px}
+.raccourcis a{display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center;min-height:86px;
+  border:1px solid #D0D5DD;border-radius:14px;padding:12px 14px;background:#fff;color:#1D2939;text-decoration:none;
+  box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.raccourcis a:hover,.raccourcis a:focus-visible{border-color:#1F4E79;background:#F5F8FC}
+.raccourcis .ico{font-size:26px;line-height:1}
+.raccourcis b{font-size:15px;color:#1F4E79}
+.raccourcis .d{font-size:12px;color:#667085}
+.raccourcis a.alerte{border-color:#FDA29B;background:#FEF3F2}
+.mc-classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.mc-carte{border:1px solid #D0D5DD;border-radius:14px;background:#fff;padding:14px}
+.mc-carte h2{margin:0 0 6px;font-size:18px}
+.mc-ligne{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:3px 0;border-bottom:1px dashed #EAECF0}
+.mc-ligne:last-child{border-bottom:0}
+.puce{display:inline-block;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:600}
+.puce.ok{background:#ECFDF3;color:#067647}.puce.moy{background:#FFFAEB;color:#B54708}.puce.ko{background:#FEF3F2;color:#B42318}.puce.na{background:#F2F4F7;color:#667085}
+.appel-rapide .compteurs{position:sticky;top:0;z-index:4;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;
+  padding:8px 0;border-bottom:1px solid #EAECF0;margin-bottom:8px}
+.appel-rapide .compteurs .c{border-radius:10px;padding:6px 12px;font-weight:700}
+.appel-rapide .c.p{background:#ECFDF3;color:#067647}.appel-rapide .c.a{background:#FEF3F2;color:#B42318}.appel-rapide .c.r{background:#FFFAEB;color:#B54708}
+.appel-rapide tr[data-eleve] td.nom{cursor:pointer;user-select:none;min-width:180px}
+.appel-rapide tr.statut-absent td.nom{text-decoration:line-through;color:#B42318}
+.appel-rapide tr.statut-retard td.nom{color:#B54708}
+.groupe-rem{border:1px solid #D0D5DD;border-radius:12px;padding:10px 12px;margin:8px 0;background:#fff}
+.groupe-rem h3{margin:0 0 4px;font-size:15px}
+.groupe-rem.g1{border-left:6px solid #D92D20}.groupe-rem.g2{border-left:6px solid #F79009}.groupe-rem.g3{border-left:6px solid #17B26A}.groupe-rem.g4{border-left:6px solid #2E90FA}
+.alerte-l{display:flex;gap:10px;align-items:flex-start;border:1px solid #EAECF0;border-radius:10px;padding:8px 10px;margin:6px 0;background:#fff}
+.alerte-l.haute{border-left:6px solid #D92D20}.alerte-l.moyenne{border-left:6px solid #F79009}.alerte-l.info{border-left:6px solid #2E90FA}
+.alerte-l .ico{font-size:20px}
+@media print{.noprint,.raccourcis{display:none!important}}
+.alerte-l details summary{cursor:pointer;font-size:13px;color:#1F4E79}
+.alerte-l ul{margin:6px 0 0 18px;padding:0;font-size:13px}
