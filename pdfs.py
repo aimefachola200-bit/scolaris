@@ -233,7 +233,7 @@ def url_verif(code):
             from flask import request
             base = request.host_url
         except RuntimeError:
-            base = "http://localhost:5000"
+            base = "http://localhost:5100"
     return f"{base.rstrip('/')}/verifier/{code}"
 
 

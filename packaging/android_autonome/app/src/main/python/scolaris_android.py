@@ -7,7 +7,7 @@ import os
 import socket
 import threading
 
-PORT_FIXE = 8765          # port fixe : la session et les réglages de l'écran sont conservés d'un lancement à l'autre
+PORT_FIXE = 8865          # port fixe : la session et les réglages de l'écran sont conservés d'un lancement à l'autre
 _serveur = {"url": None}
 
 

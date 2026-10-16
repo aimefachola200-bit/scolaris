@@ -491,9 +491,7 @@ MATIERES_SECONDAIRE = [
 
 
 def chemin_db():
-    nouveau = os.path.join(current_app.instance_path, "scolaris.db")
-    ancien = os.path.join(current_app.instance_path, "gescol.db")  # LEGACY-GESCOL
-    return ancien if os.path.exists(ancien) and not os.path.exists(nouveau) else nouveau  # LEGACY-GESCOL
+    return os.path.join(current_app.instance_path, "scolaris.db")
 
 
 def get_db():

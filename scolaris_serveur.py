@@ -15,12 +15,12 @@ import time
 import webbrowser
 
 def _port_defaut():
-    """5000 SCOLARIS (privé), 5001 SCOLARIS Public, 5002 Circonscription, 5003 DDEMP : tous peuvent tourner sur le même PC."""
+    """5100 SCOLARIS (privé), 5101 SCOLARIS Public, 5102 Circonscription, 5103 DDEMP : tous peuvent tourner sur le même PC."""
     try:
         import config
-        return str(config.PORTS.get(config.EDITION_IMPOSEE, 5000))
+        return str(config.PORTS.get(config.EDITION_IMPOSEE, 5100))
     except Exception:  # noqa: BLE001
-        return "5000"
+        return "5100"
 
 
 PORT = int(os.environ.get("SCOLARIS_PORT") or _port_defaut())

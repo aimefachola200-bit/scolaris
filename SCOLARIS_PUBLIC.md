@@ -6,7 +6,7 @@ SCOLARIS existe en deux applications jumelles qui partagent le même programme :
 |---|---|---|
 | Android autonome | `SCOLARIS-Autonome.apk` | `SCOLARIS-Public.apk` (icône avec un « P » vert) |
 | Windows | `SCOLARIS-Installation.exe` | `SCOLARIS-Public-Installation.exe` |
-| Adresse sur le PC | http://localhost:5000 | http://localhost:5001 |
+| Adresse sur le PC | http://localhost:5100 | http://localhost:5101 |
 | Données sur le PC | dossier `SCOLARIS` | dossier `SCOLARIS_Public` |
 
 Les deux peuvent être installées sur le même téléphone ou le même PC sans se gêner.

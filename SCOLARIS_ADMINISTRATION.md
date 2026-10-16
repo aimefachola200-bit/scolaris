@@ -7,7 +7,7 @@ Ce sont deux applications jumelles de SCOLARIS, faites pour l'administration sco
 | Pour qui | Le CCS (ou l'inspecteur), les CP, les chefs de division et de service (CDS, RH, CDAP, CDAF, CDOSP) | Le directeur départemental et les services (SEC, SEMP, SRH, SPAF, cantines, statistiques, infrastructures) |
 | Rassemble | Les écoles de la circonscription, par zone pédagogique | Les circonscriptions du département |
 | Android | `SCOLARIS-Circonscription.apk` (pastille orange « C ») | `SCOLARIS-DDEMP.apk` (pastille violette « D ») |
-| Windows | `SCOLARIS-Circonscription-Installation.exe` (http://localhost:5002) | `SCOLARIS-DDEMP-Installation.exe` (http://localhost:5003) |
+| Windows | `SCOLARIS-Circonscription-Installation.exe` (http://localhost:5102) | `SCOLARIS-DDEMP-Installation.exe` (http://localhost:5103) |
 
 Tout se télécharge sur la même page : https://aimefachola200-bit.github.io/scolaris/
 

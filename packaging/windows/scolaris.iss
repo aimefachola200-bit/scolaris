@@ -1,7 +1,7 @@
 ﻿; Inno Setup : fabrique SCOLARIS-Installation-x.y.z.exe à partir de dist\SCOLARIS
 ; Compiler depuis la racine du projet :  iscc /DVersion=1.3.0 packaging\windows\scolaris.iss
 ; Applications jumelles :  iscc /DVersion=1.6.0 /DEdition=publique|cs|ddemp packaging\windows\scolaris.iss
-;   -> SCOLARIS-Public-Installation-x.y.z.exe (dossier, données, port 5001 et raccourcis séparés)
+;   -> SCOLARIS-Public-Installation-x.y.z.exe (dossier, données, port 5101 et raccourcis séparés)
 
 #ifndef Version
   #define Version "1.6.0"
@@ -13,26 +13,26 @@
   #define Nom "SCOLARIS Public"
   #define Fichier "SCOLARIS-Public-Installation-"
   #define Donnees "SCOLARIS_Public"
-  #define Port "5001"
-  #define Id "{{9A4D2C61-3B7E-4E15-8F0B-2C6E9D41A7F3}"
+  #define Port "5101"
+  #define Id "{{F7AD2F18-22FD-4036-ABCF-D5212E63321E}"
 #elif Edition == "cs"
   #define Nom "SCOLARIS Circonscription"
   #define Fichier "SCOLARIS-Circonscription-Installation-"
   #define Donnees "SCOLARIS_CS"
-  #define Port "5002"
-  #define Id "{{3E7B5A90-61C4-4F2D-9B8E-0A4C7D2F5E16}"
+  #define Port "5102"
+  #define Id "{{31FD371E-D78C-46E3-9869-AD27F484A129}"
 #elif Edition == "ddemp"
   #define Nom "SCOLARIS DDEMP"
   #define Fichier "SCOLARIS-DDEMP-Installation-"
   #define Donnees "SCOLARIS_DDEMP"
-  #define Port "5003"
-  #define Id "{{C82F4D17-0B9A-4E63-A5D1-7F3E2B6C9A48}"
+  #define Port "5103"
+  #define Id "{{07A8651F-A359-4DAE-9B08-6E7E76C225FC}"
 #else
   #define Nom "SCOLARIS"
   #define Fichier "SCOLARIS-Installation-"
   #define Donnees "SCOLARIS"
-  #define Port "5000"
-  #define Id "{{6C1E2B7A-4F3D-4B7E-9C2A-7D5E3F1A9B20}"
+  #define Port "5100"
+  #define Id "{{615F2F30-6FE0-4293-BD01-EB6D706FE8E7}"
 #endif
 
 [Setup]

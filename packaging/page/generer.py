@@ -31,15 +31,15 @@ GROUPES = [
     ("SCOLARIS Public — écoles publiques", "Cantine et subventions, dépenses, gestion de carrière, maître de semaine, visites de classe, "
      "patrimoine, fiches de recensement, rapports de rentrée et de fin d'année, documents de l'enseignant.", [
         ("autonome", "SCOLARIS-Public.apk", "Android autonome – SCOLARIS Public", "Application jumelle pour les écoles publiques, sans PC ni Internet. Elle s'installe à côté de SCOLARIS sans le remplacer."),
-        ("windows", "SCOLARIS-Public-Installation.exe", "Windows (PC) – SCOLARIS Public", "Installe SCOLARIS Public sur un PC (données séparées de SCOLARIS, adresse http://localhost:5001)."),
+        ("windows", "SCOLARIS-Public-Installation.exe", "Windows (PC) – SCOLARIS Public", "Installe SCOLARIS Public sur un PC (données séparées de SCOLARIS, adresse http://localhost:5101)."),
     ]),
     ("Administration scolaire — Circonscription et DDEMP", "Tableaux de bord de la juridiction, statistiques des apprenants et des enseignants, "
      "CEP (taux par zone et par CS, prévisions, frais de relevés), carrière et retraites, visites des CP et CCS, fiches "
      "de recensement et rapports consolidés, attestations et certificats, transmissions des écoles.", [
         ("autonome", "SCOLARIS-Circonscription.apk", "Android – SCOLARIS Circonscription", "Pour le CCS, les CP et les chefs de division : reçoit les fichiers des écoles de la circonscription."),
-        ("windows", "SCOLARIS-Circonscription-Installation.exe", "Windows – SCOLARIS Circonscription", "Installe l'application de la circonscription scolaire sur un PC (adresse http://localhost:5002)."),
+        ("windows", "SCOLARIS-Circonscription-Installation.exe", "Windows – SCOLARIS Circonscription", "Installe l'application de la circonscription scolaire sur un PC (adresse http://localhost:5102)."),
         ("autonome", "SCOLARIS-DDEMP.apk", "Android – SCOLARIS DDEMP", "Pour la Direction départementale : rassemble les circonscriptions du département."),
-        ("windows", "SCOLARIS-DDEMP-Installation.exe", "Windows – SCOLARIS DDEMP", "Installe l'application de la DDEMP sur un PC (adresse http://localhost:5003)."),
+        ("windows", "SCOLARIS-DDEMP-Installation.exe", "Windows – SCOLARIS DDEMP", "Installe l'application de la DDEMP sur un PC (adresse http://localhost:5103)."),
     ]),
 ]
 

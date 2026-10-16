@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
         col.addView(lib);
 
         final EditText champ = new EditText(this);
-        champ.setHint("ex. 192.168.1.10:5000");
+        champ.setHint("ex. 192.168.1.10:5100");
         champ.setSingleLine(true);
         champ.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         champ.setImeOptions(EditorInfo.IME_ACTION_GO);

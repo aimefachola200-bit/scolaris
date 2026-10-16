@@ -61,7 +61,7 @@ Espace parents : `/parent` (identifiant = numéro de téléphone du parent).
 1. Installez **Python 3.10 ou plus** depuis python.org (cochez « Add Python to PATH »).
 2. Décompressez le dossier `scolaris`, puis double-cliquez sur **`lancer.bat`**.
    La première fois, il installe Flask et ReportLab (connexion Internet nécessaire).
-3. Le navigateur s'ouvre sur http://localhost:5000.
+3. Le navigateur s'ouvre sur http://localhost:5100.
    Connexion : **admin / admin123** – un nouveau mot de passe est demandé tout de suite.
 
 Pour essayer avec des données fictives : `venv\Scripts\python demo.py` **avant** toute vraie saisie
@@ -69,10 +69,10 @@ Pour essayer avec des données fictives : `venv\Scripts\python demo.py` **avant*
 
 ## Utilisation en réseau
 
-Les autres postes de l'école (et les téléphones) se connectent à `http://ADRESSE-IP-DU-PC:5000`.
+Les autres postes de l'école (et les téléphones) se connectent à `http://ADRESSE-IP-DU-PC:5100`.
 Pour que les QR codes imprimés pointent vers ce serveur, définissez l'adresse dans `config.py`
 (`URL_PUBLIQUE`) ou dans la variable d'environnement `SCOLARIS_URL`.
-Autorisez le port 5000 dans le pare-feu Windows si nécessaire.
+Autorisez le port 5100 dans le pare-feu Windows si nécessaire.
 
 ## Paramétrage
 

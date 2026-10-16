@@ -4,9 +4,6 @@ l'application elle-même (menu Administration > Paramètres) : les valeurs saisi
 là-bas remplacent celles-ci."""
 import os
 
-for _k, _v in list(os.environ.items()):  # LEGACY-GESCOL : anciennes variables GESCOL_* encore lues
-    if _k.startswith("GESCOL_") and "SCOLARIS_" + _k[7:] not in os.environ:  # LEGACY-GESCOL
-        os.environ["SCOLARIS_" + _k[7:]] = _v  # LEGACY-GESCOL
 import sys
 
 VERSION = "1.6.0"
@@ -44,7 +41,7 @@ EDITION = EDITION_IMPOSEE if EDITION_IMPOSEE in EDITIONS else "privee"
 # applications d'administration : la CS rassemble les écoles de sa juridiction, la DDEMP les CS du département
 NOMS_APPLI = {"privee": "SCOLARIS", "publique": "SCOLARIS Public", "cs": "SCOLARIS Circonscription", "ddemp": "SCOLARIS DDEMP"}
 DOSSIERS = {"privee": "SCOLARIS", "publique": "SCOLARIS_Public", "cs": "SCOLARIS_CS", "ddemp": "SCOLARIS_DDEMP"}
-PORTS = {"privee": 5000, "publique": 5001, "cs": 5002, "ddemp": 5003}
+PORTS = {"privee": 5100, "publique": 5101, "cs": 5102, "ddemp": 5103}
 
 
 def publique():
@@ -68,9 +65,8 @@ def _dossier_donnees():
     if getattr(sys, "frozen", False):
         racine = os.environ.get("APPDATA") or os.path.expanduser("~")
         # chaque application jumelle (SCOLARIS Public, Circonscription, DDEMP) garde ses données à part
-        nouveau = os.path.join(racine, DOSSIERS.get(EDITION_IMPOSEE, "SCOLARIS"))
-        ancien = os.path.join(racine, {"privee": "GESCOL", "publique": "GESCOL_Public", "cs": "GESCOL_CS", "ddemp": "GESCOL_DDEMP"}.get(EDITION_IMPOSEE, "GESCOL"))  # LEGACY-GESCOL
-        return ancien if os.path.isdir(ancien) and not os.path.isdir(nouveau) else nouveau  # LEGACY-GESCOL
+        # SCOLARIS est indépendant de GESCOL : il ne lit jamais les dossiers de données de GESCOL.
+        return os.path.join(racine, DOSSIERS.get(EDITION_IMPOSEE, "SCOLARIS"))
     return os.path.join(BASE_DIR, "instance")
 
 

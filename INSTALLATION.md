@@ -46,7 +46,7 @@ Choisissez un PC qui reste allumé pendant les heures de cours (secrétariat, di
    (le programme n'a pas de signature commerciale payante).
 2. Laissez cochés **Icône sur le bureau** et **Autoriser les tablettes et téléphones du Wi-Fi**.
    Cochez **Lancer SCOLARIS au démarrage de Windows** pour le PC serveur.
-3. La fenêtre **SCOLARIS Serveur** s'ouvre : elle affiche l'adresse pour les tablettes (ex. `http://192.168.1.10:5000`)
+3. La fenêtre **SCOLARIS Serveur** s'ouvre : elle affiche l'adresse pour les tablettes (ex. `http://192.168.1.10:5100`)
    et un QR code. **Laissez-la ouverte** (vous pouvez la réduire).
 4. Connectez-vous : **admin / admin123**, choisissez un nouveau mot de passe.
 5. **Administration → Paramètres de l'établissement** : nom, sigle, adresse, directeur, année scolaire,
@@ -97,7 +97,7 @@ Idéale pour un directeur ou un enseignant qui travaille seul, ou en attendant l
 2. Autorisez l'installation depuis cette source si Android le demande. Si Play Protect avertit :
    **Plus de détails → Installer quand même**.
 3. Ouvrez **SCOLARIS** et saisissez l'adresse du serveur : celle de la fenêtre SCOLARIS Serveur
-   (ex. `192.168.1.10:5000`) ou l'adresse en ligne (`https://NOM.pythonanywhere.com`).
+   (ex. `192.168.1.10:5100`) ou l'adresse en ligne (`https://NOM.pythonanywhere.com`).
 4. Pour changer d'adresse plus tard : page de connexion ou **Compte → Changer de serveur**.
 
 Les bulletins, reçus et certificats PDF s'enregistrent dans **Téléchargements** (notification en haut de l'écran).
@@ -143,6 +143,21 @@ seulement sur le PC de l'école n'est pas joignable par le service de paiement.
 - **Mettre à jour** : installez le nouveau `SCOLARIS-Installation-x.y.z.exe` par-dessus l'ancien, et le nouvel APK
   par-dessus l'ancien. Les données sont conservées.
 
+## SCOLARIS et GESCOL sur le même appareil
+
+SCOLARIS est une application **indépendante** : on peut l'installer à côté de GESCOL sans rien changer à GESCOL.
+
+| | GESCOL | SCOLARIS |
+|---|---|---|
+| Programme Windows | GESCOL (désinstallation séparée) | SCOLARIS (identifiant d'installation propre) |
+| Données sur le PC | `%APPDATA%\GESCOL…` | `%APPDATA%\SCOLARIS…` (jamais celles de GESCOL) |
+| Adresse sur le PC | http://localhost:5000 à 5003 | http://localhost:5100 à 5103 |
+| Applications Android | `bj.gescol…` | `bj.scolaris…` (icône et données séparées) |
+
+Les deux peuvent tourner en même temps, et se connecter à l'un ne déconnecte pas l'autre.
+SCOLARIS démarre avec une base vide ; pour y reprendre des données de GESCOL, utilisez l'export de GESCOL
+puis l'import de SCOLARIS (menu **Données**).
+
 ## Sécurité
 
 - Changez le mot de passe **admin** dès la première connexion et donnez à chacun son propre compte.
@@ -158,7 +173,7 @@ seulement sur le PC de l'école n'est pas joignable par le service de paiement.
 |---|---|
 | La tablette affiche « Serveur injoignable » | Même Wi-Fi que le PC ? Fenêtre SCOLARIS Serveur ouverte ? Adresse IP inchangée ? |
 | La tablette n'arrive toujours pas à se connecter | Pare-feu Windows : réinstallez SCOLARIS en laissant cochée l'option réseau |
-| « SCOLARIS est déjà en marche » / rien ne s'ouvre | Il tourne déjà : icône SCOLARIS de la barre des tâches, ou ouvrez http://localhost:5000 |
+| « SCOLARIS est déjà en marche » / rien ne s'ouvre | Il tourne déjà : icône SCOLARIS de la barre des tâches, ou ouvrez http://localhost:5100 |
 | Mot de passe admin perdu | Un autre administrateur peut le réinitialiser (Administration → Utilisateurs) |
 | Erreur au démarrage | Envoyez le fichier `scolaris_serveur.log` du dossier de données |
 

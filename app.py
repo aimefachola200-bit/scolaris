@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 SCOLARIS – Gestion d'établissement scolaire (CPFA, Bénin)
-Lancement : python app.py   puis ouvrir http://localhost:5000
+Lancement : python app.py   puis ouvrir http://localhost:5100
 Compte initial : admin / admin123 (changement demandé à la première connexion)
 """
 import csv
@@ -397,6 +397,8 @@ def create_app(test_config=None):
         app.config["SECRET_KEY"] = f.read().strip()
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # cookie propre à SCOLARIS et à chaque édition : ne gêne ni GESCOL ni les applications jumelles
+    app.config["SESSION_COOKIE_NAME"] = "scolaris_" + (config.EDITION_IMPOSEE or "privee")
     if test_config:
         app.config.update(test_config)
     app.teardown_appcontext(fermer_db)
@@ -1509,7 +1511,7 @@ def create_app(test_config=None):
 app = create_app()
 
 
-def servir(host="0.0.0.0", port=5000):
+def servir(host="0.0.0.0", port=5100):
     """Serveur de production (waitress) si disponible, sinon serveur Flask intégré."""
     try:
         from waitress import serve
@@ -1519,7 +1521,7 @@ def servir(host="0.0.0.0", port=5000):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5100))
     print(f"\n  SCOLARIS démarré : http://localhost:{port}\n  (Ctrl+C pour arrêter)\n")
     if "--debug" in sys.argv:
         app.run(host="0.0.0.0", port=port, debug=True)
