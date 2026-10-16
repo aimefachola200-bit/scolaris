@@ -146,10 +146,10 @@ seulement sur le PC de l'école n'est pas joignable par le service de paiement.
 ## Sécurité
 
 - Changez le mot de passe **admin** dès la première connexion et donnez à chacun son propre compte.
-- L'APK est signé avec une clé fournie dans le projet (`packaging/android/app/scolaris-release.keystore`),
-  pratique pour installer directement sur les appareils. **Avant de publier sur le Play Store**, créez votre
-  propre clé et ajoutez-la dans GitHub (Settings → Secrets → Actions : `ANDROID_KEYSTORE_B64`,
-  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`).
+- Les APK sont signés avec une clé **personnelle qui n'est pas dans le dépôt**. Elle est enregistrée dans GitHub
+  (Settings → Secrets and variables → Actions : `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`,
+  `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). Gardez une copie du fichier `.keystore` et de son mot de passe
+  en lieu sûr : sans eux, aucune mise à jour des applications Android n'est possible.
 
 ## En cas de problème
 

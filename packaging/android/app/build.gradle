@@ -3,11 +3,11 @@ plugins {
 }
 
 // Clé de signature : variables d'environnement (secrets GitHub) si présentes,
-// sinon la clé fournie avec le projet (même clé à chaque fabrication = mises à jour possibles).
-def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-release.keystore"
-def cleMdp = System.getenv("SCOLARIS_KEYSTORE_PASSWORD") ?: "gescol-benin"  // LEGACY-GESCOL : mot de passe réel de la clé fournie
-def cleAlias = System.getenv("SCOLARIS_KEY_ALIAS") ?: "gescol"  // LEGACY-GESCOL : alias réel de la clé fournie
-def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: "gescol-benin"  // LEGACY-GESCOL : mot de passe réel de la clé fournie
+// La clé n'est plus fournie avec le projet : elle vient des secrets GitHub (ou d'un fichier local non publié).
+def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // fichier local, jamais publié (.gitignore)
+def cleMdp = System.getenv("SCOLARIS_KEYSTORE_PASSWORD") ?: ""
+def cleAlias = System.getenv("SCOLARIS_KEY_ALIAS") ?: "scolaris"
+def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: ""
 
 android {
     namespace "bj.scolaris.app"
