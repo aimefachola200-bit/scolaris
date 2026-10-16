@@ -1,0 +1,42 @@
+name: Renommer GESCOL en SCOLARIS
+
+# Se lance à la main : onglet Actions > "Renommer GESCOL en SCOLARIS" > Run workflow
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  renommer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer Pillow (génération des icônes)
+        run: pip install pillow
+
+      - name: Renommage (le script est sorti du dépôt pour ne pas se modifier lui-même)
+        run: |
+          mv scolaris_renommage /tmp/outil
+          python /tmp/outil/renommer_scolaris.py .
+          rm -f sauvegarde_avant_scolaris.zip
+          mkdir -p docs && cp /tmp/outil/scolaris-banniere-github.png docs/
+
+      - name: Tests (informatif, n'arrête pas le déroulement)
+        continue-on-error: true
+        run: |
+          pip install -r requirements.txt || true
+          python -m unittest discover tests
+
+      - name: Enregistrer le résultat dans le dépôt
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "SCOLARIS : nouveau nom et logo" || echo "Rien à enregistrer"
+          git push
