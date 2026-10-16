@@ -89,18 +89,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Clé de signature (secrets ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)
+      - name: Clé de signature (secret ANDROID_KEYSTORE_PASSWORD)
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           KS_MDP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          # La clé n'est plus dans le dépôt (public) : elle vient uniquement des secrets GitHub.
-          if [ -z "$KS" ] || [ -z "$KS_MDP" ]; then
-            echo "::error::Secrets de signature absents : Settings > Secrets and variables > Actions (voir INSTALLATION.md)."
+          # La clé scolaris-signature.keystore est dans le dépôt, protégée par un mot de passe fort qui,
+          # lui, n'existe que dans les secrets GitHub. ANDROID_KEYSTORE_B64 (facultatif) permet d'en utiliser une autre.
+          if [ -z "$KS_MDP" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_PASSWORD absent : Settings > Secrets and variables > Actions (voir INSTALLATION.md)."
             exit 1
           fi
-          echo "$KS" | base64 -d > "$RUNNER_TEMP/cle.keystore"
-          echo "SCOLARIS_KEYSTORE=$RUNNER_TEMP/cle.keystore" >> "$GITHUB_ENV"
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/cle.keystore"
+            echo "SCOLARIS_KEYSTORE=$RUNNER_TEMP/cle.keystore" >> "$GITHUB_ENV"
+          fi
       - name: APK
         env:
           SCOLARIS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -166,18 +169,21 @@ jobs:
           else
             python packaging/android_autonome/preparer.py
           fi
-      - name: Clé de signature (secrets ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)
+      - name: Clé de signature (secret ANDROID_KEYSTORE_PASSWORD)
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
           KS_MDP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          # La clé n'est plus dans le dépôt (public) : elle vient uniquement des secrets GitHub.
-          if [ -z "$KS" ] || [ -z "$KS_MDP" ]; then
-            echo "::error::Secrets de signature absents : Settings > Secrets and variables > Actions (voir INSTALLATION.md)."
+          # La clé scolaris-signature.keystore est dans le dépôt, protégée par un mot de passe fort qui,
+          # lui, n'existe que dans les secrets GitHub. ANDROID_KEYSTORE_B64 (facultatif) permet d'en utiliser une autre.
+          if [ -z "$KS_MDP" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_PASSWORD absent : Settings > Secrets and variables > Actions (voir INSTALLATION.md)."
             exit 1
           fi
-          echo "$KS" | base64 -d > "$RUNNER_TEMP/cle.keystore"
-          echo "SCOLARIS_KEYSTORE=$RUNNER_TEMP/cle.keystore" >> "$GITHUB_ENV"
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/cle.keystore"
+            echo "SCOLARIS_KEYSTORE=$RUNNER_TEMP/cle.keystore" >> "$GITHUB_ENV"
+          fi
       - name: APK autonome
         env:
           SCOLARIS_BUILD_PYTHON: python3.11

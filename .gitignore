@@ -17,4 +17,6 @@ packaging/android_autonome/app/src/main/python/*
 
 # Clés de signature : jamais dans le dépôt
 *.keystore
+!packaging/android/app/scolaris-signature.keystore
+!packaging/android_autonome/app/scolaris-signature.keystore
 *.jks

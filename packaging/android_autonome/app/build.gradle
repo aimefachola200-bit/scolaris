@@ -6,10 +6,10 @@ plugins {
     id "com.chaquo.python"
 }
 
-def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // fichier local, jamais publié (.gitignore)
+def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // dans le dépôt, protégé par le mot de passe des secrets
 def cleMdp = System.getenv("SCOLARIS_KEYSTORE_PASSWORD") ?: ""
 def cleAlias = System.getenv("SCOLARIS_KEY_ALIAS") ?: "scolaris"
-def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: ""
+def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: cleMdp
 
 android {
     namespace "bj.scolaris.autonome"

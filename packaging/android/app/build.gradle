@@ -3,11 +3,11 @@ plugins {
 }
 
 // Clé de signature : variables d'environnement (secrets GitHub) si présentes,
-// La clé n'est plus fournie avec le projet : elle vient des secrets GitHub (ou d'un fichier local non publié).
-def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // fichier local, jamais publié (.gitignore)
+// Clé scolaris-signature.keystore fournie avec le projet ; son mot de passe vient des secrets GitHub.
+def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // dans le dépôt, protégé par le mot de passe des secrets
 def cleMdp = System.getenv("SCOLARIS_KEYSTORE_PASSWORD") ?: ""
 def cleAlias = System.getenv("SCOLARIS_KEY_ALIAS") ?: "scolaris"
-def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: ""
+def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: cleMdp
 
 android {
     namespace "bj.scolaris.app"
