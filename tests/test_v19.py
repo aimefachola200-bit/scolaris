@@ -10,6 +10,22 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, RACINE)
 
 import m_groupes_whatsapp as W  # noqa: E402
+import acces as A  # noqa: E402
+import garde_notes as GN  # noqa: E402
+
+
+def signer(graine, msg):
+    """Signature Ed25519 (RFC 8032) pour les tests, avec une clé de test (la vraie clé privée n'est pas dans le dépôt)."""
+    import hashlib
+    h = hashlib.sha512(graine).digest()
+    a = int.from_bytes(h[:32], "little")
+    a &= (1 << 254) - 8
+    a |= 1 << 254
+    pub = A._encoder(A._multiplier(a, A._BASE))
+    r = int.from_bytes(hashlib.sha512(h[32:] + msg).digest(), "little") % A._L
+    R = A._encoder(A._multiplier(r, A._BASE))
+    k = int.from_bytes(hashlib.sha512(R + pub + msg).digest(), "little") % A._L
+    return pub, R + ((r + k * a) % A._L).to_bytes(32, "little")
 
 
 def lancer(script, edition):
@@ -18,6 +34,33 @@ def lancer(script, edition):
     env.pop("SCOLARIS_DATA", None)
     env["SCOLARIS_EDITION_SCRIPT"] = edition
     return subprocess.run([sys.executable, "-c", script], cwd=RACINE, env=env, capture_output=True, text=True, timeout=900)
+
+
+class TestGardeNotes(unittest.TestCase):
+    def test_regles(self):
+        self.assertEqual(GN.lire("18", "2"), (20.0, False, 2.0))
+        self.assertEqual(GN.lire("12,5", ""), (12.5, False, None))
+        self.assertEqual(GN.lire("D", "1"), (None, True, None))
+        self.assertEqual(GN.lire("", ""), (None, False, None))
+        for a, b in (("20", ""), ("20", "0"), ("19", "1.5"), ("15", "3"), ("", "1"), ("abc", ""), ("-1", "")):
+            with self.assertRaises(GN.NoteRefusee, msg=(a, b)):
+                GN.lire(a, b)
+        self.assertEqual(GN.separer("18|2"), ("18", "2"))
+        self.assertEqual(GN.afficher(20.0, 2.0), ("18", "2"))
+        self.assertEqual(GN.afficher(12.5, None), ("12.5", ""))
+
+
+class TestCodesAcces(unittest.TestCase):
+    def test_signature(self):
+        pub, sig = signer(b"\x01" * 32, b"SCOLARIS|AAAA-BBBB-CCCC|directeur")
+        self.assertTrue(A.verifier_signature(pub, b"SCOLARIS|AAAA-BBBB-CCCC|directeur", sig))
+        self.assertFalse(A.verifier_signature(pub, b"SCOLARIS|AAAA-BBBB-CCCC|enseignant", sig))
+        self.assertFalse(A.verifier_signature(A.CLE_PUBLIQUE, b"SCOLARIS|AAAA-BBBB-CCCC|directeur", sig))
+
+    def test_code(self):
+        self.assertEqual(len(A.nouvel_identifiant_installation()), 14)
+        self.assertEqual(A.message("scolaris", "aaaa-bbbb-cccc", " Directeur "), "SCOLARIS|AAAA-BBBB-CCCC|directeur")
+        self.assertFalse(A.code_valide("SCOLARIS", "AAAA-BBBB-CCCC", "directeur", "ABCDE-FGHIJ"))
 
 
 class TestRegles(unittest.TestCase):
@@ -88,6 +131,66 @@ assert "envoyée le" not in txt(ok(c.get("/groupes-whatsapp")))
 assert "Groupes WhatsApp" in txt(ok(c.get("/")))      # lien dans le menu
 c2 = app.test_client(); ok(c2.post("/login", data={"identifiant": "enseignant", "mdp": "demo1234"}), 302)
 assert c2.get("/groupes-whatsapp").status_code in (302, 403)
+# --- garde-fou des notes : note principale + performance
+import json, sys
+sys.path.insert(0, os.getcwd())
+with app.app_context():
+    from datetime import date as _d
+    cl = q("SELECT * FROM classes WHERE niveau='CM2' ORDER BY id", un=True)
+    import config as _c
+    ev = ex("INSERT INTO evaluations (classe_id, annee, type, numero, libelle, date) VALUES (?,?,?,?,?,?)", (cl["id"], _c.ANNEE_ACTIVE, "sommative", 9, "Test perf", "2000-01-01"))
+    ev = q("SELECT id FROM evaluations WHERE classe_id=? AND libelle='Test perf'", (cl["id"],), un=True)["id"]
+    els = [r["id"] for r in q("SELECT id FROM eleves WHERE classe_id=? AND statut='inscrit' ORDER BY id", (cl["id"],))][:5]
+    mid = q("SELECT id FROM matieres WHERE cycle='primaire' AND actif=1 ORDER BY ordre", un=True)["id"]
+d = client_dir = c
+saisies = {str(els[0]): {str(mid): "18|2"}, str(els[1]): {str(mid): "20"}, str(els[2]): {str(mid): "15|3"},
+           str(els[3]): {str(mid): "12,5"}, str(els[4]): {str(mid): "19|1.5"}}
+r = c.post(f"/evaluations/{ev}/saisie", data={"notes_json": json.dumps(saisies)})
+assert r.status_code == 302, r.status_code
+with app.app_context():
+    v = {n["eleve_id"]: (n["valeur"], n["performance"]) for n in q("SELECT * FROM notes WHERE periode='Test perf'")}
+assert v.get(els[0]) == (20.0, 2.0), v
+assert v.get(els[3]) == (12.5, None), v
+assert els[1] not in v and els[2] not in v and els[4] not in v, v
+t = txt(ok(c.get(f"/evaluations/{ev}/saisie")))
+assert 'class="perf"' in t and "GardeNotes" in t and 'value="18"' in t
+# --- codes d'accès personnels (contrôle activé, délai écoulé)
+import acces as A, hashlib
+graine = b"\x07" * 32
+h = hashlib.sha512(graine).digest(); a = int.from_bytes(h[:32], "little"); a &= (1 << 254) - 8; a |= 1 << 254
+pub = A._encoder(A._multiplier(a, A._BASE)); A.CLE_PUBLIQUE = pub; A._cache.clear()
+def sig(msg):
+    r_ = int.from_bytes(hashlib.sha512(h[32:] + msg).digest(), "little") % A._L
+    R = A._encoder(A._multiplier(r_, A._BASE)); k = int.from_bytes(hashlib.sha512(R + pub + msg).digest(), "little") % A._L
+    return R + ((r_ + k * a) % A._L).to_bytes(32, "little")
+app.config["ACCES_CONTROLE"] = True
+with app.app_context():
+    ex("UPDATE parametres SET valeur='2000-01-01' WHERE cle='acces_debut'")
+    inst = q("SELECT valeur FROM parametres WHERE cle='acces_installation'", un=True)["valeur"]
+r = c.get("/groupes-whatsapp"); assert r.status_code == 302 and "/acces" in r.headers["Location"], r.headers.get("Location")
+t = txt(ok(c.get("/acces")))
+appli = "GESCOL" if "GESCOL" in t.split("|")[0][-20:] or os.environ.get("GESCOL_EDITION") else "SCOLARIS"
+dem = f"{appli}|{inst}|directeur"
+assert dem in t, (dem, t[-2000:])
+assert "wa.me/2290196510333" in t, t[t.find("<main"):][:3000]
+ok(c.post("/acces", data={"code": "AAAAA-BBBBB"}))
+assert c.get("/groupes-whatsapp").status_code == 302
+code = A.presenter_code(sig(dem.encode()))
+ok(c.post("/acces", data={"code": code}), 302)
+ok(c.get("/groupes-whatsapp"))
+# l'administrateur : demandes de tous les comptes, codes collés en une fois
+t = txt(ok(c.get("/acces/comptes")))
+assert f"{appli}|{inst}|enseignant" in t
+code_e = A.presenter_code(sig(f"{appli}|{inst}|enseignant".encode()))
+ok(c.post("/acces/comptes", data={"codes": f"enseignant : {code_e}\nfaux : ABC"}), 302)
+e2 = app.test_client(); ok(e2.post("/login", data={"identifiant": "enseignant", "mdp": "demo1234"}), 302)
+assert "/acces" not in (e2.get("/").headers.get("Location") or "")
+# délai de grâce : bandeau, accès permis
+with app.app_context():
+    ex("UPDATE parametres SET valeur=date('now') WHERE cle='acces_debut'")
+    ex("UPDATE utilisateurs SET code_acces=NULL WHERE identifiant='directeur'")
+t = txt(ok(c.get("/groupes-whatsapp")))
+assert "code d'accès personnel" in t and "jour(s) avant le blocage" in t
 print("ECOLE-OK")
 '''
 
@@ -124,6 +227,12 @@ assert "TEL;TYPE=CELL:+2290197000001" in v
 r = ok(c.get("/groupes-whatsapp/inviter/E%d?groupe=directeurs" % e["id"]), 302)
 assert r.headers["Location"].startswith("https://wa.me/2290197000001")
 assert "Groupes WhatsApp" in txt(ok(c.get("/juridiction/tableau-de-bord")))
+app.config["ACCES_CONTROLE"] = True
+with app.app_context():
+    ex("UPDATE parametres SET valeur='2000-01-01' WHERE cle='acces_debut'")
+r = c.get("/juridiction/tableau-de-bord"); assert r.status_code == 302 and "/acces" in r.headers["Location"]
+t = txt(ok(c.get("/acces"))); assert "|responsable" in t
+t = txt(ok(c.get("/acces/comptes"))); assert "|cp1" in t
 print("JUR-OK")
 '''
 

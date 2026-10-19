@@ -161,7 +161,7 @@
   {% else %}
   <div class="bh-titre"><strong>{{ ECOLE.nom }}</strong><span class="aide">{% if ECOLE.cs %}CS {{ ECOLE.cs }} · {% endif %}{{ ANNEE }}</span></div>
   {% endif %}
-  <div class="bh-user">{{ g.user.nom }} <span class="badge">{{ ROLES[g.role_reel if g.get('role_reel') else g.user.role] }}</span> · <a href="{{ url_for('mon_compte') }}">Compte</a> · <a href="{{ url_for('logout') }}">Déconnexion</a></div>
+  <div class="bh-user">{{ g.user.nom }} <span class="badge">{{ ROLES[g.role_reel if g.get('role_reel') else g.user.role] }}</span> · <a href="{{ url_for('mon_compte') }}">Compte</a>{% if acces_gestion is defined and acces_gestion() %} · <a href="{{ url_for('acces_comptes') }}">Codes d'accès</a>{% endif %} · <a href="{{ url_for('logout') }}">Déconnexion</a></div>
 </header>
 {% elif g.get('parent') %}
 <header class="top parent">
@@ -202,6 +202,7 @@
   <button class="btn sec petit" type="button" onclick="document.getElementById('bandeau-install').hidden=true;try{localStorage.setItem('scolaris-install-ignore','1')}catch(e){}">Plus tard</button>
 </div>
 <main {% if g.user %}class="travail"{% endif %}>
+  {% if acces_bandeau is defined %}{% set _ab = acces_bandeau() %}{% if _ab is not none %}<div class="flash warning">🔐 Votre compte n'a pas encore son <b>code d'accès personnel</b> : {% if _ab > 0 %}encore {{ _ab }} jour(s) avant le blocage.{% else %}délai écoulé.{% endif %} <a href="{{ url_for('acces_page') }}"><b>Demander / saisir mon code</b></a>{% if acces_gestion() %} · <a href="{{ url_for('acces_comptes') }}">codes de tous les comptes</a>{% endif %}</div>{% endif %}{% endif %}
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
   {% endwith %}

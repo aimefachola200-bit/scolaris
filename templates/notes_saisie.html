@@ -16,7 +16,9 @@
 {% if mat %}
 <p class="aide">Choisissez l'appréciation de chaque domaine. « D » = dispensé. La colonne Observation apparaît sur le livret remis aux parents.</p>
 {% else %}
-<p class="aide">Tapez une note de 0 à 20 (virgule acceptée), <b>D</b> pour « dispensé », ou laissez vide si la matière n'est pas encore évaluée. La touche Entrée passe à la case suivante. L'observation apparaît sur le bulletin.</p>
+<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2) ; la note retenue est leur somme, 20 au plus. <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 seulement avec la performance), performance supérieure à 2 ou somme supérieure à 20 — elle n'est pas enregistrée. <b>D</b> = dispensé ; vide = matière pas encore évaluée. Entrée passe à la case suivante. L'observation apparaît sur le bulletin.</p>
+<style>.np{display:inline-flex;gap:2px;align-items:center}.np input.n{width:48px}.np input.perf{width:34px;font-size:12px;background:#F5F8FF;border-style:dashed}
+input.err{outline:2px solid #B42318!important;background:#FEE4E2!important;color:#B42318;font-weight:700}</style>
 {% endif %}
 {% if not eleves %}<div class="carte">Aucun élève inscrit dans cette classe.</div>{% else %}
 <form method="post" id="grille">
@@ -36,9 +38,10 @@
         <option value="D" {{ 'selected' if v=='D' }}>D</option>
       </select></td>
       {% else %}
-      {% set v = ('D' if n and n.dispense else ('%g'|format(n.valeur) if n and n.valeur is not none else '')) %}
-      <td class="c"><input name="n_{{ e.id }}_{{ m.id }}" value="{{ v }}" inputmode="decimal" autocomplete="off" aria-label="{{ e.nom }} – {{ m.nom }}"
-        class="{{ 'disp' if v=='D' else ('bas' if n and n.valeur is not none and n.valeur < 10 else '') }}"></td>
+      {% set np = afficher_np(n.valeur, n.performance if n and 'performance' in n.keys() else none) if n and not n.dispense else ('', '') %}
+      {% set v = 'D' if n and n.dispense else np[0] %}
+      <td class="c"><span class="np"><input name="n_{{ e.id }}_{{ m.id }}" value="{{ v }}" inputmode="decimal" autocomplete="off" aria-label="{{ e.nom }} – {{ m.nom }} : note principale"
+        class="n {{ 'disp' if v=='D' else ('bas' if n and n.valeur is not none and n.valeur < 10 else '') }}"><input name="p_{{ e.id }}_{{ m.id }}" value="{{ np[1] }}" class="perf" inputmode="decimal" maxlength="4" placeholder="P" autocomplete="off" title="Note de performance (0 à 2)" aria-label="{{ e.nom }} – {{ m.nom }} : note de performance"></span></td>
       {% endif %}
     {% endfor %}
     {% if mat %}
@@ -54,8 +57,20 @@
 <p class="actions" style="margin-top:14px"><button class="btn">Enregistrer</button>
   {% if not mat %}<span class="aide">Moyenne de classe : {{ '%.2f'|format(stats.moyenne_classe) if stats.moyenne_classe is not none else '—' }}</span>{% endif %}</p>
 </form>
+<script>{{ garde_js|safe }}</script>
 <script>
 (function(){
+  function verifier(el){
+    var box=el.closest('.np'); if(!box) return;
+    var a=box.querySelector('input.n'), b=box.querySelector('input.perf'), r=GardeNotes.lire(a.value,b.value);
+    a.classList.toggle('err',!!r.errN); b.classList.toggle('err',!!r.errP); a.title=r.msg||''; b.title=r.msg||'Note de performance (0 à 2)';
+    a.style.outline='';
+  }
+  [].slice.call(document.querySelectorAll('#grille .np input')).forEach(function(el){ el.addEventListener('input',function(){verifier(el)}); verifier(el); });
+  document.getElementById('grille').addEventListener('submit',function(ev){
+    var n=document.querySelectorAll('#grille input.err').length;
+    if(n && !window.confirm(n+' case(s) en rouge ne seront pas enregistrées. Continuer ?')) ev.preventDefault();
+  });
   var ins=[].slice.call(document.querySelectorAll('#grille input[name^="n_"], #grille select[name^="n_"]'));
   ins.forEach(function(el,i){
     el.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();var n=ins[i+1];if(n){n.focus();if(n.select)n.select();}}});
@@ -64,7 +79,7 @@
       var v=el.value.trim().replace(',','.'),f=parseFloat(v);
       el.classList.toggle('disp',v.toUpperCase()==='D');
       el.classList.toggle('bas',v!==''&&!isNaN(f)&&f<10);
-      el.style.outline=(v===''||v.toUpperCase()==='D'||(!isNaN(f)&&f>=0&&f<=20&&/^\d+(\.\d+)?$/.test(v)))?'':'2px solid #B42318';
+      verifier(el);
     });
   });
   var modifie=false;document.getElementById('grille').addEventListener('input',function(){modifie=true});

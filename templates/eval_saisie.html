@@ -15,7 +15,11 @@ table.ev-grille th.ev-mat abbr{text-decoration:none;cursor:help}
 table.ev-grille .ev-coef{font-weight:normal;font-size:11px;opacity:.85}
 .ev-legende{font-size:12.5px;margin:6px 0 10px}
 table.ev-grille td.calc{background:#F9FAFB;font-weight:600;text-align:center;white-space:nowrap}
-table.ev-grille input.err{outline:2px solid #B42318;background:#FEF3F2}
+table.ev-grille input.err{outline:2px solid #B42318;background:#FEE4E2;color:#B42318;font-weight:700}
+table.ev-grille .ev-np{display:inline-flex;gap:2px;align-items:center}
+table.ev-grille input.cell{width:48px}
+table.ev-grille input.perf{width:34px;font-size:12px;background:#F5F8FF;border-style:dashed}
+table.ev-grille input.perf::placeholder{color:#98A2B3}
 table.ev-grille input[disabled]{background:#F2F4F7;color:#667085}
 table.ev-grille th.nom,table.ev-grille td.nom{min-width:190px;white-space:nowrap}
 table.ev-grille tr.ko td.nom{box-shadow:inset 3px 0 0 #B42318}
@@ -96,7 +100,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
 {% if mat %}
 <p class="aide">Choisissez l'appréciation de chaque domaine : <b>A</b> = acquis, <b>ECA</b> = en cours d'acquisition, <b>NA</b> = non acquis, <b>D</b> = dispensé.</p>
 {% else %}
-<p class="aide">Tapez une note de 0 à 20 (virgule acceptée), <b>D</b> = dispensé, case vide = pas de note. <b>Entrée</b> passe à l'élève suivant (même matière).
+<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2) ; la note retenue est leur somme, 20 au plus. <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 n'est possible qu'avec la performance), performance supérieure à 2 ou somme supérieure à 20 — elle ne sera pas enregistrée. <b>D</b> = dispensé, case vide = pas de note. <b>Entrée</b> passe à l'élève suivant (même matière).
   {% if prim %}<b>MAÎTRISE</b> : {{ seuil_txt }} — seule condition de réussite ; la moyenne sert au rang.
   {% elif cl.niveau in ['6ème','5ème'] %}Moyenne simple (pas de coefficient en 6ème/5ème) ; admis si moyenne ≥ 10.
   {% else %}Moyenne pondérée par les coefficients ; admis si moyenne ≥ 10.{% endif %}
@@ -120,7 +124,9 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
         {% for k in APPRECIATIONS %}<option value="{{ k }}" {{ 'selected' if val == k }}>{{ k }}</option>{% endfor %}
         <option value="D" {{ 'selected' if val == 'D' }}>D</option></select>
       {% else %}
-      <input {% if ok %}name="n_{{ e.id }}_{{ m.id }}"{% else %}disabled{% endif %} data-m="{{ m.id }}" class="cell" value="{{ val }}" inputmode="decimal" maxlength="6" aria-label="{{ e.nom }} {{ e.prenoms }} – {{ m.nom }}">
+      {% set np = (val or '').split('|') %}<span class="ev-np">
+      <input {% if ok %}name="n_{{ e.id }}_{{ m.id }}"{% else %}disabled{% endif %} data-m="{{ m.id }}" class="cell" value="{{ np[0] }}" inputmode="decimal" maxlength="6" aria-label="{{ e.nom }} {{ e.prenoms }} – {{ m.nom }} : note principale">
+      <input {% if ok %}name="p_{{ e.id }}_{{ m.id }}"{% else %}disabled{% endif %} data-m="{{ m.id }}" class="perf" value="{{ np[1] if np|length > 1 else '' }}" inputmode="decimal" maxlength="4" placeholder="P" title="Note de performance (0 à 2)" aria-label="{{ e.nom }} {{ e.prenoms }} – {{ m.nom }} : note de performance"></span>
       {% endif %}</td>
     {% endfor %}
     {% if mat %}<td class="calc c-dec">—</td>{% else %}
@@ -140,6 +146,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
 <form id="f-effacer" method="post" action="{{ url_for('eval_effacer', ev_id=ev.id) }}" hidden></form>
 <form id="f-bulletin" method="get" action="{{ url_for('eval_bulletin_eleve', ev_id=ev.id) }}" target="_blank" hidden></form>
 
+<script>{{ garde_js|safe }}</script>
 <script>
 (function(){
   "use strict";
@@ -155,13 +162,23 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
   /* Lecture d'une case : {vide} | {disp} | {note} | {appr} | {err} */
   function lire(el){
     var v = (el.value || '').trim();
+    if (!MAT) return lireNP(el);
     if (v === '') return {vide: true};
     if (v.toUpperCase() === 'D') return {disp: true};
     if (MAT) return ['A','ECA','NA'].indexOf(v) >= 0 ? {appr: v} : {err: true};
-    v = v.replace(',', '.');
-    if (!/^\d{1,2}(\.\d{1,2})?$/.test(v)) return {err: true};
-    var f = parseFloat(v);
-    return (f >= 0 && f <= 20) ? {note: Math.round(f * 100) / 100} : {err: true};
+    return lireNP(el);
+  }
+
+  /* v1.9 : note principale + note de performance ; les deux cases passent au rouge si une règle n'est pas respectée */
+  function perfDe(el){ return el.parentNode ? el.parentNode.querySelector('.perf') : null; }
+  function lireNP(el){
+    var p = perfDe(el), r = GardeNotes.lire(el.value, p ? p.value : '');
+    el.classList.toggle('err', !!r.errN); if (p) p.classList.toggle('err', !!r.errP);
+    el.title = r.msg || ''; if (p) p.title = r.msg || 'Note de performance (0 à 2)';
+    if (r.errN || r.errP) return {err: true};
+    if (r.disp) return {disp: true};
+    if (r.vide) return {vide: true};
+    return {note: r.note};
   }
 
   function seuilDe(nbEval){
@@ -174,7 +191,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
     var r = {id: +tr.dataset.e, vals: [], disp: 0, pts: 0, coefs: 0, appr: [], err: 0};
     $$('.cell', tr).forEach(function(el){
       var x = lire(el);
-      el.classList.toggle('err', !!x.err);
+      if (MAT) el.classList.toggle('err', !!x.err);
       if (!MAT) { el.classList.toggle('bas', x.note !== undefined && x.note < 10); el.classList.toggle('disp', !!x.disp); }
       else el.className = el.className.replace(/appr-\S+/, 'appr-' + (el.value || 'vide'));
       if (x.err) { r.err++; return; }
@@ -287,24 +304,26 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
   form.addEventListener('input', function(e){ if (!grille || !grille.contains(e.target)) modifie = true; });
   // Sauvegarder : la grille part en un seul champ JSON (évite la limite du nombre de champs)
   form.addEventListener('submit', function(ev){
-    var errs = grille ? $$('.cell.err', grille).length : 0;
+    var errs = grille ? $$('.cell.err, .perf.err', grille).length : 0;
     if (errs && !window.confirm(errs + ' case(s) contiennent une valeur invalide (en rouge) : elles ne seront pas enregistrées. Continuer ?')) { ev.preventDefault(); return; }
     var o = {};
     if (grille) $$('.cell[name]', grille).forEach(function(el){
-      var p = el.name.split('_'); (o[p[1]] = o[p[1]] || {})[p[2]] = el.value; el.dataset.nom = el.name; el.removeAttribute('name');
+      var p = el.name.split('_'), pf = MAT ? null : perfDe(el), pv = pf ? pf.value.trim() : '';
+      (o[p[1]] = o[p[1]] || {})[p[2]] = el.value + (pv ? '|' + pv : ''); el.dataset.nom = el.name; el.removeAttribute('name');
+      if (pf && pf.name) { pf.dataset.nom = pf.name; pf.removeAttribute('name'); }
     });
     document.getElementById('notes-json').value = JSON.stringify(o);
     modifie = false;
   });
-  window.addEventListener('pageshow', function(){ $$('.cell[data-nom]').forEach(function(el){ el.name = el.dataset.nom; }); });
+  window.addEventListener('pageshow', function(){ $$('.cell[data-nom], .perf[data-nom]').forEach(function(el){ el.name = el.dataset.nom; }); });
 
   // Charger : notes et en-tête enregistrés en base
   document.getElementById('b-charger').addEventListener('click', function(){
     if (modifie && !window.confirm('Remplacer la grille affichée par les données enregistrées ? Les modifications non sauvegardées seront perdues.')) return;
     fetch(CFG.url_donnees, {credentials: 'same-origin'}).then(function(r){ return r.json(); }).then(function(d){
       if (grille) $$('.cell', grille).forEach(function(el){
-        var tr = el.closest('tr'), v = (d.notes[tr.dataset.e] || {})[el.dataset.m];
-        el.value = v === undefined || v === null ? '' : v;
+        var tr = el.closest('tr'), v = (d.notes[tr.dataset.e] || {})[el.dataset.m], np = String(v === undefined || v === null ? '' : v).split('|');
+        el.value = np[0]; var pf = MAT ? null : perfDe(el); if (pf) pf.value = np[1] || '';
       });
       var ent = d.entete || {};
       $$('input[name],select[name]', form).forEach(function(el){ if (el.name in ent && !el.classList.contains('cell')) el.value = ent[el.name]; });
@@ -317,7 +336,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
   document.getElementById('b-reinit').addEventListener('click', function(){
     if (!grille) return;
     if (!window.confirm('Vider la grille à l\'écran ?\nLes notes enregistrées ne sont pas supprimées tant que vous ne cliquez pas sur « Sauvegarder ». « Charger » les fait revenir.')) return;
-    $$('.cell:not([disabled])', grille).forEach(function(el){ el.value = ''; });
+    $$('.cell:not([disabled]), .perf:not([disabled])', grille).forEach(function(el){ el.value = ''; });
     modifie = true; recalculer();
     SCOLARIS.toast('Grille vidée à l\'écran (rien n\'est encore supprimé en base).');
   });

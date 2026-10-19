@@ -10,6 +10,18 @@ Application web Python (Flask + SQLite) utilisable sur le réseau de l'école.
 Modules : élèves et inscriptions, classes, saisie des notes et bulletins,
 paiements et reçus, documents officiels avec QR code de vérification.
 
+## Nouveautés de la version 1.9.1
+
+- **Garde-fou de la saisie des notes** (saisie des évaluations et notes par période) : chaque matière se saisit en
+  deux cases, la **note principale** et la **note de performance** (case « P », sur 2) ; la note retenue est leur
+  somme. La case passe au **rouge** dès que la note principale atteint 20 (20/20 n'est possible qu'avec la note de
+  performance), que la performance dépasse 2 ou que la somme dépasse 20 ; ces valeurs sont refusées à l'enregistrement.
+- **Code d'accès personnel** : chaque compte doit saisir, une fois, le code délivré par le concepteur (Maître Aimé
+  FACHE). Le code est lié au compte et à l'installation, n'expire pas, et se demande en un toucher par WhatsApp depuis
+  la page « Code d'accès » ; l'administrateur ou le directeur envoie toutes les demandes et colle tous les codes en une
+  fois (« Codes d'accès »). Délai de 15 jours après la mise à jour, puis blocage des comptes sans code. Le code est
+  une signature numérique : seul le générateur du concepteur, qui n'est pas publié, peut le produire.
+
 ## Nouveautés de la version 1.9
 
 - **Groupes WhatsApp** (menu « Groupes WhatsApp ») pour partager les informations :

@@ -17,6 +17,7 @@ from datetime import date, datetime
 from flask import abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
 import evaluations_core as EC
+import garde_notes as GN
 from calcul import APPRECIATIONS, NIVEAUX_SANS_COEF, appreciation_note, cycle_du_niveau
 
 # Champs d'en-tête enregistrés avec l'évaluation (M.identification + titre de l'évaluation)
@@ -86,6 +87,7 @@ def _flowable_signatures(pdfs, signatures, largeur):
 
 
 def enregistrer(app, H):
+    H.ajouter_colonne("notes", "performance", "REAL")   # v1.9 : note de performance (sur 2)
     q, ex = H.q, H.ex
 
     # ------------------------------------------------------------------ outils
@@ -164,12 +166,21 @@ def enregistrer(app, H):
             if eid not in eleves or mid not in permis:
                 continue
             e = eleves[eid]
+            perf = None
             try:
-                val, disp, app_ = lire_saisie(brut, maternelle)
+                if maternelle:
+                    val, disp, app_ = lire_saisie(brut, maternelle)
+                else:  # v1.9 : note principale (< 20) + note de performance (0 à 2)
+                    val, disp, perf = GN.lire(*GN.separer(brut))
+                    app_ = None
+            except GN.NoteRefusee as err:
+                erreurs.append(f"{e['nom']} {e['prenoms']} – {noms_mat[mid]} : {err}.")
+                rejets[(eid, mid)] = str(brut)[:14]
+                continue
             except (ValueError, TypeError):
                 attendu = "A, ECA, NA ou D" if maternelle else "une note de 0 à 20, ou D"
                 erreurs.append(f"{e['nom']} {e['prenoms']} – {noms_mat[mid]} : « {brut} » n'est pas valide ({attendu}).")
-                rejets[(eid, mid)] = str(brut)[:10]
+                rejets[(eid, mid)] = str(brut)[:14]
                 continue
             ancien = anciens.get((eid, mid))
             if val is None and not disp and app_ is None:
@@ -178,15 +189,15 @@ def enregistrer(app, H):
                     modifs += 1
                 continue
             if ancien and ancien["valeur"] == val and bool(ancien["dispense"]) == disp \
-                    and (ancien["appreciation"] or None) == app_:
+                    and (ancien["appreciation"] or None) == app_ and ancien["performance"] == perf:
                 continue
             db.execute("""INSERT INTO notes (eleve_id, matiere_id, periode, annee, valeur, dispense, appreciation,
-                                             saisi_par, modifie_le) VALUES (?,?,?,?,?,?,?,?,?)
+                                             saisi_par, modifie_le, performance) VALUES (?,?,?,?,?,?,?,?,?,?)
                           ON CONFLICT(eleve_id, matiere_id, periode, annee)
                           DO UPDATE SET valeur=excluded.valeur, dispense=excluded.dispense,
                                         appreciation=excluded.appreciation, saisi_par=excluded.saisi_par,
-                                        modifie_le=excluded.modifie_le""",
-                       (eid, mid, ev["libelle"], ev["annee"], val, int(disp), app_, g.user["id"], H.maintenant()))
+                                        modifie_le=excluded.modifie_le, performance=excluded.performance""",
+                       (eid, mid, ev["libelle"], ev["annee"], val, int(disp), app_, g.user["id"], H.maintenant(), perf))
             modifs += 1
         db.commit()
         return modifs, erreurs, rejets
@@ -343,10 +354,22 @@ def enregistrer(app, H):
 
     # ------------------------------------------------------------------ saisie
     def donnees_grille(ev, cl):
+        """Valeurs des cases ; notes chiffrées : « principale|performance » (deux cases dans la grille)."""
         matieres, lignes = EC.resultats(ev, cl)
         maternelle = cl["cycle"] == "maternelle"
-        return matieres, lignes, {str(l["eleve"]["id"]): {str(m["id"]): valeur_cellule(l, m, maternelle)
-                                                          for m in matieres} for l in lignes}
+        perfs = {}
+        if not maternelle:
+            for n in q("""SELECT n.eleve_id, n.matiere_id, n.valeur, n.performance FROM notes n JOIN eleves e ON e.id=n.eleve_id
+                         WHERE n.periode=? AND n.annee=? AND e.classe_id=?""", (ev["libelle"], ev["annee"], cl["id"])):
+                perfs[(n["eleve_id"], n["matiere_id"])] = n["performance"]
+
+        def cellule(l, m):
+            v = valeur_cellule(l, m, maternelle)
+            if maternelle or v in ("", "D"):
+                return v
+            a, b = GN.afficher(l["notes"].get(m["id"]), perfs.get((l["eleve"]["id"], m["id"])))
+            return f"{a}|{b}" if b else a
+        return matieres, lignes, {str(l["eleve"]["id"]): {str(m["id"]): cellule(l, m) for m in matieres} for l in lignes}
 
     @app.route("/evaluations/<int:ev_id>/saisie", methods=["GET", "POST"])
     @H.connexion_requise("evaluations")
@@ -363,10 +386,11 @@ def enregistrer(app, H):
                 except (ValueError, TypeError, AttributeError):
                     flash("Données de la grille illisibles : rechargez la page.", "danger")
                     return redirect(url_for("eval_saisie", ev_id=ev_id))
-            for k, v in request.form.items():  # sans JavaScript : un champ par case
+            for k, v in request.form.items():  # sans JavaScript : un champ par case (+ case performance p_…)
                 m = re.match(r"^n_(\d+)_(\d+)$", k)
                 if m:
-                    saisies[(int(m.group(1)), int(m.group(2)))] = v
+                    perf = request.form.get(f"p_{m.group(1)}_{m.group(2)}", "").strip()
+                    saisies[(int(m.group(1)), int(m.group(2)))] = f"{v}|{perf}" if perf else v
             ecrire_entete(ev, request.form)
             modifs, erreurs, rejets = enregistrer_notes(ev, cl, saisies)
             # Les valeurs refusées sont gardées (session) pour être réaffichées en rouge : rien n'est perdu.
@@ -399,7 +423,7 @@ def enregistrer(app, H):
                         "sexe": l["eleve"]["sexe"]} for l in lignes],
             "url_donnees": url_for("eval_donnees", ev_id=ev_id), "rejets": rejets,
         }
-        return render_template("eval_saisie.html", ev=ev, cl=cl, matieres=matieres, lignes=lignes, valeurs=valeurs,
+        return render_template("eval_saisie.html", garde_js=GN.JS, ev=ev, cl=cl, matieres=matieres, lignes=lignes, valeurs=valeurs,
                                permis=permis, v=entete(ev, cl), evs=EC.evaluations_classe(cl["id"]),
                                config_js=config_js, APPRECIATIONS=APPRECIATIONS,
                                seuil_txt=seuil_texte(ev, len(matieres)),
@@ -560,7 +584,10 @@ def enregistrer(app, H):
                     ignorees += 1
                     continue
                 try:
-                    lire_saisie(brut, maternelle)
+                    lire_saisie(brut, maternelle) if maternelle else GN.lire(brut)
+                except GN.NoteRefusee as err:
+                    erreurs.append(f"Ligne {num} ({qui}) – {m['nom']} : {err}.")
+                    continue
                 except (ValueError, TypeError):
                     erreurs.append(f"Ligne {num} ({qui}) – {m['nom']} : « {brut} » n'est pas "
                                    + ("une appréciation valide (A, ECA, NA, D)." if maternelle else "une note valide (0 à 20, ou D)."))

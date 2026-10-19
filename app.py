@@ -18,6 +18,7 @@ from flask import (Flask, abort, flash, g, redirect, render_template, request,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
+import garde_notes
 import pdfs
 from calcul import (APPRECIATIONS, LigneNote, MODES_CALCUL, NIVEAUX_MATERNELLE, NIVEAUX_PRIMAIRE,
                     NIVEAUX_SECONDAIRE, calculer, classer, cycle_du_niveau, statistiques)
@@ -366,7 +367,8 @@ def appliquer_parametres():
         config.EDITION = v.get("edition") if v.get("edition") in config.EDITIONS else "privee"
 
 
-MODULES = ["m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appel", "m_paie", "m_tresorerie", "m_secretariat",
+MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous les autres modules)
+           "m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appel", "m_paie", "m_tresorerie", "m_secretariat",
            # v1.3
            "m_inscriptions", "m_evaluations", "m_resultats", "m_registre", "m_affichage", "m_cep", "m_synthese",
            "m_cantine", "m_donnees",
@@ -907,25 +909,27 @@ def create_app(test_config=None):
                                    (e["id"], m["id"], per, config.ANNEE_ACTIVE, code, int(disp), g.user["id"], maintenant()))
                         modifs += 1
                         continue
-                    try:
-                        val, disp = lire_note(request.form[cle])
-                    except ValueError:
-                        erreurs.append(f"{e['nom']} {e['prenoms']} – {m['nom']} : « {request.form[cle]} » n'est pas une note valide (0 à 20, ou D).")
+                    try:  # v1.9 : note principale (< 20) + note de performance (0 à 2)
+                        val, disp, perf = garde_notes.lire(request.form[cle], request.form.get(f"p_{e['id']}_{m['id']}"))
+                    except garde_notes.NoteRefusee as err:
+                        erreurs.append(f"{e['nom']} {e['prenoms']} – {m['nom']} : {err}.")
                         continue
                     ancien = notes.get((e["id"], m["id"]))
-                    if ancien and ancien["valeur"] == val and bool(ancien["dispense"]) == disp:
+                    if ancien and ancien["valeur"] == val and bool(ancien["dispense"]) == disp \
+                            and ("performance" not in ancien.keys() or ancien["performance"] == perf):
                         continue
                     if val is None and not disp:
                         if ancien:
                             db.execute("DELETE FROM notes WHERE id=?", (ancien["id"],))
                             modifs += 1
                         continue
-                    db.execute("""INSERT INTO notes (eleve_id, matiere_id, periode, annee, valeur, dispense, saisi_par, modifie_le)
-                                  VALUES (?,?,?,?,?,?,?,?)
+                    db.execute("""INSERT INTO notes (eleve_id, matiere_id, periode, annee, valeur, dispense, saisi_par, modifie_le, performance)
+                                  VALUES (?,?,?,?,?,?,?,?,?)
                                   ON CONFLICT(eleve_id, matiere_id, periode, annee)
                                   DO UPDATE SET valeur=excluded.valeur, dispense=excluded.dispense,
-                                                saisi_par=excluded.saisi_par, modifie_le=excluded.modifie_le""",
-                               (e["id"], m["id"], per, config.ANNEE_ACTIVE, val, int(disp), g.user["id"], maintenant()))
+                                                saisi_par=excluded.saisi_par, modifie_le=excluded.modifie_le,
+                                                performance=excluded.performance""",
+                               (e["id"], m["id"], per, config.ANNEE_ACTIVE, val, int(disp), g.user["id"], maintenant(), perf))
                     modifs += 1
             db.commit()
             journal("notes_saisies", f"{cl['nom']} {per} : {modifs} modification(s)")
@@ -936,7 +940,7 @@ def create_app(test_config=None):
             else:
                 flash(f"Notes enregistrées ({modifs} modification(s)).", "success")
             return redirect(url_for("notes_saisie", cid=cid, p=p))
-        return render_template("notes_saisie.html", cl=cl, p=p, per=per, matieres=matieres,
+        return render_template("notes_saisie.html", garde_js=garde_notes.JS, afficher_np=garde_notes.afficher, cl=cl, p=p, per=per, matieres=matieres,
                                eleves=eleves, notes=notes, res=res, stats=stats, APPRECIATIONS=APPRECIATIONS)
 
     @app.route("/notes/<int:cid>/<int:p>/resultats")
