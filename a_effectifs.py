@@ -6,7 +6,9 @@ Une seule page (/juridiction/effectifs) qui rassemble, par sexe, d'après les fi
   1. les apprenants : primaire (EP) et maternelle (EM, espaces enfance), garçons / filles ;
   2. le personnel enseignant : enseignants (adjoints compris) et directeurs, hommes / femmes ;
   3. les catégories : FE, ACDPE, ACDPCTD (AME), Éducateur, Privé, Autre ;
-  4. les diplômes professionnels : CAP (EP, EM) et CEAP (EP, EM).
+  4. les diplômes professionnels : CAP (EP, EM) et CEAP (EP, EM) ;
+  5. les diplômes académiques et universitaires (CEP … Doctorat) ;
+  6. les enseignants et directeurs du secteur privé (EP, EM).
 Chaque tableau est ventilé par circonscription (DDEMP), par zone pédagogique (CS ou CS choisie à la DDEMP) ou par
 école (au choix), avec une COURBE par tableau ; export Excel. La page est rattachée aux divisions chargées des
 statistiques (CDOSP / DOSP, statistiques) et des ressources humaines (RH / SRH) — voir a_divisions.
@@ -22,6 +24,11 @@ import m_juridiction as J
 CATS = [("FE", "FE"), ("ACDPE", "ACDPE"), ("ACDPCTD", "ACDPCTD (AME)"), ("EDUCATEUR", "Éducateur"),
         ("PRIVE", "Privé"), ("AUTRE", "Autre")]
 DIPLOMES = [("cap_ep", "CAP – EP"), ("cap_em", "CAP – EM"), ("ceap_ep", "CEAP – EP"), ("ceap_em", "CEAP – EM")]
+# diplômes académiques et universitaires (diplôme le plus élevé déclaré sur la fiche de l'agent)
+ACADEMIQUES = [("cep", "CEP"), ("bepc", "BEPC"), ("bac", "BAC"), ("bac2", "BAC + 2 (DEUG, DUT, BTS)"),
+               ("licence", "Licence"), ("maitrise", "Maîtrise"), ("master", "Master / DEA / DESS"),
+               ("doctorat", "Doctorat"), ("autre", "Autre"), ("nr", "Non renseigné")]
+PRIVE = [("ens", "Enseignants"), ("dir", "Directeurs"), ("ep", "dont EP"), ("em", "dont EM")]
 PALETTE = ["#2a78d6", "#eb6834", "#1b7f3b", "#8e44ad", "#c99a06", "#d6336c", "#0f766e", "#64748b"]
 
 
@@ -39,6 +46,20 @@ def categorie(p):
     if c.startswith("EDUC") or "educat" in _sans_accent(p.get("fonction")):
         return "EDUCATEUR"
     return "AUTRE"
+
+
+def diplome_academique(v):
+    """Libellé libre (« Licence en sociologie », « BAC D », « Maîtrise »…) → clé de ACADEMIQUES."""
+    d = _sans_accent(v).replace(".", "").replace("-", " ")
+    if not d.strip():
+        return "nr"
+    for cle, motifs in (("doctorat", ("doctorat", "phd", "doctor")), ("master", ("master", "dea", "dess", "mba")),
+                        ("maitrise", ("maitrise",)), ("licence", ("licence", "license", "bachelor")),
+                        ("bac2", ("deug", "dut", "bts", "duel", "bac + 2", "bac+2", "bac 2", "dues")),
+                        ("bac", ("bac", "baccalaureat")), ("bepc", ("bepc", "brevet")), ("cep", ("cep",))):
+        if any(m in d for m in motifs):
+            return cle
+    return "autre"
 
 
 def oui(v):
@@ -64,7 +85,9 @@ def nouveau_groupe(nom):
     return {"nom": nom, "ecoles": 0,
             "app": {"ep": {"g": 0, "f": 0, "t": 0}, "em": {"g": 0, "f": 0, "t": 0}, "t": {"g": 0, "f": 0, "t": 0}},
             "ens": vide_hf(), "dir": vide_hf(), "tous": vide_hf(),
-            "cat": {k: vide_hf() for k, _ in CATS}, "dip": {k: vide_hf() for k, _ in DIPLOMES}}
+            "cat": {k: vide_hf() for k, _ in CATS}, "dip": {k: vide_hf() for k, _ in DIPLOMES},
+            "aca": {k: vide_hf() for k, _ in ACADEMIQUES},
+            "prive": {"ecoles": 0, **{k: vide_hf() for k, _ in PRIVE}}}
 
 
 def calculer(lignes, personnel, par):
@@ -81,8 +104,11 @@ def calculer(lignes, personnel, par):
     for l in lignes:
         k, nom = cle_nom(l)
         g = grp.setdefault(k, nouveau_groupe(nom))
-        de_ecole[l["id"]] = (g, l["type"])
+        de_ecole[l["id"]] = (g, l["type"], l.get("secteur"))
         em = l["type"] in ("EM", "EE")
+        if l.get("secteur") == "prive":
+            g["prive"]["ecoles"] += 1
+            tot["prive"]["ecoles"] += 1
         e = l.get("eff") or {}
         for x in (g, tot):
             x["ecoles"] += 1
@@ -95,7 +121,7 @@ def calculer(lignes, personnel, par):
         g_t = de_ecole.get(p.get("ecole_id"))
         if not g_t:
             continue
-        g, typ = g_t
+        g, typ, secteur = g_t
         role = p.get("role") or ""
         if role not in ("enseignant", "adjoint", "directeur"):
             continue
@@ -110,6 +136,10 @@ def calculer(lignes, personnel, par):
                 ajouter(x["dip"]["cap_em" if (t_cap == "EM" or (not t_cap and em)) else "cap_ep"], sx)
             if oui(p.get("ceap")):
                 ajouter(x["dip"]["ceap_em" if em else "ceap_ep"], sx)
+            ajouter(x["aca"][diplome_academique(p.get("diplome_academique"))], sx)
+            if secteur == "prive" or categorie(p) == "PRIVE":
+                ajouter(x["prive"]["dir" if role == "directeur" else "ens"], sx)
+                ajouter(x["prive"]["em" if em else "ep"], sx)
     return list(grp.values()), tot
 
 
@@ -123,26 +153,35 @@ def svg_courbes(categories, series, aria="Courbes"):
         return Markup("")
     n = len(categories)
     larg = max(640, 70 * n + 90)
-    x0, x1, y0, y1 = 56, larg - 20, 34, 236
+    # légende sur plusieurs lignes si besoin
+    leg, x, yl = [], 56, 15.5
+    for nom, coul, _ in series:
+        w = 28 + 6.6 * len(nom)
+        if x + w > larg - 10 and x > 56:
+            x, yl = 56, yl + 18
+        leg.append((x, yl, nom, coul))
+        x += w
+    dy = yl - 15.5
+    x0, x1, y0, y1 = 56, larg - 20, 34 + dy, 236 + dy
     vals = [v for _, _, vs in series for v in vs if v is not None]
-    m = max(vals + [1])
-    pas = 10 ** max(0, len(str(int(m))) - 1)
-    m = ((int(m) // pas) + 1) * pas
+    brut = max(vals + [1]) / 4
+    puiss = 10 ** (len(str(int(brut))) - 1) if brut >= 1 else 1
+    pas = next(k * puiss for k in (1, 2, 2.5, 5, 10) if k * puiss >= brut)
+    m = pas * 4
     def X(i):
         return x0 + (x1 - x0) * (i + .5) / n
     def Y(v):
         return y1 - (y1 - y0) * v / m
-    p = [f'<svg viewBox="0 0 {larg} 300" width="100%" role="img" aria-label="{_t(aria)}" class="jsvg" '
+    p = [f'<svg viewBox="0 0 {larg} {300 + dy:.0f}" width="100%" role="img" aria-label="{_t(aria)}" class="jsvg" '
          f'style="min-width:{min(larg, 900)}px">']
-    x = x0
-    for nom, coul, _ in series:
-        p.append(f'<rect x="{x}" y="6" width="11" height="11" rx="2" fill="{coul}"/><text x="{x + 15}" y="15.5" class="lg">{_t(nom)}</text>')
-        x += 28 + 7 * len(nom)
+    for x, yl_, nom, coul in leg:
+        p.append(f'<rect x="{x:.0f}" y="{yl_ - 9.5:.1f}" width="11" height="11" rx="2" fill="{coul}"/>'
+                 f'<text x="{x + 15:.0f}" y="{yl_:.1f}" class="lg">{_t(nom)}</text>')
     for j in range(5):
-        v = m * j / 4
+        v = pas * j
         yy = Y(v)
         p.append(f'<line x1="{x0}" y1="{yy:.1f}" x2="{x1}" y2="{yy:.1f}" class="gr"/>'
-                 f'<text x="{x0 - 6}" y="{yy + 4:.1f}" text-anchor="end" class="vl">{int(v)}</text>')
+                 f'<text x="{x0 - 6}" y="{yy + 4:.1f}" text-anchor="end" class="vl">{v:g}</text>')
     for i, c in enumerate(categories):
         lib = str(c)
         lib = lib if len(lib) <= 16 else lib[:15] + "…"
@@ -194,6 +233,12 @@ def enregistrer(app, H):
                                "Catégories"),
             "dip": svg_courbes(noms, [(l, PALETTE[i], [g["dip"][k]["t"] for g in grp]) for i, (k, l) in enumerate(DIPLOMES)],
                                "CAP et CEAP"),
+            "aca": svg_courbes(noms, [(l, PALETTE[i % len(PALETTE)], [g["aca"][k]["t"] for g in grp])
+                                      for i, (k, l) in enumerate(ACADEMIQUES[:8])], "Diplômes académiques"),
+            "prive": svg_courbes(noms, [("Enseignants – H", PALETTE[0], [g["prive"]["ens"]["h"] for g in grp]),
+                                        ("Enseignants – F", PALETTE[1], [g["prive"]["ens"]["f"] for g in grp]),
+                                        ("Directeurs", PALETTE[3], [g["prive"]["dir"]["t"] for g in grp])],
+                                 "Secteur privé"),
         }
         if request.args.get("export") == "xlsx":
             haut = [config.ECOLE.get("nom", ""), f"Effectifs – année {flt['annee']} – par {lib.lower()}"]
@@ -211,9 +256,13 @@ def enregistrer(app, H):
                         lambda g: [g["cat"][k][s] for k, _l in CATS for s in ("h", "f", "t")]),
                 feuille("CAP et CEAP", [f"{l} – {s.upper()}" if s != "t" else l for _k, l in DIPLOMES for s in ("h", "f", "t")],
                         lambda g: [g["dip"][k][s] for k, _l in DIPLOMES for s in ("h", "f", "t")]),
+                feuille("Diplômes académiques", [f"{l} – {s.upper()}" if s != "t" else l for _k, l in ACADEMIQUES for s in ("h", "f", "t")],
+                        lambda g: [g["aca"][k][s] for k, _l in ACADEMIQUES for s in ("h", "f", "t")]),
+                feuille("Secteur privé", ["Écoles privées"] + [f"{l} – {s.upper()}" if s != "t" else l for _k, l in PRIVE for s in ("h", "f", "t")],
+                        lambda g: [g["prive"]["ecoles"]] + [g["prive"][k][s] for k, _l in PRIVE for s in ("h", "f", "t")]),
             ]
             H.journal("jur_effectifs", f"{flt['annee']} xlsx")
             return H.xlsx.reponse_classeur(f"effectifs_{flt['annee']}_par_{par}.xlsx", feuilles)
         return render_template("jur_effectifs.html", flt=flt, par=par, lib=lib, grp=grp, tot=tot, CATS=CATS,
-                               DIPLOMES=DIPLOMES, courbes=courbes, args=T.args_filtres(flt, par=par),
+                               DIPLOMES=DIPLOMES, ACADEMIQUES=ACADEMIQUES, PRIVE=PRIVE, courbes=courbes, args=T.args_filtres(flt, par=par),
                                args0=T.args_filtres(flt))

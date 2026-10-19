@@ -17,6 +17,7 @@
   <div class="kpi"><div class="l">Enseignants</div><div class="v">{{ tot.ens.t }}</div><div class="d">{{ tot.ens.h }} H · {{ tot.ens.f }} F</div></div>
   <div class="kpi"><div class="l">Directeurs</div><div class="v">{{ tot.dir.t }}</div><div class="d">{{ tot.dir.h }} H · {{ tot.dir.f }} F</div></div>
   <div class="kpi"><div class="l">CAP</div><div class="v">{{ tot.dip.cap_ep.t + tot.dip.cap_em.t }}</div><div class="d">EP {{ tot.dip.cap_ep.t }} · EM {{ tot.dip.cap_em.t }}</div></div>
+  <div class="kpi"><div class="l">Secteur privé</div><div class="v">{{ tot.prive.ens.t + tot.prive.dir.t }}</div><div class="d">{{ tot.prive.ecoles }} école(s) · {{ tot.prive.ens.t }} ens. · {{ tot.prive.dir.t }} dir.</div></div>
   <div class="kpi"><div class="l">CEAP</div><div class="v">{{ tot.dip.ceap_ep.t + tot.dip.ceap_em.t }}</div><div class="d">EP {{ tot.dip.ceap_ep.t }} · EM {{ tot.dip.ceap_em.t }}</div></div>
 </div>
 
@@ -61,6 +62,28 @@
   </table></div>
   <p class="aide">CAP : option EP ou EM déclarée sur la fiche de l'agent (à défaut, celle de son école). CEAP : selon le type de l'école.</p>
   <h3>Courbe CAP / CEAP par {{ lib|lower }}</h3><div class="tw">{{ courbes.dip }}</div>
+</div>
+
+<div class="carte"><h2>5. Diplômes académiques et universitaires (enseignants et directeurs)</h2>
+  <div class="tw"><table class="t serre">
+    <tr><th rowspan="2">{{ lib }}</th>{% for k, l in ACADEMIQUES %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
+    <tr>{% for _ in ACADEMIQUES %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
+    {% for g in grp + [tot] %}<tr class="{{ 'b' if loop.last }}"><td>{{ g.nom }}</td>
+      {% for k, l in ACADEMIQUES %}<td class="num">{{ g.aca[k].h }}</td><td class="num">{{ g.aca[k].f }}</td><td class="num"><b>{{ g.aca[k].t }}</b></td>{% endfor %}</tr>{% endfor %}
+  </table></div>
+  <p class="aide">Diplôme académique le plus élevé déclaré sur la fiche de l'agent (état nominatif transmis par l'école) ; « Non renseigné » : case vide.</p>
+  <h3>Courbe des diplômes académiques par {{ lib|lower }}</h3><div class="tw">{{ courbes.aca }}</div>
+</div>
+
+<div class="carte"><h2>6. Enseignants du secteur privé</h2>
+  <div class="tw"><table class="t serre">
+    <tr><th rowspan="2">{{ lib }}</th><th rowspan="2" class="num">Écoles privées</th>{% for k, l in PRIVE %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
+    <tr>{% for _ in PRIVE %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
+    {% for g in grp + [tot] %}<tr class="{{ 'b' if loop.last }}"><td>{{ g.nom }}</td><td class="num">{{ g.prive.ecoles }}</td>
+      {% for k, l in PRIVE %}<td class="num">{{ g.prive[k].h }}</td><td class="num">{{ g.prive[k].f }}</td><td class="num"><b>{{ g.prive[k].t }}</b></td>{% endfor %}</tr>{% endfor %}
+  </table></div>
+  <p class="aide">Personnel enseignant (adjoints compris) et directeurs des écoles privées, ainsi que les agents de catégorie « Privé ». « dont EP / EM » : selon le type de l'école.</p>
+  <h3>Courbe du secteur privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive }}</div>
 </div>
 {% endif %}
 {% endblock %}

@@ -57,6 +57,25 @@ class TestRegles(unittest.TestCase):
         grp, tot = E.calculer(lignes, pers, "cs")
         self.assertEqual(len(grp), 1)
 
+    def test_diplomes_prive(self):
+        self.assertEqual(E.diplome_academique("Licence en sociologie"), "licence")
+        self.assertEqual(E.diplome_academique("BAC D"), "bac")
+        self.assertEqual(E.diplome_academique("DEUG"), "bac2")
+        self.assertEqual(E.diplome_academique("Maîtrise"), "maitrise")
+        self.assertEqual(E.diplome_academique("DEA"), "master")
+        self.assertEqual(E.diplome_academique(""), "nr")
+        self.assertEqual(E.diplome_academique("Diplôme X"), "autre")
+        lignes = [{"id": 1, "nom": "EPP", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "eff": {"g": 1, "f": 1, "t": 2}},
+                  {"id": 2, "nom": "EPRIV", "type": "EM", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "eff": {"g": 1, "f": 1, "t": 2}}]
+        pers = [{"ecole_id": 1, "role": "enseignant", "sexe": "F", "diplome_academique": "Licence"},
+                {"ecole_id": 2, "role": "enseignant", "sexe": "M", "diplome_academique": "BAC"},
+                {"ecole_id": 2, "role": "directeur", "sexe": "F"}]
+        _g, tot = E.calculer(lignes, pers, "zone")
+        self.assertEqual((tot["aca"]["licence"]["f"], tot["aca"]["bac"]["h"], tot["aca"]["nr"]["t"]), (1, 1, 1))
+        self.assertEqual((tot["prive"]["ecoles"], tot["prive"]["ens"]["h"], tot["prive"]["dir"]["f"], tot["prive"]["em"]["t"]), (1, 1, 1, 2))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -105,7 +124,8 @@ i_ccs, i_cp = t.find("Chef"), t.find("Conseillers pédagogiques (CP)")
 assert 0 < i_ccs < i_cp, (i_ccs, i_cp)                      # les CCS avant les CP
 assert "1 / 10" in t.replace("<span class=\"gris\"> / ", " / ").replace("</span>", ""), "suivi du CCS : 1 réalisé / 10 programmés"
 t = txt(ok(c.get("/juridiction/effectifs")))
-for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducateur", "CAP – EP", "CEAP – EM", "<polyline"):
+for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducateur", "CAP – EP", "CEAP – EM", "<polyline",
+          "5. Diplômes académiques", "Licence", "Doctorat", "6. Enseignants du secteur privé"):
     assert k in t, k
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"
