@@ -101,6 +101,9 @@ ENDPOINTS_COMMUNS = {
     "affectations", "manifeste", "service_worker", "hors_ligne", "installer", "sante",
     "referentiel_js", "rejoindre", "signature_png", "signature_enregistrer", "cachet_svg", "ecoles", "ecole_form",
     "ecole_choisir", "ecole_basculer", "ecole_supprimer", "ecole_logo", "ecole_griffe_svg", "interdit", "introuvable",
+    # v1.9 : groupes WhatsApp des directeurs et des enseignants (pages de la structure, sans école ouverte)
+    "groupes_whatsapp", "groupes_whatsapp_reglages", "groupes_whatsapp_contact", "groupes_whatsapp_inviter",
+    "groupes_whatsapp_suivant", "groupes_whatsapp_raz", "groupes_whatsapp_vcf",
 }
 # adresses accessibles sans école ouverte (structure, administration, connexion, fichiers, espaces publics et API) :
 # toute autre adresse est une page de module d'école et demande une école ouverte (page « Choisissez une école »)
@@ -109,6 +112,7 @@ PREFIXES_STRUCTURE = (
     "/administration", "/ecoles", "/sauvegarde", "/mon-compte", "/demandes-ecoles", "/communication/reglages",
     "/paiements/en-ligne/reglages", "/paie/parametres", "/manifest.webmanifest", "/sw.js", "/hors-ligne",
     "/installer", "/referentiel.js", "/rejoindre", "/sante", "/signatures", "/cachet.svg",
+    "/groupes-whatsapp",
     # espaces publics (élèves, parents), API de transmission et de notification, retours de paiement en ligne
     "/eleve", "/parent", "/api", "/webhooks", "/paiement",
 )

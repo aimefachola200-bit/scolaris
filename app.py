@@ -384,6 +384,8 @@ MODULES = ["m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appe
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)
            "m_classe", "a_alertes",
+           # v1.9 : groupes WhatsApp des directeurs et des enseignants (école, CS, DDEMP)
+           "m_groupes_whatsapp",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 

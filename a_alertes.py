@@ -195,6 +195,14 @@ def enregistrer(app, H):
                             "lien": url_for("jur_up") if "jur_up" in app.view_functions else None,
                             "ecoles": [f"{s['up_nom']} – {s['date'][8:10]}/{s['date'][5:7]}/{s['date'][:4]}"
                                        + (f" : {s['theme']}" if s["theme"] else "") for s in seances]})
+        # v1.9 : directeurs injoignables sur WhatsApp (numéro absent ou invalide)
+        sans_num = [e for e in ecs if not H.notif.normaliser_tel(e["directeur_tel"])]
+        if sans_num:
+            alertes.append({"niveau": "info", "ico": "💬",
+                            "titre": f"{len(sans_num)} directeur(s) sans numéro de téléphone valide",
+                            "detail": "Ils ne peuvent pas être ajoutés au groupe WhatsApp des directeurs : compléter la fiche de l'école.",
+                            "lien": url_for("groupes_whatsapp", groupe="directeurs", cs=cs_id or None) if "groupes_whatsapp" in app.view_functions else None,
+                            "ecoles": noms(sans_num)})
         alertes.sort(key=lambda a: NIVEAUX[a["niveau"]])
         return alertes
 
