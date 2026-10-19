@@ -23,6 +23,9 @@ paiements et reçus, documents officiels avec QR code de vérification.
   rubrique propre au privé donne écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées ;
   les **catégories d'âge** des apprenants du primaire (v1.10.3), de « moins de 5 ans » à « 16 ans et plus »,
   par sexe et par cours (CI … CM2), avec pourcentages, âge moyen et écart type (public, et privé à part) ;
+  les **écoles maternelles par section** (v1.10.4), section des petits (SP) et des grands (SG), par sexe : tableau 3
+  de la fiche de recensement (catégories d'âge, pourcentages, âge moyen, écart type), rapport de rentrée EM et fiche
+  de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
 - **Tableaux globaux des fiches** (Fiches des écoles) : pour la fiche de recensement (EP, EM) et les rapports de

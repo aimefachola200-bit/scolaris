@@ -104,6 +104,32 @@ class TestRegles(unittest.TestCase):
         p = E.tableau_ages(tot["prive"]["ages"])
         self.assertEqual((p["tot"]["CE1"], p["stats"]["CE1"][2]), ([2, 2, 4], (8.0, 0.0)))
 
+    def test_maternelles(self):
+        self.assertEqual((E.cle_age_m(1), E.cle_age_m(2), E.cle_age_m(4), E.cle_age_m(7)), ("m25", "a25", "a4", "p5"))
+        self.assertEqual((E.section_de("Maternelle 1"), E.section_de("GS"), E.section_de("CI")), ("SP", "SG", None))
+        rec = {"maternelle": {"valeurs": {"t3.a3.pe_g": 4, "t3.a3.pe_f": 6, "t3.a5.gr_g": 5, "t3.p5.gr_f": 1}}}
+        rap = {"rentree-em": {"valeurs": {"rep.debut.pet_G": 4, "rep.debut.pet_F": 6, "rep.debut.gra_G": 5,
+                                          "rep.besoin.gra_F": 1}},
+               "fin-em": {"valeurs": {"rep.fin.pet_G": 3, "rep.aband.gra_F": 2}}}
+        lignes = [{"id": 1, "nom": "EM A", "type": "EM", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {}, "_sec_eff": {}, "_rec": rec, "_rap": rap},
+                  {"id": 2, "nom": "EM B", "type": "EM", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 2,
+                   "zone_nom": "Z2", "eff": {}, "_rec": {}, "_rap": {},
+                   "_sec_eff": {"ages": {"Maternelle 2": {"5": [2, 2]}}, "classes": []}},
+                  {"id": 3, "nom": "EM P", "type": "EM", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {}, "_rec": {}, "_rap": {},
+                   "_sec_eff": {"classes": [{"niveau": "Maternelle 1", "garcons": 7, "filles": 8}]}}]
+        _g, tot = E.calculer(lignes, [], "zone")
+        m = E.tableau_mat(tot["mat"])
+        self.assertEqual((m["ecoles"], m["rec"]["SP"], m["rec"]["SG"], m["rec"]["T"]), (2, [4, 6, 10], [7, 3, 10], [11, 9, 20]))
+        self.assertEqual(m["ages"]["stats"]["SP"][2], (3.0, 0.0))
+        self.assertEqual(m["ages"]["tot"]["ENS"], [11, 9, 20])
+        self.assertEqual((m["deb"]["T"], m["rentree"][1][2]["SG"], m["finf"]["SP"], m["fin"][3][2]["T"]),
+                         ([9, 6, 15], [0, 1, 1], [3, 0, 3], [0, 2, 2]))
+        self.assertEqual((m["n_rentree"], m["n_fin"], m["n_rec"]), (1, 1, 2))
+        p = E.tableau_mat(tot["prive"]["mat"])
+        self.assertEqual((p["ecoles"], p["rec"]["SP"], p["ages"]["vide"]), (1, [7, 8, 15], True))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -154,7 +180,8 @@ assert "1 / 10" in t.replace("<span class=\"gris\"> / ", " / ").replace("</span>
 t = txt(ok(c.get("/juridiction/effectifs")))
 for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducateur", "CAP – EP", "CEAP – EM", "<polyline",
           "5. Diplômes académiques", "Licence", "Doctorat", "6. Secteur privé (à part)", "Écoles privées (à part)", "7. Catégories d'âge", "Moins de 5 ans",
-          "16 ans et plus", "Écart type", "Âge moyen"):
+          "16 ans et plus", "Écart type", "Âge moyen", "8. Écoles maternelles", "Section des petits (SP)",
+          "Section des grands (SG)", "Rapport de rentrée (EM)", "Fiche de fin d'année (EM)", "Moins de 2 ans ½"):
     assert k in t, k
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"

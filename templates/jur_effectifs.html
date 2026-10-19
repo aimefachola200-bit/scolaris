@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% import "jur_tableau_commun.html" as T with context %}
 {% block titre %}Effectifs{% endblock %}
 {% block contenu %}
-{% macro tab_ages(t) %}{% if t.vide %}<p class="aide">Aucun âge déclaré pour ces écoles (ni âges des élèves, ni tableau 7.3 de la fiche de recensement).</p>{% else %}
+{% macro tab_ages(t, vide_msg="Aucun âge déclaré pour ces écoles (ni âges des élèves, ni tableau 7.3 de la fiche de recensement).") %}{% if t.vide %}<p class="aide">{{ vide_msg }}</p>{% else %}
   <div class="tw"><table class="t serre ages">
     <tr><th rowspan="2">Catégorie d'âge</th>{% for c in t.cols %}<th colspan="3" class="grp">{{ 'Ensemble' if c == 'ENS' else c }}</th>{% endfor %}</tr>
     <tr>{% for _ in t.cols %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -10,6 +10,29 @@
     <tr class="b stat"><td>Âge moyen (ans)</td>{% for c in t.cols %}{% for m, e in t.stats[c] %}<td class="num">{{ ("%.2f"|format(m))|replace('.', ',') if m is not none else '–' }}</td>{% endfor %}{% endfor %}</tr>
     <tr class="b stat"><td>Écart type (ans)</td>{% for c in t.cols %}{% for m, e in t.stats[c] %}<td class="num">{{ ("%.2f"|format(e))|replace('.', ',') if e is not none else '–' }}</td>{% endfor %}{% endfor %}</tr>
   </table></div>{% endif %}{% endmacro %}
+{% macro f3(d) %}{% for c in ('SP', 'SG', 'T') %}{% for v in d[c] %}<td class="num{{ ' ens' if c == 'T' }}">{% if loop.last %}<b>{{ v|jur_nb }}</b>{% else %}{{ v|jur_nb }}{% endif %}</td>{% endfor %}{% endfor %}{% endmacro %}
+{% macro tete_sec(premiere, extra='') %}<tr><th rowspan="2">{{ premiere }}</th>{{ extra|safe }}<th colspan="3" class="grp">Section des petits (SP)</th><th colspan="3" class="grp">Section des grands (SG)</th><th colspan="3" class="grp">Total</th></tr>
+    <tr>{% for _ in range(3) %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>{% endmacro %}
+{% macro bloc_mat(m, cle, titre_sect) %}
+  <h3>8.1 Effectifs par section et par {{ lib|lower }} — fiche de recensement (tableau 3)</h3>
+  <div class="tw"><table class="t serre">{{ tete_sec(lib, '<th rowspan="2" class="num">Écoles</th>') }}
+    {% for g in grp %}{% if g[cle].ecoles %}<tr><td>{{ g.nom }}</td><td class="num">{{ g[cle].ecoles }}</td>{{ f3(g[cle].rec) }}</tr>{% endif %}{% endfor %}
+    <tr class="b"><td>Total</td><td class="num">{{ m.ecoles }}</td>{{ f3(m.rec) }}</tr></table></div>
+  <h3>8.2 Catégories d'âge par section et par sexe (fiche de recensement, tableau 3)</h3>
+  {{ tab_ages(m.ages, "Aucun âge déclaré pour ces écoles maternelles (ni âges des enfants, ni tableau 3 de la fiche de recensement).") }}
+  <h3>8.3 Rapport de rentrée (EM) : répartition des enfants par section</h3>
+  <p class="aide">{{ m.n_rentree }} école(s) sur {{ m.ecoles }} ont transmis le rapport de rentrée.</p>
+  <div class="tw"><table class="t serre">{{ tete_sec('Rubrique') }}
+    {% for k, l_, d in m.rentree %}<tr class="{{ 'b' if k == 'debut' }}"><td>{{ l_ }}</td>{{ f3(d) }}</tr>{% endfor %}</table></div>
+  {% if m.n_rentree %}<div class="tw"><table class="t serre">{{ tete_sec(lib) }}
+    {% for g in grp %}{% if g[cle].ecoles %}<tr><td>{{ g.nom }} <small class="gris">(début d'année)</small></td>{{ f3(g[cle].deb) }}</tr>{% endif %}{% endfor %}</table></div>{% endif %}
+  <h3>8.4 Fiche de fin d'année (EM) : répartition des enfants par section</h3>
+  <p class="aide">{{ m.n_fin }} école(s) sur {{ m.ecoles }} ont transmis la fiche de fin d'année.</p>
+  <div class="tw"><table class="t serre">{{ tete_sec('Rubrique') }}
+    {% for k, l_, d in m.fin %}<tr class="{{ 'b' if k == 'fin' }}"><td>{{ l_ }}</td>{{ f3(d) }}</tr>{% endfor %}</table></div>
+  {% if m.n_fin %}<div class="tw"><table class="t serre">{{ tete_sec(lib) }}
+    {% for g in grp %}{% if g[cle].ecoles %}<tr><td>{{ g.nom }} <small class="gris">(fin d'année)</small></td>{{ f3(g[cle].finf) }}</tr>{% endif %}{% endfor %}</table></div>{% endif %}
+{% endmacro %}
 <style>.ages small.pc{color:#6b7280;font-size:.72em;white-space:nowrap}.ages td.ens{background:#f5f7fb}.ages tr.stat td{background:#fff8e1}</style>
 {{ T.styles() }}
 <div class="entete"><div><h1>👥 Effectifs : apprenants et personnel enseignant</h1>
@@ -126,6 +149,15 @@
   <div class="tw">{{ courbes.ages_grp }}</div>{% endif %}
   <details style="margin-top:12px"{% if not ages.prv.vide %} open{% endif %}><summary><b style="color:#8e44ad">Secteur privé (à part) : catégories d'âge par sexe et par cours</b></summary>
     {{ tab_ages(ages.prv) }}</details>
+</div>
+
+<div class="carte"><h2>8. Écoles maternelles : effectifs par section (SP et SG), par sexe (secteur public)</h2>
+  {{ bloc_mat(mats.pub, 'mat_t', 'public') }}
+  <p class="aide">{{ NOTE_AGES_M }}. Pourcentage : part de la catégorie d'âge dans l'effectif de la section et du sexe. Sources : fiche de recensement des écoles maternelles (tableau 3, ou âges des enfants transmis par l'école), rapport de rentrée EM et fiche de fin d'année EM (« Répartition des enfants par section »).</p>
+  {% if mats.pub.ecoles %}<h3>Courbe des effectifs par section et par {{ lib|lower }}</h3><div class="tw">{{ courbes.mat }}</div>
+  {% if not mats.pub.ages.vide %}<h3>Courbe des âges par section</h3><div class="tw">{{ courbes.mat_ages }}</div>{% endif %}{% endif %}
+  <details style="margin-top:12px"{% if mats.prv.ecoles %} open{% endif %}><summary><b style="color:#8e44ad">Secteur privé (à part) : écoles maternelles par section</b></summary>
+    {% if mats.prv.ecoles %}{{ bloc_mat(mats.prv, 'mat_tp', 'privé') }}{% else %}<p class="aide">Aucune école maternelle privée pour ces critères.</p>{% endif %}</details>
 </div>
 {% endif %}
 {% endblock %}
