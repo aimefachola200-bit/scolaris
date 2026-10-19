@@ -62,6 +62,9 @@ class TestCodesAcces(unittest.TestCase):
         self.assertFalse(A.verifier_signature(pub, b"SCOLARIS|AAAA-BBBB-CCCC|enseignant", sig))
         self.assertFalse(A.verifier_signature(A.CLE_PUBLIQUE, b"SCOLARIS|AAAA-BBBB-CCCC|directeur", sig))
 
+    def test_desactive(self):
+        self.assertFalse(A.ACTIF)  # codes d'accès désactivés pour le moment (v1.9.2)
+
     def test_code(self):
         self.assertEqual(len(A.nouvel_identifiant_installation()), 14)
         self.assertEqual(A.message("scolaris", "aaaa-bbbb-cccc", " Directeur "), "SCOLARIS|AAAA-BBBB-CCCC|directeur")

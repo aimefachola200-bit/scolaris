@@ -11,6 +11,7 @@
 * Délai de grâce : 15 jours à partir de la première ouverture de cette version (bandeau d'avertissement), puis blocage.
 * Les espaces parents / élèves, les API de transmission et les fichiers statiques ne sont pas concernés.
 """
+import os
 import re
 import urllib.parse
 from datetime import date, timedelta
@@ -62,7 +63,10 @@ def enregistrer(app, H):
         return bool(code) and A.code_valide(nom_appli(), installation(), u["identifiant"], code)
 
     def controle_actif():
-        return not current_app.config.get("TESTING") or current_app.config.get("ACCES_CONTROLE")
+        if current_app.config.get("ACCES_CONTROLE"):
+            return True
+        actif = A.ACTIF or os.environ.get("CODES_ACCES") == "1"
+        return actif and not current_app.config.get("TESTING")
 
     def demande_de(u):
         return A.demande(nom_appli(), installation(), u["identifiant"])
@@ -99,7 +103,7 @@ def enregistrer(app, H):
             if not u or not controle_actif() or request.endpoint in ("acces_page", "acces_comptes") or autorise(u):
                 return None
             return max(0, jours_restants())
-        return {"acces_bandeau": bandeau, "acces_gestion": lambda: bool(g.get("user")) and
+        return {"acces_bandeau": bandeau, "acces_gestion": lambda: controle_actif() and bool(g.get("user")) and
                 ((g.get("role_reel") or g.user["role"]) in ROLES_GESTION)}
 
     @app.route("/acces", methods=["GET", "POST"])

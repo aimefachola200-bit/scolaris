@@ -18,6 +18,9 @@ import secrets
 # Clé publique du concepteur (la clé privée correspondante n'est PAS dans le code source)
 CLE_PUBLIQUE = bytes.fromhex("35ff091ac3d0bc50f6935d2611321087898e7ef5b90ce401bb40cb73afcbacf7")
 DELAI_GRACE_JOURS = 15
+# Contrôle des codes d'accès : désactivé pour le moment (demande du concepteur, 19/10/2026).
+# Mettre True (ou la variable d'environnement CODES_ACCES=1) pour l'activer de nouveau : rien d'autre à changer.
+ACTIF = False
 TEL_CONCEPTEUR = "2290196510333"   # Maître Aimé FACHE — 01 96 51 03 33
 
 # ------------------------------------------------------------------ Ed25519 (vérification seule, RFC 8032)

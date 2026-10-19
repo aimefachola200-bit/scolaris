@@ -10,6 +10,11 @@ Application web Python (Flask + SQLite) utilisable sur le réseau de l'école.
 Modules : élèves et inscriptions, classes, saisie des notes et bulletins,
 paiements et reçus, documents officiels avec QR code de vérification.
 
+## Nouveautés de la version 1.9.2
+
+- Le **code d'accès personnel** est **désactivé pour le moment** : l'application s'ouvre comme avant, sans code ni
+  bandeau. Le mécanisme reste prêt (acces.py : ACTIF = True, ou variable d'environnement CODES_ACCES=1, pour le réactiver).
+
 ## Nouveautés de la version 1.9.1
 
 - **Garde-fou de la saisie des notes** (saisie des évaluations et notes par période) : chaque matière se saisit en
