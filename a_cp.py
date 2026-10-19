@@ -1491,6 +1491,59 @@ def enregistrer(app, H):
 
     H.jur_cp_calculer = calculer        # pour les tests et les autres modules
 
+    # ------------------------------------------------------------------ v1.10 : tableau de bord (CCS puis CP)
+    INDIC_RAP = [("vc", "Visites de classes", "s2", "vc_prog_t", "vc_real_t"),
+                 ("ve", "Visites d'écoles", "s2", "ve_prog_t", "ve_real_t"),
+                 ("su", "Suivis de directeurs", "s2", "su_prog_t", "su_real_t"),
+                 ("up", "Séances d'UP", "s2", "up_prog", "up_real"),
+                 ("fo", "Formations / conférences", "s2", "fo_prog", "fo_real"),
+                 ("co", "Concertations", "s3", "co_prog", "co_real")]
+
+    def ligne_rap(b, a):
+        vals = {}
+        for k, _lib, sec, kp, kr in INDIC_RAP:
+            r = (b.get(sec) or {}).get(a["cle"]) or {}
+            prog, real = n0(r.get(kp)), n0(r.get(kr))
+            vals[k] = {"prog": prog, "real": real, "taux": round(100.0 * real / prog, 1) if prog else None}
+        tp = sum(v["prog"] for v in vals.values())
+        tr = sum(v["real"] for v in vals.values())
+        return {"lib": a.get("lib") or "", "nom": a.get("nom") or "", "zone": a.get("zone") or "", "vals": vals,
+                "prog": tp, "real": tr, "taux": round(100.0 * tr / tp, 1) if tp else None}
+
+    def tableau_rap(annee, periode, cs_id=None):
+        """Programmation et réalisation des activités pédagogiques, CCS d'abord puis CP, par circonscription.
+        DDEMP : bilan transmis par la CS (niveau CS, même période) s'il existe, sinon calcul sur les données reçues."""
+        out = []
+        for c in H.jur_cs_liste():
+            if cs_id and c["id"] != cs_id:
+                continue
+            if config.EDITION == "cs" and H.jur_cs_courante() and c["id"] != H.jur_cs_courante()["id"]:
+                continue
+            b, source = None, "calcul"
+            if config.EDITION == "ddemp":
+                for it in reversed(H.jur_cs_section(c["id"], "cp_bilans", annee) or []):
+                    if isinstance(it, dict) and it.get("periode") == periode and it.get("niveau") == "cs" \
+                            and isinstance(it.get("bilan"), dict):
+                        try:
+                            b, source = totaux(json.loads(json.dumps(it["bilan"]))), "transmis"
+                        except Exception:  # noqa: BLE001 — bilan transmis illisible : calcul
+                            b = None
+                        break
+            if b is None:
+                try:
+                    b, _ = bilan_complet(annee, periode, c["id"], None)
+                except Exception:  # noqa: BLE001 — CS sans zones ni données
+                    continue
+            acts = b.get("acteurs") or []
+            ccs = next((a for a in acts if a["cle"] == "ccs"), None)
+            out.append({"cs_id": c["id"], "cs_nom": c["nom"], "source": source,
+                        "ccs": ligne_rap(b, ccs) if ccs else None,
+                        "cps": [ligne_rap(b, a) for a in acts if a["cle"] != "ccs"]})
+        return out
+
+    H.jur_cp_tableau_rap = tableau_rap
+    H.jur_cp_indicateurs_rap = [(k, lib) for k, lib, *_ in INDIC_RAP]
+
 
 # ======================================================================== Excel (openpyxl)
 class Excel:

@@ -194,6 +194,48 @@ def feuilles_vue(vue_, haut, prefixe=""):
     return feuilles
 
 
+# ============================================================================ v1.10 : tableaux comparatifs
+_HORS_CHIFFRES = ("identification", "visas", "etat nominatif", "annexe")
+
+
+def _sans_accent(t):
+    import unicodedata
+    return unicodedata.normalize("NFD", str(t or "")).encode("ascii", "ignore").decode().lower()
+
+
+def rubriques_chiffrees(vue_):
+    """Index des rubriques à chiffres de la fiche (sans l'identification, l'état nominatif ni les visas)."""
+    return [i for i, s in enumerate(vue_) if not any(m in _sans_accent(s["titre"]) for m in _HORS_CHIFFRES)
+            and (s["tableaux"] or s["champs"])]
+
+
+def lignes_chiffrees(rub):
+    """[(clé, tableau, ligne, colonne, valeur numérique | None)] d'une rubrique de la vue lisible."""
+    out = []
+    for k, (num, lib, val) in enumerate(rub["champs"]):
+        out.append((("c", k), "", f"{num} {lib}".strip(), "", MRE.nombre(val)))
+    for ti, t in enumerate(rub["tableaux"]):
+        ttl = t["titre"] if len(rub["tableaux"]) > 1 else ""
+        for li, l in enumerate(t["lignes"]):
+            for ci, cell in enumerate(l["cells"]):
+                col = t["colonnes"][ci] if ci < len(t["colonnes"]) else str(ci + 1)
+                out.append((("t", ti, li, ci), ttl, l["lib"], col, MRE.nombre(cell)))
+    return out
+
+
+def comparer(vues, total_vue, idx):
+    """Tableau comparatif d'une rubrique : lignes = cases chiffrées, colonnes = groupes + total."""
+    base = lignes_chiffrees(total_vue[idx])
+    par_groupe = [{c[0]: c[4] for c in lignes_chiffrees(v[idx])} if v and idx < len(v) else {} for v in vues]
+    lignes = []
+    for cle, ttl, lib, col, tot in base:
+        vals = [pg.get(cle) for pg in par_groupe]
+        if tot is None and all(v is None for v in vals):
+            continue
+        lignes.append({"tableau": ttl, "ligne": lib, "colonne": col, "vals": vals, "total": tot})
+    return lignes
+
+
 # ============================================================================ enregistrement Flask
 def enregistrer(app, H):
 
@@ -367,6 +409,64 @@ def enregistrer(app, H):
         r["controles"] = manque + r["controles"]
         r.update(titre=titre, ecoles=ecoles, prises=prises)
         return r
+
+    @app.route("/juridiction/fiches/tableaux")
+    @H.connexion_requise("jur_fiches")
+    def jur_fiches_tableaux():
+        """v1.10 : tableaux globaux des rubriques chiffrées (infrastructures, mobilier, équipements, effectifs…) des
+        fiches de recensement, de rentrée et de fin d'année : une colonne par CS (DDEMP) ou par zone (CS), et le total."""
+        garde()
+        annee = annee_req()
+        fiche = request.args.get("fiche") if request.args.get("fiche") in FICHES else "recensement-primaire"
+        cs_id, _zone, typ, sect = filtres()
+        if config.EDITION == "ddemp" and not cs_id:
+            groupes = [(c["nom"], c["id"], None) for c in J.cs_liste()]
+            lib_g = "Circonscription"
+        else:
+            groupes = [(z["nom"], cs_id, z["id"]) for z in J.zones(cs_id)]
+            lib_g = "Zone pédagogique"
+        tot = donnees_synthese(fiche, annee, cs_id, None, typ, sect)
+        vue_tot = vue(fiche, tot["valeurs"], synthese=True)
+        res_g = [donnees_synthese(fiche, annee, c, z, typ, sect) for _n, c, z in groupes]
+        vues = [vue(fiche, r["valeurs"], synthese=True) if r["prises"] else None for r in res_g]
+        rubs = rubriques_chiffrees(vue_tot)
+        try:
+            idx = int(request.args.get("rubrique", ""))
+        except ValueError:
+            idx = None
+        if idx not in rubs:
+            idx = next((i for i in rubs if any(m in _sans_accent(vue_tot[i]["titre"]) for m in ("locaux", "infrastructure"))),
+                       rubs[0] if rubs else None)
+        noms = [n for n, _c, _z in groupes]
+        if request.args.get("format") == "xlsx":
+            haut = [config.ECOLE.get("nom", ""), f"{FICHES[fiche][3]} – tableaux globaux par {lib_g.lower()} – année {annee}"]
+            feuilles, vus = [], set()
+            for i in rubs:
+                lg = comparer(vues, vue_tot, i)
+                if not lg:
+                    continue
+                nom_f = re.sub(r"[\[\]:*?/\\]", " ", vue_tot[i]["titre"])[:28].strip() or f"Rubrique {i}"
+                while nom_f.lower() in vus:
+                    nom_f = nom_f[:25] + f" {len(vus)}"
+                vus.add(nom_f.lower())
+                feuilles.append((nom_f, ["Tableau", "Ligne", "Colonne"] + noms + ["Total"],
+                                 [[x["tableau"], x["ligne"], x["colonne"]] + ["" if v is None else v for v in x["vals"]]
+                                  + ["" if x["total"] is None else x["total"]] for x in lg],
+                                 {"titre_haut": haut + [vue_tot[i]["titre"]]}))
+            feuilles.append(("Écoles", [lib_g, "Fiches reçues", "Écoles attendues"],
+                             [[n, len(r["prises"]), len(r["ecoles"])] for n, r in zip(noms, res_g)]
+                             + [["Total", len(tot["prises"]), len(tot["ecoles"])]], {"titre_haut": haut}))
+            H.journal("jur_fiches_tableaux", f"{fiche} {annee} xlsx")
+            try:
+                return H.xlsx.reponse_classeur(f"tableaux_{fiche}_{annee}.xlsx", feuilles)
+            except H.xlsx.ExcelIndisponible as err:
+                flash(str(err), "danger")
+        lignes = comparer(vues, vue_tot, idx) if idx is not None else []
+        return render_template("jur_fiches_tableaux.html", fiche=fiche, FICHES=FICHES, annee=annee, annees=J.annees(),
+                               cs=J.cs_liste(), cs_id=cs_id, f=request.args, rubs=[(i, vue_tot[i]["titre"]) for i in rubs],
+                               idx=idx, noms=noms, lib_g=lib_g, lignes=lignes,
+                               recues=[len(r["prises"]) for r in res_g], attendues=[len(r["ecoles"]) for r in res_g],
+                               tot_recues=len(tot["prises"]), tot_attendues=len(tot["ecoles"]))
 
     @app.route("/juridiction/fiches/synthese")
     @H.connexion_requise("jur_fiches")

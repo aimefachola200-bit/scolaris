@@ -29,6 +29,8 @@
   <div class="kpi"><div class="l">Réussite au CEP</div><div class="v">{{ cp.taux|jur_pct }}</div><div class="d">{{ cp.admis|jur_nb }} admis / {{ cp.candidats_connus|jur_nb }} candidats</div></div>
 </div>
 
+{% include "_jur_rap.html" %}
+
 {% if not tot.ecoles %}
 <div class="carte"><h2>Aucune école</h2>
   <p>Aucune école n'est encore enregistrée {{ 'dans cette circonscription' if JUR_NIVEAU == 'cs' else 'pour ce périmètre' }}.

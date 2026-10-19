@@ -10,6 +10,20 @@ Application web Python (Flask + SQLite) utilisable sur le réseau de l'école.
 Modules : élèves et inscriptions, classes, saisie des notes et bulletins,
 paiements et reçus, documents officiels avec QR code de vérification.
 
+## Nouveautés de la version 1.10
+
+- **Tableau de bord CS / DDEMP — programmation et bilan des activités pédagogiques** : pour le trimestre choisi
+  (ou le bilan annuel), les **chefs de circonscription (CCS) en premier**, puis les **conseillers pédagogiques** en
+  second plan : réalisé / programmé et taux de réalisation (visites de classes et d'écoles, suivis de directeurs,
+  séances d'UP, formations, concertations). À la DDEMP : bilan transmis par chaque CS, sinon calcul sur les données reçues.
+- **Module « Effectifs »** (Statistiques) : apprenants EP / EM (fiche de recensement), enseignants et directeurs,
+  catégories FE, ACDPE, ACDPCTD (AME), Éducateur, Privé, titulaires du CAP (EP, EM) et du CEAP (EP, EM), par sexe ;
+  par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
+  Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Tableaux globaux des fiches** (Fiches des écoles) : pour la fiche de recensement (EP, EM) et les rapports de
+  rentrée et de fin d'année (EP, EM), chaque rubrique chiffrée (infrastructures, locaux, mobilier, équipements,
+  effectifs, finances…) avec une colonne par CS (DDEMP) ou par zone (CS) et le total ; Excel de toutes les rubriques.
+
 ## Nouveautés de la version 1.9.2
 
 - Le **code d'accès personnel** est **désactivé pour le moment** : l'application s'ouvre comme avant, sans code ni

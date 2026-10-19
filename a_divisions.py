@@ -101,9 +101,11 @@ _TABLEAU = [("Tableau de bord (effectifs, classes par cours, CEP, visites)", "ju
             ("Classes par cours et par zone", "jur_classes", None)]
 _STATS = [("Statistiques des écoles", "jur_stats_ecoles", None),
           ("Effectifs des apprenants (tableaux de recensement)", "jur_stats_effectifs", None),
+          ("Effectifs : apprenants, personnel, catégories, CAP / CEAP (courbes)", "jur_effectifs", None),
           ("Enseignants : besoins et écarts", "jur_stats_enseignants", None)]
 _FICHES = [("Fiches de recensement, de rentrée et de fin d'année des écoles", "jur_fiches", "jur_fiches"),
            ("Fiches consolidées (synthèse)", "jur_fiches_synthese", "jur_fiches"),
+           ("Tableaux globaux des fiches : infrastructures, mobilier, équipements… par CS / zone", "jur_fiches_tableaux", "jur_fiches"),
            ("Fiche de recensement (module des écoles)", "recensement_accueil", None),
            ("Rapports de rentrée et de fin d'année (module des écoles)", "rapports_accueil", None),
            ("Tableau synoptique de l'école", "synoptique_accueil", None)]
@@ -125,6 +127,7 @@ _PEDA = [("Unités pédagogiques (UP) : responsables, activités, taux d'exécut
          ("Comité d'évaluation, épreuves et grilles", "epreuves_accueil", None),
          ("Documents de l'enseignant", "docs_enseignant_accueil", None)]
 _PERS = [("Personnel et carrière (par catégorie)", "jur_personnel", "jur_personnel"),
+         ("Effectifs du personnel : enseignants, directeurs, catégories, CAP / CEAP", "jur_effectifs", None),
          ("Visites d'aptitude et diplômes", "jur_aptitude", "jur_personnel"),
          ("Départs à la retraite", "jur_retraite", "jur_personnel"),
          ("Agents de la structure", "jur_agents", "jur_personnel"),
@@ -185,6 +188,7 @@ MODULES_PAR_DIVISION = {
                  ("Statistiques des écoles", "jur_stats_ecoles", None)],
     "statistiques": _TABLEAU + _STATS + _FICHES + _CEP[:2] + _DONNEES + [("Fiches consolidées", "jur_fiches_synthese", "jur_fiches")],
     "infrastructures": [("Patrimoine et infrastructures", "patrimoine_accueil", None),
+                        ("Tableaux globaux des fiches : infrastructures, mobilier, équipements", "jur_fiches_tableaux", "jur_fiches"),
                         ("Classes par cours et par zone (salles)", "jur_classes", None),
                         ("Statistiques des écoles", "jur_stats_ecoles", None), ("Écoles de la juridiction", "jur_ecoles", "jur_ecoles")],
     # ------------------------------------------------------------------ division ajoutée à la main

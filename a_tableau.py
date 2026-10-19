@@ -56,6 +56,7 @@ COLONNES_ECOLES = [("EP", "public", "Primaires publiques"), ("EP", "prive", "Pri
 LIGNES_72 = [("m45", "Moins de 4 ans et demi"), ("a45", "4 ans et demi"), ("a5", "5 ans"), ("a6", "6 ans"),
              ("a7", "7 ans"), ("a8", "8 ans"), ("a9", "9 ans et plus")]
 COULEUR_G, COULEUR_F, COULEUR_1 = "#2a78d6", "#eb6834", "#2a78d6"
+PERIODES_RAP = {"T1": "1er trimestre", "T2": "2e trimestre", "T3": "3e trimestre", "AN": "Bilan annuel"}
 
 _H = None   # objet H (helpers), fixé par enregistrer()
 
@@ -895,7 +896,19 @@ def enregistrer(app, H):
                    "sans_enseignant": [l for l in lignes if l["besoin"]["manque"]],
                    "plethoriques": [l for l in lignes if l["plethoriques"]],
                    "retraites": retraites(flt["annee"], flt["cs_id"])}
+        # v1.10 : programmation et bilan des activités pédagogiques (CCS puis CP)
+        rap, rap_periode = [], request.args.get("periode")
+        if rap_periode not in PERIODES_RAP:
+            import a_alertes
+            rap_periode = a_alertes.periode_du_jour()[1]
+        if getattr(H, "jur_cp_tableau_rap", None):
+            try:
+                rap = H.jur_cp_tableau_rap(flt["annee"], rap_periode, flt["cs_id"])
+            except Exception:  # noqa: BLE001 — module des CP non configuré : section masquée
+                rap = []
         return render_template("jur_tableau.html", flt=flt, lignes=lignes, tot=tot, grp=grp, par=par,
+                               rap=rap, rap_periode=rap_periode, PERIODES_RAP=PERIODES_RAP,
+                               INDIC_RAP=getattr(H, "jur_cp_indicateurs_rap", []),
                                lib_groupe=_lib_groupe(par), graph_eff=graph_eff, graph_rep=svg_repartition(tot["g"], tot["f"]),
                                graph_ratio=graph_ratio, graph_cep=graph_cep, cep_forts=cep_forts, cep_faibles=cep_faibles,
                                bilan=bilan, source_bilan=source_bilan, tot_bilan=tot_bilan, alertes=alertes,
