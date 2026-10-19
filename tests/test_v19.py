@@ -42,7 +42,12 @@ class TestGardeNotes(unittest.TestCase):
         self.assertEqual(GN.lire("12,5", ""), (12.5, False, None))
         self.assertEqual(GN.lire("D", "1"), (None, True, None))
         self.assertEqual(GN.lire("", ""), (None, False, None))
-        for a, b in (("20", ""), ("20", "0"), ("19", "1.5"), ("15", "3"), ("", "1"), ("abc", ""), ("-1", "")):
+        self.assertEqual(GN.lire("9", "0"), (9.0, False, 0.0))
+        self.assertEqual(GN.lire("9", ""), (9.0, False, None))
+        self.assertEqual(GN.lire("10", "2"), (12.0, False, 2.0))
+        self.assertEqual(GN.lire("19", "1"), (20.0, False, 1.0))
+        for a, b in (("20", ""), ("20", "0"), ("19", "1.5"), ("15", "3"), ("", "1"), ("abc", ""), ("-1", ""),
+                     ("9", "1"), ("9,5", "0.5")):
             with self.assertRaises(GN.NoteRefusee, msg=(a, b)):
                 GN.lire(a, b)
         self.assertEqual(GN.separer("18|2"), ("18", "2"))

@@ -3,8 +3,9 @@
 
 Chaque note chiffrée se saisit en deux cases : la note principale et la note de performance (sur 2).
 * la note principale doit rester STRICTEMENT inférieure à 20 : 20/20 n'est possible qu'avec la note de performance ;
-* la note de performance va de 0 à 2 ;
-* la note retenue (principale + performance) ne dépasse jamais 20.
+* la note de performance va de 0 à 2, et seulement à partir de 10 de note principale : en dessous de la moyenne,
+  pas de perfectionnement (performance 0 ou vide) ;
+* la note retenue (principale + performance) ne dépasse jamais 20 : 19 → performance 1 au plus, 18 → 2 au plus.
 Une case hors de ces règles est affichée en rouge à la saisie et refusée à l'enregistrement.
 La note retenue est rangée dans notes.valeur (moyennes, rangs, bulletins inchangés) et la note de performance
 dans notes.performance.
@@ -55,8 +56,10 @@ def lire(brut_note, brut_perf=None):
             raise NoteRefusee(f"« {p} » n'est pas une note de performance") from None
         if not 0 <= perf <= PERF_MAX:
             raise NoteRefusee(f"note de performance {p} : elle va de 0 à 2")
+        if v < 10 and perf > 0:
+            raise NoteRefusee(f"note principale {s} inférieure à 10 : pas de note de performance (0 ou vide)")
         if v + perf > NOTE_MAX:
-            raise NoteRefusee(f"{s} + {p} dépasse 20")
+            raise NoteRefusee(f"note principale {s} : la note de performance ne peut pas dépasser {max(0, NOTE_MAX - v):g} (somme limitée à 20)")
     total = round(v + (perf or 0), 2)
     return total, False, (round(perf, 2) if perf is not None else None)
 
@@ -95,7 +98,8 @@ window.GardeNotes = (function(){
     if (isNaN(v) || v < 0) { r.errN = true; r.msg = 'note invalide'; }
     else if (v >= 20) { r.errN = true; r.msg = 'la note principale doit rester inférieure à 20 (20/20 seulement avec la performance)'; }
     if (b !== '' && (isNaN(p) || p < 0 || p > 2)) { r.errP = true; r.msg = 'la note de performance va de 0 à 2'; }
-    if (!r.errN && !r.errP && v + p > 20) { r.errN = r.errP = true; r.msg = 'la somme dépasse 20'; }
+    else if (!r.errN && v < 10 && p > 0) { r.errP = true; r.msg = 'note inférieure à 10 : pas de note de performance (0 ou vide)'; }
+    else if (!r.errN && v + p > 20) { r.errP = true; r.msg = 'performance limitée à ' + (Math.round((20 - v) * 100) / 100) + ' pour une note principale de ' + a; }
     if (!r.errN && !r.errP) r.note = Math.round((v + p) * 100) / 100;
     return r;
   }

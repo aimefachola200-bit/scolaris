@@ -100,7 +100,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
 {% if mat %}
 <p class="aide">Choisissez l'appréciation de chaque domaine : <b>A</b> = acquis, <b>ECA</b> = en cours d'acquisition, <b>NA</b> = non acquis, <b>D</b> = dispensé.</p>
 {% else %}
-<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2) ; la note retenue est leur somme, 20 au plus. <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 n'est possible qu'avec la performance), performance supérieure à 2 ou somme supérieure à 20 — elle ne sera pas enregistrée. <b>D</b> = dispensé, case vide = pas de note. <b>Entrée</b> passe à l'élève suivant (même matière).
+<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2), accordée seulement à partir de 10 ; la note retenue est leur somme, 20 au plus (19 → performance 1 au plus). <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 n'est possible qu'avec la performance), performance avec une note inférieure à 10, performance supérieure à 2 ou somme supérieure à 20 — elle ne sera pas enregistrée. <b>D</b> = dispensé, case vide = pas de note. <b>Entrée</b> passe à l'élève suivant (même matière).
   {% if prim %}<b>MAÎTRISE</b> : {{ seuil_txt }} — seule condition de réussite ; la moyenne sert au rang.
   {% elif cl.niveau in ['6ème','5ème'] %}Moyenne simple (pas de coefficient en 6ème/5ème) ; admis si moyenne ≥ 10.
   {% else %}Moyenne pondérée par les coefficients ; admis si moyenne ≥ 10.{% endif %}

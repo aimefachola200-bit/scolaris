@@ -14,8 +14,10 @@ paiements et reçus, documents officiels avec QR code de vérification.
 
 - **Garde-fou de la saisie des notes** (saisie des évaluations et notes par période) : chaque matière se saisit en
   deux cases, la **note principale** et la **note de performance** (case « P », sur 2) ; la note retenue est leur
-  somme. La case passe au **rouge** dès que la note principale atteint 20 (20/20 n'est possible qu'avec la note de
-  performance), que la performance dépasse 2 ou que la somme dépasse 20 ; ces valeurs sont refusées à l'enregistrement.
+  somme. Le perfectionnement n'est accordé qu'à partir de 10 (en dessous, la note reste telle quelle, performance 0) ;
+  la somme ne dépasse jamais 20 (19 → performance 1 au plus). La case passe au **rouge** dès que la note principale
+  atteint 20 (20/20 n'est possible qu'avec la performance), qu'une performance accompagne une note inférieure à 10,
+  que la performance dépasse 2 ou que la somme dépasse 20 ; ces valeurs sont refusées à l'enregistrement.
 - **Code d'accès personnel** : chaque compte doit saisir, une fois, le code délivré par le concepteur (Maître Aimé
   FACHE). Le code est lié au compte et à l'installation, n'expire pas, et se demande en un toucher par WhatsApp depuis
   la page « Code d'accès » ; l'administrateur ou le directeur envoie toutes les demandes et colle tous les codes en une

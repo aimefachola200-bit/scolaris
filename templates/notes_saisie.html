@@ -16,7 +16,7 @@
 {% if mat %}
 <p class="aide">Choisissez l'appréciation de chaque domaine. « D » = dispensé. La colonne Observation apparaît sur le livret remis aux parents.</p>
 {% else %}
-<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2) ; la note retenue est leur somme, 20 au plus. <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 seulement avec la performance), performance supérieure à 2 ou somme supérieure à 20 — elle n'est pas enregistrée. <b>D</b> = dispensé ; vide = matière pas encore évaluée. Entrée passe à la case suivante. L'observation apparaît sur le bulletin.</p>
+<p class="aide">Pour chaque matière : <b>note principale</b> (inférieure à 20) puis, dans la petite case <b>P</b>, la <b>note de performance</b> (0 à 2), accordée seulement à partir de 10 ; la note retenue est leur somme, 20 au plus (19 → performance 1 au plus). <span style="color:#B42318;font-weight:700">Case rouge</span> : note principale ≥ 20 (20/20 seulement avec la performance), performance avec une note inférieure à 10, performance supérieure à 2 ou somme supérieure à 20 — elle n'est pas enregistrée. <b>D</b> = dispensé ; vide = matière pas encore évaluée. Entrée passe à la case suivante. L'observation apparaît sur le bulletin.</p>
 <style>.np{display:inline-flex;gap:2px;align-items:center}.np input.n{width:48px}.np input.perf{width:34px;font-size:12px;background:#F5F8FF;border-style:dashed}
 input.err{outline:2px solid #B42318!important;background:#FEE4E2!important;color:#B42318;font-weight:700}</style>
 {% endif %}
