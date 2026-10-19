@@ -8,12 +8,16 @@ Une seule page (/juridiction/effectifs) qui rassemble, par sexe, d'après les fi
   3. les catégories : FE, ACDPE, ACDPCTD (AME), Éducateur, Privé, Autre ;
   4. les diplômes professionnels : CAP (EP, EM) et CEAP (EP, EM) ;
   5. les diplômes académiques et universitaires (CEP … Doctorat) ;
-  6. le SECTEUR PRIVÉ À PART : écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées.
+  6. le SECTEUR PRIVÉ À PART : écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées ;
+  7. (v1.10.3) les CATÉGORIES D'ÂGE des apprenants du primaire, de « moins de 5 ans » à « 16 ans et plus » (tableau
+     7.3 de la fiche de recensement), par sexe et par cours (CI … CM2), avec pourcentages, âge moyen et écart type ;
+     secteur public, et secteur privé à part.
 Les rubriques 1 à 5 ne comptent que le secteur public.
 Chaque tableau est ventilé par circonscription (DDEMP), par zone pédagogique (CS ou CS choisie à la DDEMP) ou par
 école (au choix), avec une COURBE par tableau ; export Excel. La page est rattachée aux divisions chargées des
 statistiques (CDOSP / DOSP, statistiques) et des ressources humaines (RH / SRH) — voir a_divisions.
 """
+import math
 import unicodedata
 
 from flask import abort, render_template, request
@@ -89,10 +93,11 @@ def nouveau_groupe(nom):
             "app": {"ep": {"g": 0, "f": 0, "t": 0}, "em": {"g": 0, "f": 0, "t": 0}, "t": {"g": 0, "f": 0, "t": 0}},
             "ens": vide_hf(), "dir": vide_hf(), "tous": vide_hf(),
             "cat": {k: vide_hf() for k, _ in CATS}, "dip": {k: vide_hf() for k, _ in DIPLOMES},
-            "aca": {k: vide_hf() for k, _ in ACADEMIQUES},
+            "aca": {k: vide_hf() for k, _ in ACADEMIQUES}, "ages": nouvelle_repartition(),
             "prive": {"ecoles": 0, "app": {"ep": {"g": 0, "f": 0, "t": 0}, "em": {"g": 0, "f": 0, "t": 0},
                                            "t": {"g": 0, "f": 0, "t": 0}},
-                      "cap": vide_hf(), "ceap": vide_hf(), **{k: vide_hf() for k, _ in PRIVE}}}
+                      "cap": vide_hf(), "ceap": vide_hf(), "ages": nouvelle_repartition(),
+                      **{k: vide_hf() for k, _ in PRIVE}}}
 
 
 def calculer(lignes, personnel, par):
@@ -114,12 +119,15 @@ def calculer(lignes, personnel, par):
         de_ecole[l["id"]] = (g, l["type"], prive)
         em = l["type"] in ("EM", "EE")
         e = l.get("eff") or {}
+        rep = ages_ecole(l) if l.get("type") == "EP" else None
         for x in (g, tot):
             cible = x["prive"] if prive else x
             cible["ecoles"] += 1
             for niv in ("em" if em else "ep", "t"):
                 for s_ in ("g", "f", "t"):
                     cible["app"][niv][s_] += int(e.get(s_) or 0)
+            if rep:
+                cumuler(cible["ages"], rep)
     for p in personnel:
         if p.get("actif") is False:
             continue
@@ -152,6 +160,99 @@ def calculer(lignes, personnel, par):
                 ajouter(x["dip"]["ceap_em" if em else "ceap_ep"], sx)
             ajouter(x["aca"][diplome_academique(p.get("diplome_academique"))], sx)
     return list(grp.values()), tot
+
+
+# ======================================================================== 7. catégories d'âge (primaire)
+COURS = ["CI", "CP", "CE1", "CE2", "CM1", "CM2"]
+# (clé, libellé, âge retenu pour l'âge moyen et l'écart type : 4 ans pour « moins de 5 ans », 16 pour « 16 et plus »)
+AGES = [("m5", "Moins de 5 ans", 4)] + [(f"a{i}", f"{i} ans", i) for i in range(5, 16)] + [("a16", "16 ans et plus", 16)]
+
+
+def cle_age(a):
+    return "m5" if a < 5 else ("a16" if a >= 16 else f"a{a}")
+
+
+def _ent(v):
+    try:
+        return max(0, int(round(float(str(v).replace(",", ".").replace(" ", "")))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _cours(n):
+    nn = _sans_accent(n).upper().replace(" ", "")
+    return nn if nn in COURS else None
+
+
+def ages_ecole(l):
+    """Répartition âge × cours × sexe d'une école primaire : {cle_age: {cours: [g, f]}}.
+    Source : les âges des élèves (section effectifs, âge au 31 décembre) ; à défaut, le tableau 7.3 de la fiche de
+    recensement (t73.<âge>.<cours>_g / _f)."""
+    d = {k: {c: [0, 0] for c in COURS} for k, _l, _a in AGES}
+    vu = False
+    for niv, dist in ((l.get("_sec_eff") or {}).get("ages") or {}).items():
+        c = _cours(niv)
+        if not c or not isinstance(dist, dict):
+            continue
+        for age, gf in dist.items():
+            try:
+                a = int(float(age))
+            except (TypeError, ValueError):
+                continue
+            if isinstance(gf, (list, tuple)) and len(gf) >= 2:
+                d[cle_age(a)][c][0] += _ent(gf[0])
+                d[cle_age(a)][c][1] += _ent(gf[1])
+                vu = vu or bool(_ent(gf[0]) or _ent(gf[1]))
+    if not vu:
+        val = (((l.get("_rec") or {}).get("primaire") or {}).get("valeurs") or {})
+        for k, _l, _a in AGES:
+            kr = "a4" if k == "m5" else k                       # « moins de 5 ans » = ligne a4 de la fiche
+            for c in COURS:
+                d[k][c][0] += _ent(val.get(f"t73.{kr}.{c.lower()}_g"))
+                d[k][c][1] += _ent(val.get(f"t73.{kr}.{c.lower()}_f"))
+    return d
+
+
+def nouvelle_repartition():
+    return {k: {c: [0, 0] for c in COURS} for k, _l, _a in AGES}
+
+
+def cumuler(dest, d):
+    for k in dest:
+        for c in COURS:
+            dest[k][c][0] += d[k][c][0]
+            dest[k][c][1] += d[k][c][1]
+
+
+def moyenne_ecart(effectifs):
+    """effectifs : [(âge, nombre)] → (moyenne, écart type de la population) ; (None, None) si vide."""
+    n = sum(x for _a, x in effectifs)
+    if not n:
+        return None, None
+    m = sum(a * x for a, x in effectifs) / n
+    v = sum(x * (a - m) ** 2 for a, x in effectifs) / n
+    return round(m, 2), round(math.sqrt(v), 2)
+
+
+def tableau_ages(rep):
+    """Tableau final : lignes par catégorie d'âge, colonnes par cours puis ENSEMBLE, chaque fois G / F / T
+    avec le pourcentage de la colonne ; lignes Total, Âge moyen, Écart type."""
+    cols = COURS + ["ENS"]
+
+    def val(k, c, i):           # i : 0 = G, 1 = F, 2 = T
+        cs = COURS if c == "ENS" else [c]
+        g = sum(rep[k][x][0] for x in cs)
+        f = sum(rep[k][x][1] for x in cs)
+        return (g, f, g + f)[i]
+
+    tot = {c: [sum(val(k, c, i) for k, _l, _a in AGES) for i in range(3)] for c in cols}
+    lignes = []
+    for k, lib, _a in AGES:
+        cells = {c: [(val(k, c, i), round(100.0 * val(k, c, i) / tot[c][i], 1) if tot[c][i] else None)
+                     for i in range(3)] for c in cols}
+        lignes.append({"cle": k, "lib": lib, "cells": cells})
+    stats = {c: [moyenne_ecart([(a, val(k, c, i)) for k, _l, a in AGES]) for i in range(3)] for c in cols}
+    return {"cols": cols, "lignes": lignes, "tot": tot, "stats": stats, "vide": not tot["ENS"][2]}
 
 
 def _t(s):
@@ -255,6 +356,25 @@ def enregistrer(app, H):
                                         ("Directeurs", PALETTE[3], [g["prive"]["dir"]["t"] for g in grp])],
                                  "Secteur privé"),
         }
+        # 7. catégories d'âge : tableau global (public / privé à part) et âge moyen ± écart type par regroupement
+        ages = {"pub": tableau_ages(tot["ages"]), "prv": tableau_ages(tot["prive"]["ages"])}
+        for g in grp:
+            t_ = tableau_ages(g["ages"])
+            g["age_stats"] = t_["stats"]["ENS"]
+            g["age_eff"] = t_["tot"]["ENS"]
+        lib_ages = [lib_ for _k, lib_, _a in AGES]
+        lib_ages_c = ["< 5"] + [str(i) for i in range(5, 16)] + ["16 +"]
+        ta = ages["pub"]
+        courbes["ages"] = svg_courbes(lib_ages_c, [("Garçons", PALETTE[0], [x["cells"]["ENS"][0][0] for x in ta["lignes"]]),
+                                                   ("Filles", PALETTE[1], [x["cells"]["ENS"][1][0] for x in ta["lignes"]]),
+                                                   ("Total", PALETTE[2], [x["cells"]["ENS"][2][0] for x in ta["lignes"]])],
+                                      "Apprenants du primaire par âge")
+        courbes["ages_cours"] = svg_courbes(lib_ages_c, [(c, PALETTE[i], [x["cells"][c][2][0] for x in ta["lignes"]])
+                                                         for i, c in enumerate(COURS)], "Âges par cours")
+        courbes["ages_grp"] = svg_courbes(noms, [("Âge moyen – G", PALETTE[0], [g["age_stats"][0][0] for g in grp]),
+                                                 ("Âge moyen – F", PALETTE[1], [g["age_stats"][1][0] for g in grp]),
+                                                 ("Écart type", PALETTE[3], [g["age_stats"][2][1] for g in grp])],
+                                          "Âge moyen et écart type")
         if request.args.get("export") == "xlsx":
             haut = [config.ECOLE.get("nom", ""), f"Effectifs – année {flt['annee']} – par {lib.lower()}"]
             lst = grp + [tot]
@@ -280,8 +400,23 @@ def enregistrer(app, H):
                         lambda g: [g["prive"]["ecoles"]] + [g["prive"]["app"][n][s] for n in ("ep", "em", "t") for s in ("g", "f", "t")]
                         + [g["prive"][k][s] for k, _l in PRIVE for s in ("h", "f", "t")]),
             ]
+            def feuille_ages(nom, t_):
+                ent = ["Catégorie d'âge"] + [f"{c if c != 'ENS' else 'Ensemble'} – {s_}{' %' if p_ else ''}"
+                                             for c in t_["cols"] for s_ in ("G", "F", "T") for p_ in (0, 1)]
+                rows = [[x["lib"]] + [x["cells"][c][i][p_] for c in t_["cols"] for i in range(3) for p_ in (0, 1)]
+                        for x in t_["lignes"]]
+                rows.append(["Total"] + [v for c in t_["cols"] for i in range(3) for v in (t_["tot"][c][i], 100.0 if t_["tot"][c][i] else None)])
+                rows.append(["Âge moyen (ans)"] + [v for c in t_["cols"] for i in range(3) for v in (t_["stats"][c][i][0], None)])
+                rows.append(["Écart type (ans)"] + [v for c in t_["cols"] for i in range(3) for v in (t_["stats"][c][i][1], None)])
+                return (nom, ent, rows, {"titre_haut": haut + ["Âge au 31 décembre ; « moins de 5 ans » compté 4 ans et « 16 ans et plus » 16 ans pour l'âge moyen et l'écart type"]})
+            feuilles += [feuille_ages("Âges (public)", ages["pub"]), feuille_ages("Âges (privé)", ages["prv"]),
+                         (f"Âges par {lib.lower()}"[:31], [lib, "Élèves – G", "Élèves – F", "Élèves", "Âge moyen – G", "Âge moyen – F",
+                                                    "Âge moyen", "Écart type – G", "Écart type – F", "Écart type"],
+                          [[g["nom"]] + list(g["age_eff"]) + [g["age_stats"][i][0] for i in range(3)] + [g["age_stats"][i][1] for i in range(3)]
+                           for g in grp] + [["Total"] + list(ages["pub"]["tot"]["ENS"]) + [ages["pub"]["stats"]["ENS"][i][0] for i in range(3)]
+                                            + [ages["pub"]["stats"]["ENS"][i][1] for i in range(3)]], {"titre_haut": haut})]
             H.journal("jur_effectifs", f"{flt['annee']} xlsx")
             return H.xlsx.reponse_classeur(f"effectifs_{flt['annee']}_par_{par}.xlsx", feuilles)
         return render_template("jur_effectifs.html", flt=flt, par=par, lib=lib, grp=grp, tot=tot, CATS=CATS,
-                               DIPLOMES=DIPLOMES, ACADEMIQUES=ACADEMIQUES, PRIVE=PRIVE, courbes=courbes, args=T.args_filtres(flt, par=par),
+                               DIPLOMES=DIPLOMES, ACADEMIQUES=ACADEMIQUES, PRIVE=PRIVE, courbes=courbes, ages=ages, args=T.args_filtres(flt, par=par),
                                args0=T.args_filtres(flt))

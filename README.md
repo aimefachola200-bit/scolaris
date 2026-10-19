@@ -21,6 +21,8 @@ paiements et reçus, documents officiels avec QR code de vérification.
   **diplômes académiques et universitaires** (CEP, BEPC, BAC, BAC + 2, Licence, Maîtrise, Master / DEA / DESS,
   Doctorat) ; le **secteur privé à part** (v1.10.2) : les rubriques 1 à 5 ne comptent que le public, et une
   rubrique propre au privé donne écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées ;
+  les **catégories d'âge** des apprenants du primaire (v1.10.3), de « moins de 5 ans » à « 16 ans et plus »,
+  par sexe et par cours (CI … CM2), avec pourcentages, âge moyen et écart type (public, et privé à part) ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
 - **Tableaux globaux des fiches** (Fiches des écoles) : pour la fiche de recensement (EP, EM) et les rapports de

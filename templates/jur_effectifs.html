@@ -1,6 +1,16 @@
 {% extends "base.html" %}{% import "jur_tableau_commun.html" as T with context %}
 {% block titre %}Effectifs{% endblock %}
 {% block contenu %}
+{% macro tab_ages(t) %}{% if t.vide %}<p class="aide">Aucun âge déclaré pour ces écoles (ni âges des élèves, ni tableau 7.3 de la fiche de recensement).</p>{% else %}
+  <div class="tw"><table class="t serre ages">
+    <tr><th rowspan="2">Catégorie d'âge</th>{% for c in t.cols %}<th colspan="3" class="grp">{{ 'Ensemble' if c == 'ENS' else c }}</th>{% endfor %}</tr>
+    <tr>{% for _ in t.cols %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
+    {% for x in t.lignes %}<tr><td>{{ x.lib }}</td>{% for c in t.cols %}{% for v, pc in x.cells[c] %}<td class="num{{ ' ens' if c == 'ENS' }}">{% if loop.index == 3 %}<b>{{ v|jur_nb }}</b>{% else %}{{ v|jur_nb }}{% endif %}{% if pc is not none and v %}<br><small class="pc">{{ ("%.1f"|format(pc))|replace('.', ',') }} %</small>{% endif %}</td>{% endfor %}{% endfor %}</tr>{% endfor %}
+    <tr class="b"><td>Total</td>{% for c in t.cols %}{% for v in t.tot[c] %}<td class="num">{{ v|jur_nb }}{% if v %}<br><small class="pc">100 %</small>{% endif %}</td>{% endfor %}{% endfor %}</tr>
+    <tr class="b stat"><td>Âge moyen (ans)</td>{% for c in t.cols %}{% for m, e in t.stats[c] %}<td class="num">{{ ("%.2f"|format(m))|replace('.', ',') if m is not none else '–' }}</td>{% endfor %}{% endfor %}</tr>
+    <tr class="b stat"><td>Écart type (ans)</td>{% for c in t.cols %}{% for m, e in t.stats[c] %}<td class="num">{{ ("%.2f"|format(e))|replace('.', ',') if e is not none else '–' }}</td>{% endfor %}{% endfor %}</tr>
+  </table></div>{% endif %}{% endmacro %}
+<style>.ages small.pc{color:#6b7280;font-size:.72em;white-space:nowrap}.ages td.ens{background:#f5f7fb}.ages tr.stat td{background:#fff8e1}</style>
 {{ T.styles() }}
 <div class="entete"><div><h1>👥 Effectifs : apprenants et personnel enseignant</h1>
   <p class="sous">{{ tot.ecoles }} école(s) · année scolaire {{ flt.annee }} · par {{ lib|lower }} · d'après les fiches de recensement et l'état nominatif transmis par les écoles</p></div>
@@ -93,6 +103,29 @@
   <h3>Courbe des apprenants du privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive_app }}</div>
   <h3>Courbe du personnel du privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive }}</div>
 </div>
+</div>
+
+<div class="carte"><h2>7. Catégories d'âge des apprenants du primaire, par sexe et par cours (secteur public)</h2>
+  {{ tab_ages(ages.pub) }}
+  <p class="aide">Âge au 31 décembre (tableau 7.3 de la fiche de recensement), d'après les âges des élèves transmis par l'école ou, à défaut, le tableau 7.3 de sa fiche.
+    Pourcentage : part de la catégorie d'âge dans l'effectif du cours et du sexe (colonne). Âge moyen et écart type (de la population) : « moins de 5 ans » compté 4 ans, « 16 ans et plus » compté 16 ans.</p>
+  {% if not ages.pub.vide %}
+  <h3>Courbe des âges (ensemble des cours) par sexe</h3><div class="tw">{{ courbes.ages }}</div>
+  <h3>Courbe des âges par cours</h3><div class="tw">{{ courbes.ages_cours }}</div>
+  <h3>Âge moyen et écart type par {{ lib|lower }}</h3>
+  <div class="tw"><table class="t serre">
+    <tr><th rowspan="2">{{ lib }}</th><th colspan="3" class="grp">Élèves dont l'âge est connu</th><th colspan="3" class="grp">Âge moyen (ans)</th><th colspan="3" class="grp">Écart type (ans)</th></tr>
+    <tr>{% for _ in range(3) %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
+    {% for g in grp %}<tr><td>{{ g.nom }}</td>{% for v in g.age_eff %}<td class="num">{{ v|jur_nb }}</td>{% endfor %}
+      {% for m, e in g.age_stats %}<td class="num">{{ ("%.2f"|format(m))|replace('.', ',') if m is not none else '–' }}</td>{% endfor %}
+      {% for m, e in g.age_stats %}<td class="num">{{ ("%.2f"|format(e))|replace('.', ',') if e is not none else '–' }}</td>{% endfor %}</tr>{% endfor %}
+    <tr class="b"><td>Total</td>{% for v in ages.pub.tot.ENS %}<td class="num">{{ v|jur_nb }}</td>{% endfor %}
+      {% for m, e in ages.pub.stats.ENS %}<td class="num">{{ ("%.2f"|format(m))|replace('.', ',') if m is not none else '–' }}</td>{% endfor %}
+      {% for m, e in ages.pub.stats.ENS %}<td class="num">{{ ("%.2f"|format(e))|replace('.', ',') if e is not none else '–' }}</td>{% endfor %}</tr>
+  </table></div>
+  <div class="tw">{{ courbes.ages_grp }}</div>{% endif %}
+  <details style="margin-top:12px"{% if not ages.prv.vide %} open{% endif %}><summary><b style="color:#8e44ad">Secteur privé (à part) : catégories d'âge par sexe et par cours</b></summary>
+    {{ tab_ages(ages.prv) }}</details>
 </div>
 {% endif %}
 {% endblock %}

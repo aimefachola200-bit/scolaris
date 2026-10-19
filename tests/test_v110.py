@@ -79,6 +79,31 @@ class TestRegles(unittest.TestCase):
         self.assertEqual((tot["prive"]["ecoles"], tot["prive"]["app"]["em"]["t"], tot["prive"]["ens"]["h"],
                           tot["prive"]["dir"]["f"], tot["prive"]["em"]["t"]), (1, 2, 1, 1, 2))
 
+    def test_ages(self):
+        self.assertEqual((E.cle_age(3), E.cle_age(5), E.cle_age(11), E.cle_age(19)), ("m5", "a5", "a11", "a16"))
+        self.assertEqual(E.moyenne_ecart([(6, 1), (8, 1)]), (7.0, 1.0))
+        self.assertEqual(E.moyenne_ecart([(6, 0)]), (None, None))
+        sec = {"ages": {"CI": {"6": [3, 1], "4": [1, 0]}, "CM2": {"11": [0, 2], "17": [1, 0]}}}
+        rec = {"primaire": {"valeurs": {"t73.a4.ci_g": 5, "t73.a7.cp_f": 2}}}
+        lignes = [{"id": 1, "nom": "A", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {}, "_sec_eff": sec, "_rec": rec},
+                  {"id": 2, "nom": "B", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 2,
+                   "zone_nom": "Z2", "eff": {}, "_sec_eff": {}, "_rec": rec},          # repli sur le 7.3 de la fiche
+                  {"id": 3, "nom": "P", "type": "EP", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {}, "_sec_eff": {"ages": {"CE1": {"8": [2, 2]}}}, "_rec": {}}]
+        grp, tot = E.calculer(lignes, [], "zone")
+        t = E.tableau_ages(tot["ages"])
+        lg = {x["cle"]: x for x in t["lignes"]}
+        self.assertEqual(lg["m5"]["cells"]["CI"][0][0], 6)                   # 1 (âges) + 5 (fiche)
+        self.assertEqual(lg["a16"]["cells"]["CM2"][2][0], 1)
+        self.assertEqual(t["tot"]["ENS"], [10, 5, 15])
+        self.assertEqual(lg["a6"]["cells"]["CI"][0][1], round(100 * 3 / 9, 1))  # 3 G de 6 ans sur 9 G au CI
+        self.assertEqual(t["stats"]["CI"][1], (6.0, 0.0))                    # 1 F de 6 ans
+        m, e = t["stats"]["ENS"][2]
+        self.assertTrue(m and e and e > 0)
+        p = E.tableau_ages(tot["prive"]["ages"])
+        self.assertEqual((p["tot"]["CE1"], p["stats"]["CE1"][2]), ([2, 2, 4], (8.0, 0.0)))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -128,7 +153,8 @@ assert 0 < i_ccs < i_cp, (i_ccs, i_cp)                      # les CCS avant les 
 assert "1 / 10" in t.replace("<span class=\"gris\"> / ", " / ").replace("</span>", ""), "suivi du CCS : 1 réalisé / 10 programmés"
 t = txt(ok(c.get("/juridiction/effectifs")))
 for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducateur", "CAP – EP", "CEAP – EM", "<polyline",
-          "5. Diplômes académiques", "Licence", "Doctorat", "6. Secteur privé (à part)", "Écoles privées (à part)"):
+          "5. Diplômes académiques", "Licence", "Doctorat", "6. Secteur privé (à part)", "Écoles privées (à part)", "7. Catégories d'âge", "Moins de 5 ans",
+          "16 ans et plus", "Écart type", "Âge moyen"):
     assert k in t, k
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"
