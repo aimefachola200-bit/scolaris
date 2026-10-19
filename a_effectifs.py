@@ -8,7 +8,8 @@ Une seule page (/juridiction/effectifs) qui rassemble, par sexe, d'après les fi
   3. les catégories : FE, ACDPE, ACDPCTD (AME), Éducateur, Privé, Autre ;
   4. les diplômes professionnels : CAP (EP, EM) et CEAP (EP, EM) ;
   5. les diplômes académiques et universitaires (CEP … Doctorat) ;
-  6. les enseignants et directeurs du secteur privé (EP, EM).
+  6. le SECTEUR PRIVÉ À PART : écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées.
+Les rubriques 1 à 5 ne comptent que le secteur public.
 Chaque tableau est ventilé par circonscription (DDEMP), par zone pédagogique (CS ou CS choisie à la DDEMP) ou par
 école (au choix), avec une COURBE par tableau ; export Excel. La page est rattachée aux divisions chargées des
 statistiques (CDOSP / DOSP, statistiques) et des ressources humaines (RH / SRH) — voir a_divisions.
@@ -28,7 +29,8 @@ DIPLOMES = [("cap_ep", "CAP – EP"), ("cap_em", "CAP – EM"), ("ceap_ep", "CEA
 ACADEMIQUES = [("cep", "CEP"), ("bepc", "BEPC"), ("bac", "BAC"), ("bac2", "BAC + 2 (DEUG, DUT, BTS)"),
                ("licence", "Licence"), ("maitrise", "Maîtrise"), ("master", "Master / DEA / DESS"),
                ("doctorat", "Doctorat"), ("autre", "Autre"), ("nr", "Non renseigné")]
-PRIVE = [("ens", "Enseignants"), ("dir", "Directeurs"), ("ep", "dont EP"), ("em", "dont EM")]
+PRIVE = [("ens", "Enseignants"), ("dir", "Directeurs"), ("ep", "Personnel EP"), ("em", "Personnel EM"),
+         ("cap", "CAP"), ("ceap", "CEAP")]
 PALETTE = ["#2a78d6", "#eb6834", "#1b7f3b", "#8e44ad", "#c99a06", "#d6336c", "#0f766e", "#64748b"]
 
 
@@ -82,16 +84,20 @@ def ajouter(d, sx):
 
 
 def nouveau_groupe(nom):
+    """Rubriques 1 à 5 : secteur PUBLIC seulement ; le secteur privé est compté à part (rubrique 6, « prive »)."""
     return {"nom": nom, "ecoles": 0,
             "app": {"ep": {"g": 0, "f": 0, "t": 0}, "em": {"g": 0, "f": 0, "t": 0}, "t": {"g": 0, "f": 0, "t": 0}},
             "ens": vide_hf(), "dir": vide_hf(), "tous": vide_hf(),
             "cat": {k: vide_hf() for k, _ in CATS}, "dip": {k: vide_hf() for k, _ in DIPLOMES},
             "aca": {k: vide_hf() for k, _ in ACADEMIQUES},
-            "prive": {"ecoles": 0, **{k: vide_hf() for k, _ in PRIVE}}}
+            "prive": {"ecoles": 0, "app": {"ep": {"g": 0, "f": 0, "t": 0}, "em": {"g": 0, "f": 0, "t": 0},
+                                           "t": {"g": 0, "f": 0, "t": 0}},
+                      "cap": vide_hf(), "ceap": vide_hf(), **{k: vide_hf() for k, _ in PRIVE}}}
 
 
 def calculer(lignes, personnel, par):
-    """lignes : écoles (a_tableau.donnees) ; personnel : J.personnel(...). Renvoie (groupes, total)."""
+    """lignes : écoles (a_tableau.donnees) ; personnel : J.personnel(...). Renvoie (groupes, total).
+    Les écoles privées et leur personnel ne sont comptés QUE dans la rubrique « prive » (secteur privé à part)."""
     def cle_nom(l):
         if par == "cs":
             return l["cs_id"], l["cs_nom"] or "Sans circonscription"
@@ -104,30 +110,38 @@ def calculer(lignes, personnel, par):
     for l in lignes:
         k, nom = cle_nom(l)
         g = grp.setdefault(k, nouveau_groupe(nom))
-        de_ecole[l["id"]] = (g, l["type"], l.get("secteur"))
+        prive = l.get("secteur") == "prive"
+        de_ecole[l["id"]] = (g, l["type"], prive)
         em = l["type"] in ("EM", "EE")
-        if l.get("secteur") == "prive":
-            g["prive"]["ecoles"] += 1
-            tot["prive"]["ecoles"] += 1
         e = l.get("eff") or {}
         for x in (g, tot):
-            x["ecoles"] += 1
+            cible = x["prive"] if prive else x
+            cible["ecoles"] += 1
             for niv in ("em" if em else "ep", "t"):
                 for s_ in ("g", "f", "t"):
-                    x["app"][niv][s_] += int(e.get(s_) or 0)
+                    cible["app"][niv][s_] += int(e.get(s_) or 0)
     for p in personnel:
         if p.get("actif") is False:
             continue
         g_t = de_ecole.get(p.get("ecole_id"))
         if not g_t:
             continue
-        g, typ, secteur = g_t
+        g, typ, prive = g_t
         role = p.get("role") or ""
         if role not in ("enseignant", "adjoint", "directeur"):
             continue
         sx = sexe(p)
         em = (p.get("ecole_type") or typ) in ("EM", "EE")
         for x in (g, tot):
+            if prive:
+                pv = x["prive"]
+                ajouter(pv["dir" if role == "directeur" else "ens"], sx)
+                ajouter(pv["em" if em else "ep"], sx)
+                if oui(p.get("cap")):
+                    ajouter(pv["cap"], sx)
+                if oui(p.get("ceap")):
+                    ajouter(pv["ceap"], sx)
+                continue
             ajouter(x["dir" if role == "directeur" else "ens"], sx)
             ajouter(x["tous"], sx)
             ajouter(x["cat"][categorie(p)], sx)
@@ -137,9 +151,6 @@ def calculer(lignes, personnel, par):
             if oui(p.get("ceap")):
                 ajouter(x["dip"]["ceap_em" if em else "ceap_ep"], sx)
             ajouter(x["aca"][diplome_academique(p.get("diplome_academique"))], sx)
-            if secteur == "prive" or categorie(p) == "PRIVE":
-                ajouter(x["prive"]["dir" if role == "directeur" else "ens"], sx)
-                ajouter(x["prive"]["em" if em else "ep"], sx)
     return list(grp.values()), tot
 
 
@@ -235,6 +246,10 @@ def enregistrer(app, H):
                                "CAP et CEAP"),
             "aca": svg_courbes(noms, [(l, PALETTE[i % len(PALETTE)], [g["aca"][k]["t"] for g in grp])
                                       for i, (k, l) in enumerate(ACADEMIQUES[:8])], "Diplômes académiques"),
+            "prive_app": svg_courbes(noms, [("Garçons", PALETTE[0], [g["prive"]["app"]["t"]["g"] for g in grp]),
+                                            ("Filles", PALETTE[1], [g["prive"]["app"]["t"]["f"] for g in grp]),
+                                            ("Total", PALETTE[2], [g["prive"]["app"]["t"]["t"] for g in grp])],
+                                     "Apprenants du privé"),
             "prive": svg_courbes(noms, [("Enseignants – H", PALETTE[0], [g["prive"]["ens"]["h"] for g in grp]),
                                         ("Enseignants – F", PALETTE[1], [g["prive"]["ens"]["f"] for g in grp]),
                                         ("Directeurs", PALETTE[3], [g["prive"]["dir"]["t"] for g in grp])],
@@ -247,7 +262,7 @@ def enregistrer(app, H):
             def feuille(nom, colonnes, valeurs):
                 return (nom, [lib, "Écoles"] + colonnes, [[g["nom"], g["ecoles"]] + valeurs(g) for g in lst], {"titre_haut": haut})
             feuilles = [
-                feuille("Apprenants", ["EP – G", "EP – F", "EP – T", "EM – G", "EM – F", "EM – T", "Total – G", "Total – F", "Total"],
+                feuille("Apprenants (public)", ["EP – G", "EP – F", "EP – T", "EM – G", "EM – F", "EM – T", "Total – G", "Total – F", "Total"],
                         lambda g: [g["app"][n][s] for n in ("ep", "em", "t") for s in ("g", "f", "t")]),
                 feuille("Personnel", ["Enseignants – H", "Enseignants – F", "Enseignants", "Directeurs – H", "Directeurs – F",
                                       "Directeurs", "Ensemble – H", "Ensemble – F", "Ensemble"],
@@ -258,8 +273,12 @@ def enregistrer(app, H):
                         lambda g: [g["dip"][k][s] for k, _l in DIPLOMES for s in ("h", "f", "t")]),
                 feuille("Diplômes académiques", [f"{l} – {s.upper()}" if s != "t" else l for _k, l in ACADEMIQUES for s in ("h", "f", "t")],
                         lambda g: [g["aca"][k][s] for k, _l in ACADEMIQUES for s in ("h", "f", "t")]),
-                feuille("Secteur privé", ["Écoles privées"] + [f"{l} – {s.upper()}" if s != "t" else l for _k, l in PRIVE for s in ("h", "f", "t")],
-                        lambda g: [g["prive"]["ecoles"]] + [g["prive"][k][s] for k, _l in PRIVE for s in ("h", "f", "t")]),
+                feuille("Secteur privé", ["Écoles privées", "Apprenants EP – G", "Apprenants EP – F", "Apprenants EP",
+                                          "Apprenants EM – G", "Apprenants EM – F", "Apprenants EM", "Apprenants – G",
+                                          "Apprenants – F", "Apprenants"]
+                        + [f"{l} – {s.upper()}" if s != "t" else l for _k, l in PRIVE for s in ("h", "f", "t")],
+                        lambda g: [g["prive"]["ecoles"]] + [g["prive"]["app"][n][s] for n in ("ep", "em", "t") for s in ("g", "f", "t")]
+                        + [g["prive"][k][s] for k, _l in PRIVE for s in ("h", "f", "t")]),
             ]
             H.journal("jur_effectifs", f"{flt['annee']} xlsx")
             return H.xlsx.reponse_classeur(f"effectifs_{flt['annee']}_par_{par}.xlsx", feuilles)

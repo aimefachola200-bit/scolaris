@@ -73,8 +73,11 @@ class TestRegles(unittest.TestCase):
                 {"ecole_id": 2, "role": "enseignant", "sexe": "M", "diplome_academique": "BAC"},
                 {"ecole_id": 2, "role": "directeur", "sexe": "F"}]
         _g, tot = E.calculer(lignes, pers, "zone")
-        self.assertEqual((tot["aca"]["licence"]["f"], tot["aca"]["bac"]["h"], tot["aca"]["nr"]["t"]), (1, 1, 1))
-        self.assertEqual((tot["prive"]["ecoles"], tot["prive"]["ens"]["h"], tot["prive"]["dir"]["f"], tot["prive"]["em"]["t"]), (1, 1, 1, 2))
+        # le privé est à part : rien de l'école privée dans les rubriques 1 à 5
+        self.assertEqual((tot["ecoles"], tot["app"]["t"]["t"], tot["tous"]["t"]), (1, 2, 1))
+        self.assertEqual((tot["aca"]["licence"]["f"], tot["aca"]["bac"]["h"], tot["aca"]["nr"]["t"]), (1, 0, 0))
+        self.assertEqual((tot["prive"]["ecoles"], tot["prive"]["app"]["em"]["t"], tot["prive"]["ens"]["h"],
+                          tot["prive"]["dir"]["f"], tot["prive"]["em"]["t"]), (1, 2, 1, 1, 2))
 
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
@@ -125,7 +128,7 @@ assert 0 < i_ccs < i_cp, (i_ccs, i_cp)                      # les CCS avant les 
 assert "1 / 10" in t.replace("<span class=\"gris\"> / ", " / ").replace("</span>", ""), "suivi du CCS : 1 réalisé / 10 programmés"
 t = txt(ok(c.get("/juridiction/effectifs")))
 for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducateur", "CAP – EP", "CEAP – EM", "<polyline",
-          "5. Diplômes académiques", "Licence", "Doctorat", "6. Enseignants du secteur privé"):
+          "5. Diplômes académiques", "Licence", "Doctorat", "6. Secteur privé (à part)", "Écoles privées (à part)"):
     assert k in t, k
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"

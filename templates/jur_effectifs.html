@@ -12,17 +12,23 @@
   <a class="btn petit {{ '' if par == 'zone' else 'sec' }}" href="{{ url_for('jur_effectifs', **dict(args0, par='zone')) }}">zone pédagogique</a>
   <a class="btn petit {{ '' if par == 'ecole' else 'sec' }}" href="{{ url_for('jur_effectifs', **dict(args0, par='ecole')) }}">école</a></div>
 
+<p class="aide">Rubriques 1 à 5 : <b>secteur public</b>. Le <b>secteur privé</b> est compté à part (rubrique 6 et case « Écoles privées »).</p>
 <div class="grille indicateurs">
-  <div class="kpi"><div class="l">Apprenants</div><div class="v">{{ tot.app.t.t|jur_nb }}</div><div class="d">{{ tot.app.t.g|jur_nb }} G · {{ tot.app.t.f|jur_nb }} F</div></div>
-  <div class="kpi"><div class="l">Enseignants</div><div class="v">{{ tot.ens.t }}</div><div class="d">{{ tot.ens.h }} H · {{ tot.ens.f }} F</div></div>
-  <div class="kpi"><div class="l">Directeurs</div><div class="v">{{ tot.dir.t }}</div><div class="d">{{ tot.dir.h }} H · {{ tot.dir.f }} F</div></div>
+  <div class="kpi"><div class="l">Apprenants (public)</div><div class="v">{{ tot.app.t.t|jur_nb }}</div><div class="d">{{ tot.app.t.g|jur_nb }} G · {{ tot.app.t.f|jur_nb }} F</div></div>
+  <div class="kpi"><div class="l">Enseignants (public)</div><div class="v">{{ tot.ens.t }}</div><div class="d">{{ tot.ens.h }} H · {{ tot.ens.f }} F</div></div>
+  <div class="kpi"><div class="l">Directeurs (public)</div><div class="v">{{ tot.dir.t }}</div><div class="d">{{ tot.dir.h }} H · {{ tot.dir.f }} F</div></div>
   <div class="kpi"><div class="l">CAP</div><div class="v">{{ tot.dip.cap_ep.t + tot.dip.cap_em.t }}</div><div class="d">EP {{ tot.dip.cap_ep.t }} · EM {{ tot.dip.cap_em.t }}</div></div>
-  <div class="kpi"><div class="l">Secteur privé</div><div class="v">{{ tot.prive.ens.t + tot.prive.dir.t }}</div><div class="d">{{ tot.prive.ecoles }} école(s) · {{ tot.prive.ens.t }} ens. · {{ tot.prive.dir.t }} dir.</div></div>
   <div class="kpi"><div class="l">CEAP</div><div class="v">{{ tot.dip.ceap_ep.t + tot.dip.ceap_em.t }}</div><div class="d">EP {{ tot.dip.ceap_ep.t }} · EM {{ tot.dip.ceap_em.t }}</div></div>
 </div>
+<div class="grille indicateurs">
+  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">🏫 Écoles privées (à part)</div><div class="v">{{ tot.prive.ecoles }}</div><div class="d">{{ tot.prive.app.t.t|jur_nb }} apprenants ({{ tot.prive.app.t.g|jur_nb }} G · {{ tot.prive.app.t.f|jur_nb }} F)</div></div>
+  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">Enseignants du privé</div><div class="v">{{ tot.prive.ens.t }}</div><div class="d">{{ tot.prive.ens.h }} H · {{ tot.prive.ens.f }} F</div></div>
+  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">Directeurs du privé</div><div class="v">{{ tot.prive.dir.t }}</div><div class="d">{{ tot.prive.dir.h }} H · {{ tot.prive.dir.f }} F</div></div>
+  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">CAP / CEAP (privé)</div><div class="v">{{ tot.prive.cap.t }} <small>/ {{ tot.prive.ceap.t }}</small></div><div class="d">CAP / CEAP</div></div>
+</div>
 
-{% if not tot.ecoles %}<div class="carte">{{ T.vide("Aucune école pour ces critères.") }}</div>{% else %}
-<div class="carte"><h2>1. Apprenants</h2>
+{% if not tot.ecoles and not tot.prive.ecoles %}<div class="carte">{{ T.vide("Aucune école pour ces critères.") }}</div>{% else %}
+<div class="carte"><h2>1. Apprenants (secteur public)</h2>
   <div class="tw"><table class="t serre">
     <tr><th rowspan="2">{{ lib }}</th><th rowspan="2" class="num">Écoles</th><th colspan="3" class="grp">Primaire (EP)</th><th colspan="3" class="grp">Maternelle (EM)</th><th colspan="3" class="grp">Ensemble</th></tr>
     <tr>{% for _ in range(3) %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -32,7 +38,7 @@
   <h3>Courbe des apprenants par {{ lib|lower }}</h3><div class="tw">{{ courbes.app }}</div>
 </div>
 
-<div class="carte"><h2>2. Personnel enseignant et directeurs</h2>
+<div class="carte"><h2>2. Personnel enseignant et directeurs (secteur public)</h2>
   <div class="tw"><table class="t serre">
     <tr><th rowspan="2">{{ lib }}</th><th colspan="3" class="grp">Enseignants (adjoints compris)</th><th colspan="3" class="grp">Directeurs</th><th colspan="3" class="grp">Ensemble</th></tr>
     <tr>{% for _ in range(3) %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -42,7 +48,7 @@
   <h3>Courbe du personnel par {{ lib|lower }}</h3><div class="tw">{{ courbes.pers }}</div>
 </div>
 
-<div class="carte"><h2>3. Catégories du personnel (enseignants et directeurs)</h2>
+<div class="carte"><h2>3. Catégories du personnel (secteur public)</h2>
   <div class="tw"><table class="t serre">
     <tr><th rowspan="2">{{ lib }}</th>{% for k, l in CATS %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
     <tr>{% for _ in CATS %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -53,7 +59,7 @@
   <h3>Courbe des catégories par {{ lib|lower }}</h3><div class="tw">{{ courbes.cat }}</div>
 </div>
 
-<div class="carte"><h2>4. Diplômes professionnels : CAP et CEAP (EP – EM)</h2>
+<div class="carte"><h2>4. Diplômes professionnels : CAP et CEAP (EP – EM, secteur public)</h2>
   <div class="tw"><table class="t serre">
     <tr><th rowspan="2">{{ lib }}</th>{% for k, l in DIPLOMES %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
     <tr>{% for _ in DIPLOMES %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -64,7 +70,7 @@
   <h3>Courbe CAP / CEAP par {{ lib|lower }}</h3><div class="tw">{{ courbes.dip }}</div>
 </div>
 
-<div class="carte"><h2>5. Diplômes académiques et universitaires (enseignants et directeurs)</h2>
+<div class="carte"><h2>5. Diplômes académiques et universitaires (secteur public)</h2>
   <div class="tw"><table class="t serre">
     <tr><th rowspan="2">{{ lib }}</th>{% for k, l in ACADEMIQUES %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
     <tr>{% for _ in ACADEMIQUES %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
@@ -75,15 +81,18 @@
   <h3>Courbe des diplômes académiques par {{ lib|lower }}</h3><div class="tw">{{ courbes.aca }}</div>
 </div>
 
-<div class="carte"><h2>6. Enseignants du secteur privé</h2>
+<div class="carte" style="border-top:4px solid #8e44ad"><h2>6. Secteur privé (à part)</h2>
   <div class="tw"><table class="t serre">
-    <tr><th rowspan="2">{{ lib }}</th><th rowspan="2" class="num">Écoles privées</th>{% for k, l in PRIVE %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
-    <tr>{% for _ in PRIVE %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
+    <tr><th rowspan="2">{{ lib }}</th><th rowspan="2" class="num">Écoles privées</th><th colspan="3" class="grp">Apprenants EP</th><th colspan="3" class="grp">Apprenants EM</th><th colspan="3" class="grp">Apprenants</th>{% for k, l in PRIVE %}<th colspan="3" class="grp">{{ l }}</th>{% endfor %}</tr>
+    <tr>{% for _ in range(3) %}<th class="num">G</th><th class="num">F</th><th class="num">T</th>{% endfor %}{% for _ in PRIVE %}<th class="num">H</th><th class="num">F</th><th class="num">T</th>{% endfor %}</tr>
     {% for g in grp + [tot] %}<tr class="{{ 'b' if loop.last }}"><td>{{ g.nom }}</td><td class="num">{{ g.prive.ecoles }}</td>
+      {% for n in ('ep', 'em', 't') %}<td class="num">{{ g.prive.app[n].g|jur_nb }}</td><td class="num">{{ g.prive.app[n].f|jur_nb }}</td><td class="num"><b>{{ g.prive.app[n].t|jur_nb }}</b></td>{% endfor %}
       {% for k, l in PRIVE %}<td class="num">{{ g.prive[k].h }}</td><td class="num">{{ g.prive[k].f }}</td><td class="num"><b>{{ g.prive[k].t }}</b></td>{% endfor %}</tr>{% endfor %}
   </table></div>
-  <p class="aide">Personnel enseignant (adjoints compris) et directeurs des écoles privées, ainsi que les agents de catégorie « Privé ». « dont EP / EM » : selon le type de l'école.</p>
-  <h3>Courbe du secteur privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive }}</div>
+  <p class="aide">Écoles privées et leur personnel (enseignants, adjoints compris, et directeurs) : ils ne sont pas comptés dans les rubriques 1 à 5. « Personnel EP / EM » : selon le type de l'école.</p>
+  <h3>Courbe des apprenants du privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive_app }}</div>
+  <h3>Courbe du personnel du privé par {{ lib|lower }}</h3><div class="tw">{{ courbes.prive }}</div>
+</div>
 </div>
 {% endif %}
 {% endblock %}

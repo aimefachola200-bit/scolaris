@@ -19,7 +19,8 @@ paiements et reçus, documents officiels avec QR code de vérification.
 - **Module « Effectifs »** (Statistiques) : apprenants EP / EM (fiche de recensement), enseignants et directeurs,
   catégories FE, ACDPE, ACDPCTD (AME), Éducateur, Privé, titulaires du CAP (EP, EM) et du CEAP (EP, EM), par sexe ;
   **diplômes académiques et universitaires** (CEP, BEPC, BAC, BAC + 2, Licence, Maîtrise, Master / DEA / DESS,
-  Doctorat), **enseignants et directeurs du secteur privé** (EP, EM, nombre d'écoles privées) (v1.10.1) ;
+  Doctorat) ; le **secteur privé à part** (v1.10.2) : les rubriques 1 à 5 ne comptent que le public, et une
+  rubrique propre au privé donne écoles, apprenants, enseignants, directeurs, CAP / CEAP des écoles privées ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
 - **Tableaux globaux des fiches** (Fiches des écoles) : pour la fiche de recensement (EP, EM) et les rapports de
