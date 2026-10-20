@@ -16,6 +16,7 @@
 {% endcall %}
 {% call groupe('jcep', 'Examens (CEP)', ep.startswith('jur_cep'), '🎓') %}
   {{ lien('jur_cep', 'Candidats et résultats', ep=='jur_cep' or ep=='jur_cep_ecole') }}
+  {% if ep_existe('jur_cep_fiches') %}{{ lien('jur_cep_fiches', 'Candidats et réussite selon les fiches (sexe, %, écart type)', ep=='jur_cep_fiches') }}{% endif %}
   {{ lien('jur_cep_prevision', 'Prévision (année suivante)', ep=='jur_cep_prevision') }}
   {{ lien('jur_cep_frais', 'Frais de relevés', ep=='jur_cep_frais') }}
 {% endcall %}

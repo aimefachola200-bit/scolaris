@@ -6,7 +6,7 @@ import os
 
 import sys
 
-VERSION = "1.10.6"
+VERSION = "1.10.7"
 # v1.8 : vérification des nouvelles versions (page « Releases » du dépôt GitHub) et fichiers à proposer par édition
 DEPOT_MAJ = os.environ.get("SCOLARIS_DEPOT_MAJ", "aimefachola200-bit/scolaris")
 FICHIERS_MAJ = {"privee": ("SCOLARIS-Installation.exe", "SCOLARIS-Autonome.apk"),

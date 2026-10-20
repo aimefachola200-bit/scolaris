@@ -113,6 +113,7 @@ _FICHES = [("Fiches de recensement, de rentrée et de fin d'année des écoles",
            ("Rapports de rentrée et de fin d'année (module des écoles)", "rapports_accueil", None),
            ("Tableau synoptique de l'école", "synoptique_accueil", None)]
 _CEP = [("CEP : candidats et résultats", "jur_cep", "jur_cep"),
+        ("CEP : candidats et réussite selon les rubriques des fiches (sexe, %, écart type)", "jur_cep_fiches", None),
         ("CEP : prévision de l'année suivante", "jur_cep_prevision", "jur_cep"),
         ("CEP : frais de relevés", "jur_cep_frais", "jur_cep"),
         ("Examen blanc (CEP blanc) de la circonscription", "jur_cep_blanc", "jur_cep"),

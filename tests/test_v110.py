@@ -15,6 +15,7 @@ import a_fiches as F  # noqa: E402
 import a_infra as I  # noqa: E402
 import a_ecoles_struct as ES  # noqa: E402
 import a_rubriques as RB  # noqa: E402
+import a_cep_fiches as CF  # noqa: E402
 
 PREFIXE = "GESCOL" if os.path.exists(os.path.join(RACINE, "GESCOL_PUBLIC.md")) else "SCOLARIS"
 
@@ -238,6 +239,39 @@ class TestRegles(unittest.TestCase):
         self.assertEqual((sal["cells"], sal["total"], sal["stat"]["moy"], sal["stat"]["et"]), ([10.0, 2.0], 12.0, 4.0, 1.63))
         self.assertEqual((tot["ecoles"], tot["fiches"]), (4, 3))
 
+    def test_cep_fiches(self):
+        r9 = {"primaire": {"valeurs": {"t9.inscrits.cep_g": "20", "t9.inscrits.cep_f": "30", "t9.composes.cep_g": "20",
+                                       "t9.composes.cep_f": "25", "t9.admis.cep_g": "15", "t9.admis.cep_f": "20",
+                                       "t9.inscrits.cva_g": "2", "t9.admis.cva_g": "1", "t9.inscrits.eh_f": "1", "t9.admis.eh_f": "1"}}}
+        r9b = {"primaire": {"valeurs": {"t9.inscrits.cep_g": "10", "t9.inscrits.cep_f": "10", "t9.composes.cep_g": "10",
+                                        "t9.composes.cep_f": "10", "t9.admis.cep_g": "10", "t9.admis.cep_f": "10"}}}
+        fin = {"fin-ep": {"valeurs": {"cep.insc.G": "8", "cep.insc.F": "12", "cep.pres.G": "8", "cep.pres.F": "10", "cep.adm.G": "4", "cep.adm.F": "9"}}}
+        lignes = [{"id": 1, "nom": "A", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "_rec": r9, "_rap": fin, "cep": {"candidats": 50, "candidats_g": 20, "candidats_f": 30, "admis": 40, "admis_g": 16, "admis_f": 24}},
+                  {"id": 2, "nom": "B", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 2, "zone_nom": "Z2",
+                   "_rec": r9b, "_rap": {}, "cep": {}},
+                  {"id": 3, "nom": "P", "type": "EP", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "_rec": r9b, "_rap": {}, "cep": {}},
+                  {"id": 4, "nom": "EM", "type": "EM", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "_rec": {}, "_rap": {}, "cep": {}}]
+        grp, tot = CF.calculer(lignes, "recensement", "zone")
+        c = tot["pub"]["ind"]["cep"]
+        self.assertEqual((tot["pub"]["ecoles"], tot["pub"]["fiches"]), (2, 2))
+        self.assertEqual((c["r"]["insc"], c["r"]["comp"], c["r"]["adm"]), ([30, 40, 70], [30, 35, 65], [25, 30, 55]))
+        self.assertEqual((c["p_g"], c["p_f"], c["parite"]), (42.9, 57.1, 1.33))
+        self.assertEqual(c["reussite"], [round(2500 / 30, 1), round(3000 / 35, 1), round(5500 / 65, 1)])
+        self.assertEqual(c["presence"][2], round(6500 / 70, 1))
+        self.assertEqual(tot["pub"]["ind"]["ens"]["r"]["insc"], [32, 40, 72])          # CEP + CEP Vie active
+        self.assertEqual(tot["pub"]["ind"]["eh"]["reussite"][1], 100.0)                 # pas de « ont composé » : base inscrits
+        d = tot["pub"]["disp"]["T"]
+        self.assertEqual((d["n"], d["cent"], d["sous50"], d["max"]), (2, 1, 0, 100.0))
+        self.assertEqual(d["moy"], round((3500 / 45 + 100) / 2, 1))
+        self.assertEqual(tot["prv"]["ecoles"], 1)
+        _g, tot = CF.calculer(lignes, "fin", "cs")
+        self.assertEqual((tot["pub"]["ind"]["cep"]["r"]["comp"], tot["pub"]["ind"]["cep"]["reussite"][2]), ([8, 10, 18], round(1300 / 18, 1)))
+        _g, tot = CF.calculer(lignes, "module", "cs")
+        self.assertEqual((tot["pub"]["fiches"], tot["pub"]["ind"]["cep"]["reussite"]), (1, [80.0, 80.0, 80.0]))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -317,6 +351,12 @@ for fi in ("recensement-maternelle", "rentree-ep", "fin-ep", "rentree-em", "fin-
     for sc in ("public", "prive"):
         ok(c.get(f"/juridiction/fiches/rubriques?fiche={fi}&sect={sc}&par=ecole"))
 x = ok(c.get("/juridiction/fiches/rubriques?export=xlsx")); assert x.data[:2] == b"PK"
+t = txt(ok(c.get("/juridiction/cep/fiches")))
+for k in ("CEP : candidats et réussite", "Inscrits", "Parité F/G", "Taux de réussite", "Rubrique 9", "CEP Vie active", "Écart type"):
+    assert k in t, k
+for u in ("?source=fin", "?source=module&par=ecole"):
+    ok(c.get("/juridiction/cep/fiches" + u))
+x = ok(c.get("/juridiction/cep/fiches?export=xlsx")); assert x.data[:2] == b"PK"
 for fiche in ("recensement-primaire", "recensement-maternelle", "rentree-ep", "fin-ep", "rentree-em", "fin-em"):
     t = txt(ok(c.get("/juridiction/fiches/tableaux?fiche=" + fiche)))
     assert "Tableaux globaux des fiches" in t and "Rubrique" in t, fiche
