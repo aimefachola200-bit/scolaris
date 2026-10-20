@@ -9,6 +9,10 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    # l'Application CP du MEMP a son propre flux (memp-cp.yml) : inutile de refabriquer SCOLARIS pour elle
+    paths-ignore:
+      - "packaging/memp_cp/**"
+      - ".github/workflows/memp-cp.yml"
 
 env:
   VERSION: "1.10.10"
