@@ -12,7 +12,7 @@ on:
     # l'Application CP du MEMP a son propre flux (memp-cp.yml) : inutile de refabriquer SCOLARIS pour elle
     paths-ignore:
       - "packaging/memp_cp/**"
-      - ".github/workflows/memp-cp.yml"
+      - ".github/workflows/applications-web.yml"
 
 env:
   VERSION: "1.10.10"

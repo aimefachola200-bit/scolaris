@@ -38,7 +38,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Application CP (MEMP — République du Bénin) pour Android.
+ * Applications web du MEMP pour Android (Application CP, CS Pobè, Mon école…) : même programme pour toutes,
+ * seuls le nom, l'identifiant et le contenu de assets/www changent (flux GitHub « Fabriquer les applications »).
  * L'application web est embarquée dans l'APK (assets/www) et servie à l'adresse sécurisée
  * https://appassets.androidplatform.net/ (caméra, base de données locale) : elle fonctionne sans Internet.
  * Les exports (PDF, Excel, sauvegardes) sont enregistrés dans « Téléchargements » ; l'impression passe par Android.
@@ -59,6 +60,7 @@ public class MainActivity extends Activity {
     private PermissionRequest demandeCamera;
     private Uri photoUri;
     private String[] enregistrementEnAttente;
+    private String nomAppli = "MEMP CP";
 
     /** Petit script ajouté à chaque page : téléchargements (liens « download » et blob:) et impression. */
     private static final String PONT_JS =
@@ -73,6 +75,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle etat) {
         super.onCreate(etat);
+        try {
+            nomAppli = getApplicationInfo().loadLabel(getPackageManager()).toString();
+        } catch (Exception ignore) {
+            // nom par défaut
+        }
         WebView.setWebContentsDebuggingEnabled(false);
         web = new WebView(this);
         if (nouvelleVersion()) {
@@ -90,7 +97,7 @@ public class MainActivity extends Activity {
         r.setDisplayZoomControls(false);
         r.setMediaPlaybackRequiresUserGesture(false);
         r.setSupportMultipleWindows(false);
-        r.setUserAgentString(r.getUserAgentString() + " MempCP-Android/1.0");
+        r.setUserAgentString(r.getUserAgentString() + " MempWeb-Android/1.0");
         web.addJavascriptInterface(new Pont(), "MempCP");
 
         web.setWebViewClient(new WebViewClient() {
@@ -239,7 +246,7 @@ public class MainActivity extends Activity {
                 ContentValues v = new ContentValues();
                 v.put(MediaStore.Downloads.DISPLAY_NAME, propre);
                 v.put(MediaStore.Downloads.MIME_TYPE, type);
-                v.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/MEMP CP");
+                v.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + dossierExports());
                 Uri u = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
                 if (u == null) {
                     throw new IOException("emplacement refusé");
@@ -249,17 +256,21 @@ public class MainActivity extends Activity {
                 }
                 ouvrir(u, type);
             } else {
-                File dossier = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "MEMP CP");
+                File dossier = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), dossierExports());
                 dossier.mkdirs();
                 File f = new File(dossier, propre);
                 try (OutputStream out = new FileOutputStream(f)) {
                     out.write(octets);
                 }
             }
-            Toast.makeText(this, "Enregistré dans Téléchargements / MEMP CP : " + propre, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Enregistré dans Téléchargements / " + dossierExports() + " : " + propre, Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, "Enregistrement impossible : " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private String dossierExports() {
+        return nomAppli.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 
     private void ouvrir(Uri u, String type) {
@@ -313,10 +324,10 @@ public class MainActivity extends Activity {
             Intent photo = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             try {
                 ContentValues v = new ContentValues();
-                v.put(MediaStore.Images.Media.DISPLAY_NAME, "memp_cp_" + System.currentTimeMillis() + ".jpg");
+                v.put(MediaStore.Images.Media.DISPLAY_NAME, "photo_" + System.currentTimeMillis() + ".jpg");
                 v.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
                 if (Build.VERSION.SDK_INT >= 29) {
-                    v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MEMP CP");
+                    v.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + dossierExports());
                 }
                 photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
             } catch (Exception e) {
