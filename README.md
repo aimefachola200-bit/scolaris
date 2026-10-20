@@ -28,6 +28,10 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Erreurs et diagnostic** (v1.10.8) : en cas d'erreur interne, une page en français remplace « Internal Server
+  Error » : version, page, nature de l'erreur, bouton d'envoi du rapport au concepteur par WhatsApp ; rapport complet
+  dans erreurs.log (dossier des données) ; page /diagnostic (version, édition, contrôle de la base, dernières erreurs).
+  Android : le cache de l'écran est vidé après chaque mise à jour (plus d'anciennes pages de la version précédente).
 - **CEP : candidats et réussite selon les fiches** (v1.10.7, Examens) : rubrique 9 de la fiche de recensement (CEP,
   CEP Vie active, Ensemble, dont enfants handicapés × inscrits / ont composé / admis), annexe CEP de la fiche de fin
   d'année ou module CEP ; candidats par sexe et pourcentage, parité filles / garçons, taux de présence, taux de

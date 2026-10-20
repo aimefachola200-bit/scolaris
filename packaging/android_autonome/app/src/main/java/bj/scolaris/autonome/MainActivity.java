@@ -60,6 +60,8 @@ public class MainActivity extends Activity {
     private static final int FOND = Color.rgb(244, 246, 249);
 
     private WebView web;
+    /** Vrai juste après une installation ou une mise à jour : le cache de l'écran (anciennes pages) est vidé. */
+    private volatile boolean misAJour = false;
     private String adresse;
     private ValueCallback<Uri[]> rappelFichier;
     private Uri photoUri;
@@ -151,6 +153,7 @@ public class MainActivity extends Activity {
         if (!tampon.equals(prefs.getString("web", "")) || !new File(cible, "templates/base.html").exists()) {
             supprimer(cible);
             copierAssets(getAssets(), "scolaris_web", cible);
+            misAJour = true;
             prefs.edit().putString("web", tampon).apply();
         }
         return cible;
@@ -188,6 +191,9 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ écran SCOLARIS
     private void afficherWeb() {
         web = new WebView(this);
+        if (misAJour) {
+            web.clearCache(true);   // pas d'anciennes pages ni d'anciens fichiers de la version précédente
+        }
         WebSettings r = web.getSettings();
         r.setJavaScriptEnabled(true);
         r.setDomStorageEnabled(true);

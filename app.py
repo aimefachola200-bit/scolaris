@@ -464,6 +464,76 @@ def create_app(test_config=None):
         return render_template("erreur.html", titre="Accès refusé",
                                message=g.get("message_403") or "Votre rôle ne permet pas d'accéder à cette page."), 403
 
+    # v1.10.8 : erreur interne → page explicative (sans gabarit : elle s'affiche même si base.html échoue),
+    # rapport conservé dans erreurs.log (dossier des données) et envoyable au concepteur par WhatsApp.
+    @app.errorhandler(500)
+    def erreur_interne(e):
+        import html as _html
+        import traceback as _tb
+        import urllib.parse as _up
+        from datetime import datetime as _dt
+        orig = getattr(e, "original_exception", None) or e
+        pile = _tb.extract_tb(orig.__traceback__) if getattr(orig, "__traceback__", None) else []
+        lieux = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in pile[-4:]]
+        resume = (f"{config.NOMS_APPLI.get(config.EDITION, 'SCOLARIS')} {config.VERSION} ({config.EDITION}"
+                  f"{', autonome' if config.AUTONOME else ''}) – page {request.path} – {type(orig).__name__} : {str(orig)[:300]}"
+                  + ("\n" + "\n".join(lieux) if lieux else ""))
+        try:
+            chemin = os.path.join(config.INSTANCE_DIR, "erreurs.log")
+            if os.path.exists(chemin) and os.path.getsize(chemin) > 400_000:
+                os.replace(chemin, chemin + ".1")
+            with open(chemin, "a", encoding="utf-8") as fh:
+                fh.write(f"===== {_dt.now():%Y-%m-%d %H:%M:%S}\n{resume}\n"
+                         + "".join(_tb.format_exception(type(orig), orig, orig.__traceback__)) + "\n")
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            import acces as _A
+            tel = _A.TEL_CONCEPTEUR
+        except Exception:  # noqa: BLE001
+            tel = "2290196510333"
+        wa = f"https://wa.me/{tel}?text=" + _up.quote("Bonjour Maître Aimé FACHE, erreur dans l'application :\n" + resume)
+        page = f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Erreur</title><style>body{{font-family:system-ui,Arial,sans-serif;background:#f4f6f9;margin:0;padding:18px;color:#1e293b}}
+.c{{max-width:760px;margin:auto;background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.1)}}
+h1{{color:#b42318;font-size:1.3em}}pre{{white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;padding:10px;border-radius:6px;font-size:.85em}}
+a.b{{display:inline-block;margin:6px 6px 0 0;padding:9px 14px;border-radius:6px;text-decoration:none;background:#1f4e79;color:#fff}}a.w{{background:#1b7f3b}}</style></head>
+<body><div class="c"><h1>Une erreur est survenue sur cette page</h1>
+<p>L'application n'a pas pu afficher <b>{_html.escape(request.path)}</b>. Vos données ne sont pas perdues.
+Envoyez ce rapport au concepteur pour une correction rapide, puis revenez à l'accueil.</p>
+<pre>{_html.escape(resume)}</pre>
+<a class="b w" href="{_html.escape(wa)}">📲 Envoyer le rapport par WhatsApp</a><a class="b" href="/">🏠 Retour à l'accueil</a><a class="b" href="/diagnostic">🩺 Diagnostic</a>
+<p style="color:#64748b;font-size:.85em">Le rapport complet est aussi enregistré dans le fichier erreurs.log du dossier des données.</p></div></body></html>"""
+        return page, 500
+
+    @app.route("/diagnostic")
+    def diagnostic():
+        """Version, édition, contrôle de la base et dernières erreurs (sur l'appareil, ou pour un compte connecté)."""
+        import html as _html
+        local = (request.remote_addr or "") in ("127.0.0.1", "::1")
+        if not local and not g.get("user"):
+            return redirect(url_for("login", suivant=request.path))
+        lignes = [f"Application : {config.NOMS_APPLI.get(config.EDITION, 'SCOLARIS')} {config.VERSION}",
+                  f"Édition : {config.EDITION}{' (autonome)' if config.AUTONOME else ''}",
+                  f"Dossier des données : {config.INSTANCE_DIR}"]
+        try:
+            ok = q("PRAGMA integrity_check", un=True)
+            lignes.append(f"Contrôle de la base : {ok[0] if ok else '?'}")
+            lignes.append(f"Utilisateurs : {q('SELECT COUNT(*) n FROM utilisateurs', un=True)['n']}")
+        except Exception as err:  # noqa: BLE001
+            lignes.append(f"Contrôle de la base : ERREUR {err}")
+        dernieres = ""
+        try:
+            with open(os.path.join(config.INSTANCE_DIR, "erreurs.log"), encoding="utf-8") as fh:
+                blocs = fh.read().split("===== ")[-5:]
+            dernieres = "\n".join("===== " + b.split("Traceback")[0].strip() for b in blocs if b.strip())
+        except OSError:
+            dernieres = "Aucune erreur enregistrée."
+        return (f"<!doctype html><html lang='fr'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                f"<title>Diagnostic</title></head><body style='font-family:system-ui,Arial;padding:16px'><h1>🩺 Diagnostic</h1>"
+                f"<pre style='white-space:pre-wrap'>{_html.escape(chr(10).join(lignes))}</pre><h2>Dernières erreurs</h2>"
+                f"<pre style='white-space:pre-wrap;font-size:.85em'>{_html.escape(dernieres)}</pre><p><a href='/'>Retour à l'accueil</a></p></body></html>")
+
     @app.errorhandler(404)
     def introuvable(_e):
         return render_template("erreur.html", titre="Page introuvable",

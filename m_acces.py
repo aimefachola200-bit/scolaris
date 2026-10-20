@@ -23,7 +23,7 @@ import config
 from db import ex, q
 
 LIBRES = {"login", "logout", "static", "acces_page", "acces_comptes", "mon_compte", "service_worker", "manifeste",
-          "hors_ligne", "sante", "installer", "referentiel_js", "interdit", "introuvable", "image_ecole"}
+          "hors_ligne", "sante", "installer", "diagnostic", "referentiel_js", "interdit", "introuvable", "image_ecole"}
 ROLES_GESTION = ("admin", "fondateur", "directeur", "responsable")
 
 
