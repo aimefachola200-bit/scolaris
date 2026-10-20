@@ -28,6 +28,9 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Correctif PC (v1.10.9)** : l'installateur Windows embarque désormais TOUS les modules (la liste manuelle oubliait
+  ceux ajoutés depuis la 1.8 : page d'accueil en « Internal Server Error » sur PC) ; dernier filet d'erreurs : toute
+  erreur, même hors des pages, affiche la page d'erreur en français.
 - **Erreurs et diagnostic** (v1.10.8) : en cas d'erreur interne, une page en français remplace « Internal Server
   Error » : version, page, nature de l'erreur, bouton d'envoi du rapport au concepteur par WhatsApp ; rapport complet
   dans erreurs.log (dossier des données) ; page /diagnostic (version, édition, contrôle de la base, dernières erreurs).

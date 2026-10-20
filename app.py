@@ -468,43 +468,9 @@ def create_app(test_config=None):
     # rapport conservé dans erreurs.log (dossier des données) et envoyable au concepteur par WhatsApp.
     @app.errorhandler(500)
     def erreur_interne(e):
-        import html as _html
-        import traceback as _tb
-        import urllib.parse as _up
-        from datetime import datetime as _dt
         orig = getattr(e, "original_exception", None) or e
-        pile = _tb.extract_tb(orig.__traceback__) if getattr(orig, "__traceback__", None) else []
-        lieux = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in pile[-4:]]
-        resume = (f"{config.NOMS_APPLI.get(config.EDITION, 'SCOLARIS')} {config.VERSION} ({config.EDITION}"
-                  f"{', autonome' if config.AUTONOME else ''}) – page {request.path} – {type(orig).__name__} : {str(orig)[:300]}"
-                  + ("\n" + "\n".join(lieux) if lieux else ""))
-        try:
-            chemin = os.path.join(config.INSTANCE_DIR, "erreurs.log")
-            if os.path.exists(chemin) and os.path.getsize(chemin) > 400_000:
-                os.replace(chemin, chemin + ".1")
-            with open(chemin, "a", encoding="utf-8") as fh:
-                fh.write(f"===== {_dt.now():%Y-%m-%d %H:%M:%S}\n{resume}\n"
-                         + "".join(_tb.format_exception(type(orig), orig, orig.__traceback__)) + "\n")
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            import acces as _A
-            tel = _A.TEL_CONCEPTEUR
-        except Exception:  # noqa: BLE001
-            tel = "2290196510333"
-        wa = f"https://wa.me/{tel}?text=" + _up.quote("Bonjour Maître Aimé FACHE, erreur dans l'application :\n" + resume)
-        page = f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Erreur</title><style>body{{font-family:system-ui,Arial,sans-serif;background:#f4f6f9;margin:0;padding:18px;color:#1e293b}}
-.c{{max-width:760px;margin:auto;background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.1)}}
-h1{{color:#b42318;font-size:1.3em}}pre{{white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;padding:10px;border-radius:6px;font-size:.85em}}
-a.b{{display:inline-block;margin:6px 6px 0 0;padding:9px 14px;border-radius:6px;text-decoration:none;background:#1f4e79;color:#fff}}a.w{{background:#1b7f3b}}</style></head>
-<body><div class="c"><h1>Une erreur est survenue sur cette page</h1>
-<p>L'application n'a pas pu afficher <b>{_html.escape(request.path)}</b>. Vos données ne sont pas perdues.
-Envoyez ce rapport au concepteur pour une correction rapide, puis revenez à l'accueil.</p>
-<pre>{_html.escape(resume)}</pre>
-<a class="b w" href="{_html.escape(wa)}">📲 Envoyer le rapport par WhatsApp</a><a class="b" href="/">🏠 Retour à l'accueil</a><a class="b" href="/diagnostic">🩺 Diagnostic</a>
-<p style="color:#64748b;font-size:.85em">Le rapport complet est aussi enregistré dans le fichier erreurs.log du dossier des données.</p></div></body></html>"""
-        return page, 500
+        chemin = request.path if request else ""
+        return page_erreur(rapport_erreur(orig, chemin), chemin), 500
 
     @app.route("/diagnostic")
     def diagnostic():
@@ -1612,7 +1578,76 @@ Envoyez ce rapport au concepteur pour une correction rapide, puis revenez à l'a
     return app
 
 
+
+# ============================================================================ v1.10.8-9 : erreurs internes
+def rapport_erreur(orig, chemin=""):
+    """Résumé d'une exception (version, page, type, message, derniers fichiers:lignes) et rapport complet dans
+    erreurs.log (dossier des données). Ne lève jamais d'exception."""
+    import traceback as _tb
+    from datetime import datetime as _dt
+    try:
+        pile = _tb.extract_tb(orig.__traceback__) if getattr(orig, "__traceback__", None) else []
+        lieux = [f"{os.path.basename(f.filename)}:{f.lineno} {f.name}" for f in pile[-5:]]
+        resume = (f"{config.NOMS_APPLI.get(config.EDITION, 'SCOLARIS')} {config.VERSION} ({config.EDITION}"
+                  f"{', autonome' if config.AUTONOME else ''}) – page {chemin} – {type(orig).__name__} : {str(orig)[:300]}"
+                  + ("\n" + "\n".join(lieux) if lieux else ""))
+    except Exception as err:  # noqa: BLE001
+        resume = f"Erreur ({type(orig).__name__}) – rapport incomplet : {err}"
+    try:
+        chemin_log = os.path.join(config.INSTANCE_DIR, "erreurs.log")
+        if os.path.exists(chemin_log) and os.path.getsize(chemin_log) > 400_000:
+            os.replace(chemin_log, chemin_log + ".1")
+        with open(chemin_log, "a", encoding="utf-8") as fh:
+            fh.write(f"===== {_dt.now():%Y-%m-%d %H:%M:%S}\n{resume}\n"
+                     + "".join(_tb.format_exception(type(orig), orig, orig.__traceback__)) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+    return resume
+
+
+def page_erreur(resume, chemin=""):
+    """Page d'erreur autonome (aucun gabarit, aucune base de données)."""
+    import html as _html
+    import urllib.parse as _up
+    try:
+        import acces as _A
+        tel = _A.TEL_CONCEPTEUR
+    except Exception:  # noqa: BLE001
+        tel = "2290196510333"
+    wa = f"https://wa.me/{tel}?text=" + _up.quote("Bonjour Maître Aimé FACHE, erreur dans l'application :\n" + resume)
+    return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Erreur</title><style>body{{font-family:system-ui,Arial,sans-serif;background:#f4f6f9;margin:0;padding:18px;color:#1e293b}}
+.c{{max-width:760px;margin:auto;background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.1)}}
+h1{{color:#b42318;font-size:1.3em}}pre{{white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;padding:10px;border-radius:6px;font-size:.85em}}
+a.b{{display:inline-block;margin:6px 6px 0 0;padding:9px 14px;border-radius:6px;text-decoration:none;background:#1f4e79;color:#fff}}a.w{{background:#1b7f3b}}</style></head>
+<body><div class="c"><h1>Une erreur est survenue sur cette page</h1>
+<p>L'application n'a pas pu afficher <b>{_html.escape(chemin)}</b>. Vos données ne sont pas perdues.
+Envoyez ce rapport au concepteur pour une correction rapide, puis revenez à l'accueil.</p>
+<pre>{_html.escape(resume)}</pre>
+<a class="b w" href="{_html.escape(wa)}">📲 Envoyer le rapport par WhatsApp</a><a class="b" href="/">🏠 Retour à l'accueil</a><a class="b" href="/diagnostic">🩺 Diagnostic</a>
+<p style="color:#64748b;font-size:.85em">Le rapport complet est aussi enregistré dans le fichier erreurs.log du dossier des données.</p></div></body></html>"""
+
+
+class FiletErreurs:
+    """Dernier filet WSGI : toute exception qui échappe à Flask (ouverture de la session, fermeture de la base,
+    gestionnaire d'erreur…) donne la page d'erreur en français au lieu de « Internal Server Error »."""
+
+    def __init__(self, interne):
+        self.interne = interne
+
+    def __call__(self, environ, start_response):
+        try:
+            return self.interne(environ, start_response)
+        except Exception as e:  # noqa: BLE001
+            chemin = environ.get("PATH_INFO", "")
+            corps = page_erreur(rapport_erreur(e, chemin), chemin).encode("utf-8")
+            start_response("500 INTERNAL SERVER ERROR", [("Content-Type", "text/html; charset=utf-8"),
+                                                          ("Content-Length", str(len(corps)))], sys.exc_info())
+            return [corps]
+
+
 app = create_app()
+app.wsgi_app = FiletErreurs(app.wsgi_app)
 
 
 def servir(host="0.0.0.0", port=5100):
