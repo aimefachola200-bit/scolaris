@@ -1074,8 +1074,8 @@ def valider_saisies(typ, brut):
         if v == "":
             continue
         lib = libelle_cle(typ, k)
-        if (kind == "champ" and t in NUMERIQUES_CHAMP) or (kind == "cellule" and t in NUMERIQUES_CELLULE):
-            x = nombre(v)
+        if (kind == "champ" and t in NUMERIQUES_CHAMP and k != "nom") or (kind == "cellule" and t in NUMERIQUES_CELLULE):
+            x = nombre(v)   # « nom » (nom de l'école) : une lettre par case, pas un nombre
             if x is None or x < 0:
                 erreurs.append(f"{lib} : « {v} » n'est pas un nombre positif.")
                 continue
@@ -1192,7 +1192,7 @@ def controles(typ, eff, alertes_somme):
         if vide(v):
             continue
         kind, d = idx.definition(k)
-        if kind and ((kind == "champ" and d["t"] in NUMERIQUES_CHAMP)
+        if kind and k != "nom" and ((kind == "champ" and d["t"] in NUMERIQUES_CHAMP)
                      or (kind == "cellule" and d["t"] in NUMERIQUES_CELLULE)) and nombre(v) is None:
             out.append(f"{libelle_cle(typ, k)} : « {v} » n'est pas un nombre.")
 
