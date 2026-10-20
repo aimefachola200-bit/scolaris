@@ -28,6 +28,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 DisableProgramGroupPage=yes
+CloseApplications=force
+RestartApplications=no
 
 [Languages]
 Name: "fr"; MessagesFile: "compiler:Languages\French.isl"

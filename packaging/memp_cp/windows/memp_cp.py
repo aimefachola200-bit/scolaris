@@ -27,16 +27,50 @@ PORT = int(VARIANTE.get("port", 8871))
 DONNEES = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), NOM.replace(" ", "_"))
 
 
+DERNIER_SIGNE = [time.time()]
+SIGNE_JS = (b"<script>(function(){function v(){fetch('/__vivant',{cache:'no-store'}).catch(function(){});}"
+            b"v();setInterval(v,30000);})();</script>")
+
+
 class Gestion(SimpleHTTPRequestHandler):
     extensions_map = dict(SimpleHTTPRequestHandler.extensions_map, **{
         ".js": "text/javascript", ".mjs": "text/javascript", ".webmanifest": "application/manifest+json",
         ".json": "application/json", ".svg": "image/svg+xml", ".wasm": "application/wasm"})
+
+    def do_GET(self):
+        DERNIER_SIGNE[0] = time.time()
+        chemin = self.path.split("?")[0]
+        if chemin == "/__vivant":                      # la fenêtre de l'application est ouverte
+            self.send_response(204)
+            self.end_headers()
+            return
+        if chemin in ("/", "/index.html"):             # page d'accueil : on y ajoute le signal « fenêtre ouverte »
+            try:
+                with open(os.path.join(WWW, "index.html"), "rb") as f:
+                    corps = f.read()
+                corps = corps.replace(b"</body>", SIGNE_JS + b"</body>", 1) if b"</body>" in corps else corps + SIGNE_JS
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(corps)))
+                self.end_headers()
+                self.wfile.write(corps)
+                return
+            except OSError:
+                pass
+        super().do_GET()
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
     def log_message(self, *args):
+        pass
+
+
+class Serveur(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):   # programme sans console : aucune sortie d'erreur
         pass
 
 
@@ -63,21 +97,23 @@ def main():
     adresse = f"http://127.0.0.1:{PORT}/index.html"
     serveur = None
     if port_libre(PORT):
-        serveur = ThreadingHTTPServer(("127.0.0.1", PORT), functools.partial(Gestion, directory=WWW))
+        serveur = Serveur(("127.0.0.1", PORT), functools.partial(Gestion, directory=WWW))
         threading.Thread(target=serveur.serve_forever, daemon=True).start()
     exe = navigateur()
-    if not exe:
-        webbrowser.open(adresse)
-        if serveur:   # navigateur ordinaire : le serveur reste actif tant que le programme tourne
-            while True:
-                time.sleep(3600)
-        return
-    os.makedirs(DONNEES, exist_ok=True)
-    p = subprocess.Popen([exe, f"--app={adresse}", f"--user-data-dir={os.path.join(DONNEES, 'navigateur')}",
+    if exe:
+        os.makedirs(DONNEES, exist_ok=True)
+        subprocess.Popen([exe, f"--app={adresse}", f"--user-data-dir={os.path.join(DONNEES, 'navigateur')}",
                           "--no-first-run", "--no-default-browser-check", "--disable-features=Translate"])
-    if serveur:
-        p.wait()                 # fenêtre (profil MEMP CP) fermée : on arrête le serveur
-        serveur.shutdown()
+    else:
+        webbrowser.open(adresse)
+    if not serveur:          # déjà lancé : la fenêtre s'ouvre sur le serveur existant
+        return
+    # Le serveur reste actif tant que la fenêtre de l'application est ouverte (signal toutes les 30 s) ;
+    # il s'arrête 30 minutes après la fermeture de la dernière fenêtre (relancer l'icône le redémarre).
+    # (Edge rend la main tout de suite à son lanceur : on ne peut pas attendre la fin de son processus.)
+    while time.time() - DERNIER_SIGNE[0] < 1800:
+        time.sleep(10)
+    serveur.shutdown()
 
 
 if __name__ == "__main__":
