@@ -83,6 +83,19 @@
      Caméra : bouton « Basculer » (avant ↔ arrière, facingMode user / environment), liste des caméras disponibles
      (enumerateDevices) quand il y en a plusieurs, dernier choix mémorisé (localStorage scolaris-camera-face / -id),
      repli automatique sur la caméra existante quand la face demandée manque (PC sans caméra arrière). */
+  /* v1.10.10 — caméra avant / arrière : appareil de la face voulue d'après son nom (front / back, avant / arrière…),
+     sinon l'appareil suivant de la liste ; null s'il n'y a qu'une caméra. */
+  function choisirCamera(cams, face, actuel) {
+    if (!cams || cams.length < 2) return null;
+    var re = face === 'user' ? /front|avant|user|selfie|facing front/i : /back|arri[eè]re|rear|environment|facing back/i;
+    var parNom = cams.filter(function (c) { return re.test(c.label || ''); });
+    var autre = parNom.filter(function (c) { return c.deviceId !== actuel; })[0] || parNom[0];
+    if (autre) return autre.deviceId;
+    var i = cams.map(function (c) { return c.deviceId; }).indexOf(actuel);
+    return cams[(i + 1) % cams.length].deviceId;
+  }
+  window.SCOLARIS_choisirCamera = choisirCamera;
+
   function initPhoto(box) {
     if (box.dataset.pret) return; box.dataset.pret = 1;
     var champ = box.dataset.champ || 'photo_data';
@@ -118,7 +131,8 @@
     function contraintes(mode) {
       // mode 1 : appareil mémorisé ; 2 : face demandée ; 3 : face opposée ; 4 : n'importe quelle caméra
       if (mode === 1) return { deviceId: { exact: appareil }, width: { ideal: 1280 } };
-      if (mode === 2) return { facingMode: face, width: { ideal: 1280 } };
+      if (mode === 2) return { facingMode: { exact: face }, width: { ideal: 1280 } };   // v1.10.10 : face imposée
+      if (mode === 5) return { facingMode: { ideal: face }, width: { ideal: 1280 } };
       if (mode === 3) return { facingMode: face === 'user' ? 'environment' : 'user', width: { ideal: 1280 } };
       return true;
     }
@@ -165,7 +179,8 @@
       }).catch(function (e) {
         var refus = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
         if (mode === 1 && !refus) return demarrer(2);          // l'appareil mémorisé n'existe plus
-        if (mode === 2 && !refus) return demarrer(3);   // la face demandée n'existe pas (PC sans caméra arrière)
+        if (mode === 2 && !refus) return demarrer(5);   // « exact » refusé par certains appareils : face préférée
+        if (mode === 5 && !refus) return demarrer(3);   // la face demandée n'existe pas (PC sans caméra arrière)
         if (mode === 3 && !refus) return demarrer(4);
         arreter();
         toast(refus ? 'Caméra refusée : autorisez-la dans le navigateur ou utilisez « Fichier ».'
@@ -180,10 +195,10 @@
     basculer.addEventListener('click', function () {
       if (!flux) return;
       face = face === 'user' ? 'environment' : 'user';
-      // avec plusieurs appareils connus mais sans facingMode (PC à deux webcams) : passer à l'appareil suivant
-      var actuel = cameras.map(function (d) { return d.deviceId; }).indexOf(appareil);
-      var piste = flux.getVideoTracks()[0], reg = piste && piste.getSettings ? piste.getSettings() : {};
-      if (cameras.length > 1 && !reg.facingMode && actuel >= 0) { appareil = cameras[(actuel + 1) % cameras.length].deviceId; demarrer(1); return; }
+      // v1.10.10 : on choisit l'APPAREIL (avant / arrière d'après son nom, sinon le suivant) : certains téléphones
+      // ignorent « facingMode » et rouvraient toujours la même caméra.
+      var autre = choisirCamera(cameras, face, appareil);
+      if (autre) { appareil = autre; demarrer(1); return; }
       appareil = ''; demarrer(2);
     });
     selCams.addEventListener('change', function () { appareil = selCams.value; if (flux) demarrer(1); });

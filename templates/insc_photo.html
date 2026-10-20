@@ -112,20 +112,34 @@
       }).catch(function(){ occupe=false; toast('Connexion au serveur impossible : photo non enregistrée.',false); });
   }
   var face=(function(){try{return localStorage.getItem('scolaris-camera-face')||'environment';}catch(e){return 'environment';}})();
+  var appareil='';
   function ouvrir(f){
-    return navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280}},audio:false});
+    // v1.10.10 : appareil précis (avant / arrière d'après son nom) quand il est connu, sinon face imposée puis préférée
+    var vid0={width:{ideal:1280}};
+    var essai=appareil?navigator.mediaDevices.getUserMedia({video:Object.assign({deviceId:{exact:appareil}},vid0),audio:false})
+      :navigator.mediaDevices.getUserMedia({video:Object.assign({facingMode:{exact:f}},vid0),audio:false});
+    return essai.catch(function(){ return navigator.mediaDevices.getUserMedia({video:Object.assign({facingMode:{ideal:f}},vid0),audio:false}); })
+      .then(function(s){ var t=s.getVideoTracks()[0], r=t&&t.getSettings?t.getSettings():{}; if(r.deviceId) appareil=r.deviceId; return s; });
   }
   document.getElementById('b-face').addEventListener('click',function(){
     face=(face==='environment')?'user':'environment';
     try{localStorage.setItem('scolaris-camera-face',face);}catch(e){}
-    if(flux){ flux.getTracks().forEach(function(t){t.stop();}); flux=null; bCam.click(); }
+    var suite=function(){ if(flux){ flux.getTracks().forEach(function(t){t.stop();}); flux=null; bCam.click(); } };
+    if(flux && navigator.mediaDevices.enumerateDevices && window.SCOLARIS_choisirCamera){
+      navigator.mediaDevices.enumerateDevices().then(function(l){
+        appareil=window.SCOLARIS_choisirCamera(l.filter(function(d){return d.kind==='videoinput';}),face,appareil)||''; suite();
+      }).catch(function(){ appareil=''; suite(); });
+      return;
+    }
+    appareil='';
+    if(flux){ suite(); }
     else { toast('Caméra '+(face==='user'?'avant':'arrière')+' sélectionnée.',true); }
   });
   bCam.addEventListener('click',function(){
     if(flux){ flux.getTracks().forEach(function(t){t.stop();}); flux=null; vid.hidden=true; guide.hidden=true; bPr.hidden=true; bCam.textContent='Allumer la caméra'; msg.hidden=false; msg.textContent='Caméra éteinte.'; return; }
     if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)||!window.isSecureContext){
       toast('Caméra non disponible ici (connexion non sécurisée) : utilisez « Fichier / appareil photo ».',false); return; }
-    ouvrir(face).catch(function(){ return ouvrir(face==='environment'?'user':'environment'); }).then(function(s){
+    ouvrir(face).catch(function(){ appareil=''; return ouvrir(face==='environment'?'user':'environment'); }).then(function(s){
       flux=s; vid.srcObject=s; vid.hidden=false; guide.hidden=false; ap.hidden=true; msg.hidden=true; bPr.hidden=false; bCam.textContent='Éteindre la caméra'; vid.play();
     }).catch(function(){ toast('Caméra inaccessible : autorisez-la dans le navigateur ou utilisez « Fichier / appareil photo ».',false); });
   });
