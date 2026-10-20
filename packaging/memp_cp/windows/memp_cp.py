@@ -44,9 +44,12 @@ class Gestion(SimpleHTTPRequestHandler):
             self.send_response(204)
             self.end_headers()
             return
-        if chemin in ("/", "/index.html"):             # page d'accueil : on y ajoute le signal « fenêtre ouverte »
+        if chemin.endswith("/") or chemin.endswith(".html"):   # toute page (accueil, espace intégré…) : signal « fenêtre ouverte »
+            fichier = self.translate_path(chemin)
+            if os.path.isdir(fichier):
+                fichier = os.path.join(fichier, "index.html")
             try:
-                with open(os.path.join(WWW, "index.html"), "rb") as f:
+                with open(fichier, "rb") as f:
                     corps = f.read()
                 corps = corps.replace(b"</body>", SIGNE_JS + b"</body>", 1) if b"</body>" in corps else corps + SIGNE_JS
                 self.send_response(200)

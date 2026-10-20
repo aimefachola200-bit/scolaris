@@ -15,6 +15,12 @@ TOUJOURS_EXCLUS = {".git", ".github", "tools", "node_modules", "serveur.js", "de
 
 
 def version(source):
+    try:  # application qui donne sa version dans version.txt (ÉduGestion Pro…)
+        t = open(os.path.join(source, "version.txt"), encoding="utf-8").read().strip()
+        if re.fullmatch(r"[0-9]+(\.[0-9]+)*", t):
+            return t
+    except OSError:
+        pass
     try:
         t = open(os.path.join(source, "js", "config.js"), encoding="utf-8").read()
         m = re.search(r"version:\s*'([0-9.]+)'", t)
@@ -55,7 +61,7 @@ def main():
     www = (os.path.join(ICI, "android", "app", "src", "main", "assets", "www") if a.cible == "android"
            else os.path.join(ICI, "windows", "www"))
     shutil.rmtree(www, ignore_errors=True)
-    shutil.copytree(a.source, www, ignore=lambda d, noms: [n for n in noms if os.path.samefile(d, a.source) and n in exclus
+    shutil.copytree(a.source, www, ignore=lambda d, noms: [n for n in noms if os.path.samefile(d, a.source) and (n in exclus or n.endswith(".zip"))
                                                             or n in (".git", ".github")])
     assert os.path.exists(os.path.join(www, "index.html")), "index.html absent"
     icones(a.source, a.cible)

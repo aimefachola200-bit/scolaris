@@ -2,6 +2,7 @@
 # sans Internet. Une seule recette (packaging/memp_cp) pour toutes :
 #   • Application CP du MEMP (générale) et MEMP CP Pobè  → page « memp-cp »
 #   • CS Pobè (gestion des écoles) et Mon école (CS Pobè) → page « cs-pobe »
+#   • ÉduGestion Pro et ÉduGestion Pro Master (avec l'espace CP, CCS, DDEMP intégré) → page « edugestion »
 # Liens fixes : https://github.com/<compte>/scolaris/releases/download/<page>/<fichier>
 # Chaque page porte aussi des QR codes de téléchargement (QR-*.png).
 # Fabrication : à chaque modification de packaging/memp_cp, chaque nuit (dernières mises à jour des applications),
@@ -29,6 +30,8 @@ jobs:
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe }
+          - { depot: EdugestionPro, dossier: ".", exclure: "", id: bj.memp.edugestion, nom: "ÉduGestion Pro", fichier: EduGestion-Pro }
+          - { depot: EdugestionProV5, dossier: ".", exclure: "", id: bj.memp.edugestion.master, nom: "ÉduGestion Pro Master", fichier: EduGestion-Pro-Master }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -82,6 +85,8 @@ jobs:
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe, port: 8872 }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe, port: 8873 }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe, port: 8874 }
+          - { depot: EdugestionPro, dossier: ".", exclure: "", id: bj.memp.edugestion, nom: "ÉduGestion Pro", fichier: EduGestion-Pro, port: 8875 }
+          - { depot: EdugestionProV5, dossier: ".", exclure: "", id: bj.memp.edugestion.master, nom: "ÉduGestion Pro Master", fichier: EduGestion-Pro-Master, port: 8876 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -139,7 +144,7 @@ jobs:
           subprocess.run([sys.executable, "-m", "pip", "install", "-q", "qrcode[pil]"], check=True)
           import qrcode
           base = "https://github.com/${{ github.repository }}/releases/download"
-          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"])):
+          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"]), ("edugestion", ["EduGestion-Pro", "EduGestion-Pro-Master"])):
               os.makedirs(page, exist_ok=True)
               for f in fichiers:
                   for nom, suffixe in ((f + ".apk", "android"), (f + "-Installation.exe", "windows")):
@@ -148,7 +153,7 @@ jobs:
                           continue
                       os.replace(src, os.path.join(page, nom))
                       qrcode.make(f"{base}/{page}/{nom}", box_size=8, border=2).save(os.path.join(page, f"QR-{f}-{suffixe}.png"))
-          print(os.listdir("memp-cp"), os.listdir("cs-pobe"))
+          print(os.listdir("memp-cp"), os.listdir("cs-pobe"), os.listdir("edugestion"))
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: memp-cp
@@ -175,5 +180,19 @@ jobs:
             |---|---|---|
             | **CS Pobè** (gestion des écoles) | [CS-Pobe.apk](https://github.com/${{ github.repository }}/releases/download/cs-pobe/CS-Pobe.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-CS-Pobe-android.png) | [CS-Pobe-Installation.exe](https://github.com/${{ github.repository }}/releases/download/cs-pobe/CS-Pobe-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-CS-Pobe-windows.png) |
             | **Mon école** (écoles de la CS) | [Ecole-Pobe.apk](https://github.com/${{ github.repository }}/releases/download/cs-pobe/Ecole-Pobe.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-Ecole-Pobe-android.png) | [Ecole-Pobe-Installation.exe](https://github.com/${{ github.repository }}/releases/download/cs-pobe/Ecole-Pobe-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-Ecole-Pobe-windows.png) |
+
+            Scannez le QR code avec l'appareil photo du téléphone. Fabriquées chaque nuit avec la dernière version.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: edugestion
+          name: "ÉduGestion Pro et ÉduGestion Pro Master (Android et Windows)"
+          make_latest: "false"
+          files: edugestion/*
+          body: |
+            **ÉduGestion Pro** — gestion des écoles maternelles et primaires du Bénin, avec l'espace CP, CCS et DDEMP (MEMP-CP) intégré. Fonctionne sans Internet.
+            | | Android | Windows |
+            |---|---|---|
+            | **ÉduGestion Pro** | [EduGestion-Pro.apk](https://github.com/${{ github.repository }}/releases/download/edugestion/EduGestion-Pro.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/edugestion/QR-EduGestion-Pro-android.png) | [EduGestion-Pro-Installation.exe](https://github.com/${{ github.repository }}/releases/download/edugestion/EduGestion-Pro-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/edugestion/QR-EduGestion-Pro-windows.png) |
+            | **ÉduGestion Pro Master** | [EduGestion-Pro-Master.apk](https://github.com/${{ github.repository }}/releases/download/edugestion/EduGestion-Pro-Master.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/edugestion/QR-EduGestion-Pro-Master-android.png) | [EduGestion-Pro-Master-Installation.exe](https://github.com/${{ github.repository }}/releases/download/edugestion/EduGestion-Pro-Master-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/edugestion/QR-EduGestion-Pro-Master-windows.png) |
 
             Scannez le QR code avec l'appareil photo du téléphone. Fabriquées chaque nuit avec la dernière version.

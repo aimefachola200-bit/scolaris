@@ -70,7 +70,15 @@ public class MainActivity extends Activity {
             + "f.readAsDataURL(b);}).catch(function(e){alert('Enregistrement impossible : '+e);});}"
             + "document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[download]');"
             + "if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('blob:')===0||h.indexOf('data:')===0){e.preventDefault();e.stopPropagation();envoyer(a.href,a.getAttribute('download'));}},true);"
-            + "window.print=function(){MempCP.imprimer(document.title||'MEMP CP');};})();";
+            + "window.print=function(){MempCP.imprimer(document.title||'MEMP CP');};"
+            // fenêtre d'impression (window.open('') puis document.write, comme ÉduGestion Pro) : imprimée par Android
+            + "var ouvrir=window.open;window.open=function(u){u=String(u||'');"
+            + "if(u.indexOf('blob:')===0||u.indexOf('data:')===0){envoyer(u,'document');return {closed:false,close:function(){},focus:function(){}};}"
+            + "if(u&&u!=='about:blank'){return ouvrir.apply(window,arguments);}"
+            + "var buf='',w={closed:false,focus:function(){},close:function(){w.closed=true;},"
+            + "document:{open:function(){buf='';},write:function(t){buf+=t;},writeln:function(t){buf+=t+'\\n';},close:function(){}},"
+            + "print:function(){var m=/<title>([^<]*)<\\/title>/i.exec(buf);MempCP.imprimerHtml(m?m[1]:(document.title||'Document'),buf);}};return w;};"
+            + "})();";
 
     @Override
     protected void onCreate(Bundle etat) {
@@ -284,6 +292,30 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Page HTML écrite par l'application (fenêtre d'impression) : chargée dans une vue à part, puis imprimée. */
+    private WebView vueImpression;
+    private void imprimerHtml(final String titre, String html) {
+        final WebView v = new WebView(this);
+        vueImpression = v;   // gardée jusqu'à la fin de l'impression
+        v.getSettings().setJavaScriptEnabled(false);
+        v.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView vue, WebResourceRequest demande) {
+                Uri u = demande.getUrl();
+                return HOTE.equals(u.getHost()) ? fichierEmbarque(u.getPath()) : null;
+            }
+
+            @Override
+            public void onPageFinished(WebView vue, String url) {
+                PrintManager pm = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                if (pm != null) {
+                    pm.print(titre, vue.createPrintDocumentAdapter(titre), new PrintAttributes.Builder().build());
+                }
+            }
+        });
+        v.loadDataWithBaseURL("https://" + HOTE + "/www/", html, "text/html", "UTF-8", null);
+    }
+
     private void imprimer(String titre) {
         PrintManager pm = (PrintManager) getSystemService(Context.PRINT_SERVICE);
         if (pm != null) {
@@ -451,6 +483,16 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     MainActivity.this.imprimer(titre);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void imprimerHtml(final String titre, final String html) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MainActivity.this.imprimerHtml(titre, html);
                 }
             });
         }
