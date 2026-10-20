@@ -13,6 +13,8 @@ sys.path.insert(0, RACINE)
 import a_effectifs as E  # noqa: E402
 import a_fiches as F  # noqa: E402
 import a_infra as I  # noqa: E402
+import a_ecoles_struct as ES  # noqa: E402
+import a_rubriques as RB  # noqa: E402
 
 PREFIXE = "GESCOL" if os.path.exists(os.path.join(RACINE, "GESCOL_PUBLIC.md")) else "SCOLARIS"
 
@@ -170,6 +172,72 @@ class TestRegles(unittest.TestCase):
         self.assertEqual((tot["pub"]["fiches"], tot["pub"]["salles"]["def_n"], tot["pub"]["places_ep"], tot["pub"]["man"]["fr"],
                           tot["pub"]["com"]["lavage"]), (1, 3, 16 + 12, 20, [1, 1]))
 
+    def test_ecoles_structure(self):
+        self.assertEqual(ES.sources_choisies(["iv. Puits", "ii. Forage fonctionnel", "iii Adduction d'eau villageoise"], ES.EAU),
+                         {"puits", "forage", "aev"})
+        self.assertEqual(ES.sources_choisies("SBEE;Energie solaire", ES.ELEC), {"sbee", "solaire"})
+        self.assertEqual(ES.moy_ecart([2, 4, 4, 4, 5, 5, 7, 9]), {"n": 8, "moy": 5.0, "et": 2.0, "min": 2, "max": 9})
+        rec = {"primaire": {"valeurs": {"classes_autorisees": "6", "classes_existantes": "5", "salles_existantes": "5",
+                                        "salles_utilisees": "4", "t314.simples.ci": "1", "t314.simples.cp": "1",
+                                        "t314.simples.ce1": "1", "t314.jumeles.ce2": "1", "t314.jumeles.cm1": "1",
+                                        "t314.jumeles.salles": "1", "t314.multi.cm2": "1", "t314.multi.salles": "1",
+                                        "point_eau": "Oui", "point_eau_src": ["iv. Puits"], "electricite": "Non",
+                                        "titre_propriete": "v. Aucun Acte", "cantine": "Oui"}}}
+        rec_m = {"maternelle": {"valeurs": {"sections_autorisees": "2", "sections_existantes": "2", "t4.simple.pe": "1",
+                                            "t4.simple.gr": "1", "eau": "Oui", "eau_src": ["Forage"], "electricite": "Oui",
+                                            "electricite_src": ["SBEE"]}}}
+        rap = {"rentree-ep": {"valeurs": {"classes_autorisees": "6", "classes_ouvertes": "6", "sp.simple.CI": "1",
+                                          "sp.simple.CP": "1", "sp.jumelee.CE1_CE2": "1", "sp.multi.salles": "1", "cantine": "OUI"}}}
+        lignes = [{"id": 1, "nom": "EPP A", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "eff": {"t": 150, "classes": 5, "tailles": [30, 40, 20, 30, 30]}, "_rec": rec, "_rap": rap},
+                  {"id": 2, "nom": "EM B", "type": "EM", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1, "zone_nom": "Z",
+                   "eff": {"t": 50, "classes": 2, "tailles": [25, 25]}, "_rec": rec_m, "_rap": {}},
+                  {"id": 3, "nom": "EPP P", "type": "EP", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 2, "zone_nom": "Z2",
+                   "eff": {"t": 60, "classes": 2, "tailles": [30, 30]}, "_rec": {}, "_rap": {}}]
+        _g, tot = ES.calculer(lignes, "recensement", "zone")
+        p = tot["pub"]
+        self.assertEqual((p["ecoles"], p["EP"], p["EM"], p["fiches"], p["aut"], p["ouv"]), (2, 1, 1, 2, 8, 7))
+        self.assertEqual(p["struct"], {"simple": 5, "jumelee": 1, "multi": 1})
+        self.assertEqual((p["struct_tot"], p["p_multi"]), (7, round(100 / 7, 1)))
+        self.assertEqual((p["equip"]["eau"], p["equip"]["elec"], p["equip"]["titre"], p["eau_src"]["puits"], p["eau_src"]["forage"],
+                          p["elec_src"]["sbee"]), ([2, 2], [1, 2], [0, 1], 1, 1, 1))
+        self.assertEqual(p["stats"]["taille"], ES.moy_ecart([30, 40, 20, 30, 30, 25, 25]))
+        self.assertEqual(p["stats"]["classes"]["moy"], 3.5)
+        self.assertEqual((tot["prv"]["ecoles"], tot["prv"]["fiches"], tot["prv"]["stats"]["classes"]["n"]), (1, 0, 1))
+        _g, tot = ES.calculer(lignes, "rentree", "cs")
+        self.assertEqual((tot["pub"]["struct"], tot["pub"]["equip"]["cantine"], tot["pub"]["ouv"]),
+                         ({"simple": 2, "jumelee": 1, "multi": 1}, [1, 1], 6))
+
+    def test_rubriques(self):
+        for code in RB.FICHES:
+            rubs = RB.questions(code)
+            self.assertTrue(rubs, code)
+            titres = " ".join(r["titre"].lower() for r in rubs)
+            self.assertNotIn("identification", titres, code)
+        rp = RB.questions("recensement-primaire")
+        ks = {q["k"]: q for r in rp for q in r["qs"]}
+        self.assertEqual(ks["point_eau"]["type"], "on")
+        self.assertEqual(ks["point_eau_src"]["type"], "multi")
+        self.assertEqual(ks["salles_existantes"]["type"], "nb")
+        self.assertIn("t314.multi.salles", ks)
+        self.assertIn("t4.s1.m_dur", ks)
+        self.assertIn("sp.multi.salles", {q["k"] for r in RB.questions("rentree-ep") for q in r["qs"]})
+        rub = [r for r in rp if any(q["k"] == "point_eau" for q in r["qs"])]
+        a, b, tot = RB.nouvel_agregat(rub), RB.nouvel_agregat(rub), RB.nouvel_agregat(rub)
+        for x, v in ((a, {"point_eau": "Oui", "point_eau_src": ["iv. Puits"], "salles_existantes": "4"}),
+                     (a, {"point_eau": "Non", "salles_existantes": "6"}), (b, None),
+                     (b, {"point_eau": "Oui", "point_eau_src": ["iv. Puits", "i. SONEB"], "salles_existantes": "2"})):
+            RB.cumuler(x, rub, v)
+            RB.cumuler(tot, rub, v)
+        lg = {x["lib"]: x for x in RB.lignes_rubrique(rub[0], [a, b], tot)}
+        eau = next(x for k, x in lg.items() if k.startswith("3.5."))
+        self.assertEqual((eau["cells"], eau["total"]), ([(1, 2, 50.0), (1, 1, 100.0)], (2, 3, 66.7)))
+        puits = next(x for k, x in lg.items() if k.endswith("→ iv. Puits"))
+        self.assertEqual(puits["total"], (2, 2, 100.0))
+        sal = next(x for k, x in lg.items() if "salles de classes existantes" in k)
+        self.assertEqual((sal["cells"], sal["total"], sal["stat"]["moy"], sal["stat"]["et"]), ([10.0, 2.0], 12.0, 4.0, 1.63))
+        self.assertEqual((tot["ecoles"], tot["fiches"]), (4, 3))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -226,7 +294,7 @@ for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducate
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"
 with app.app_context():
-    e = q("SELECT * FROM jur_ecoles WHERE type='EP' AND cs_id=? ORDER BY id", (c1["id"],), un=True)
+    e = q("SELECT * FROM jur_ecoles WHERE type='EP' AND secteur='public' AND cs_id=? ORDER BY id", (c1["id"],), un=True)
     ex("INSERT OR REPLACE INTO jur_sections (ecole_id, annee, section, donnees, source, maj) VALUES (?,?,?,?,?,datetime('now'))",
        (e["id"], a, "recensement", json.dumps({"primaire": {"valeurs": {"t4.s1.m_dur": "1", "t4.s1.t_toles": "1", "t5.s1.t2": "12",
                                                                         "point_eau": "Oui", "t631.fr.ci": "9"}}}), "test"))
@@ -237,6 +305,18 @@ for k in ("Infrastructures et mobilier", "1. Salles de classe", "2. Commodités"
 for u in ("?source=rentree", "?source=fin&par=ecole", "?par=zone"):
     ok(c.get("/juridiction/infrastructures" + u))
 x = ok(c.get("/juridiction/infrastructures?export=xlsx")); assert x.data[:2] == b"PK"
+t = txt(ok(c.get("/juridiction/ecoles-structure")))
+for k in ("Écoles : nombre, structure", "Structure pédagogique", "Multigrades", "Écart type", "Puits", "Électricité", "<polyline"):
+    assert k in t, k
+for u in ("?source=rentree", "?source=fin&par=ecole"):
+    ok(c.get("/juridiction/ecoles-structure" + u))
+x = ok(c.get("/juridiction/ecoles-structure?export=xlsx")); assert x.data[:2] == b"PK"
+t = txt(ok(c.get("/juridiction/fiches/rubriques")))
+assert "Rubriques des fiches, consolidées" in t and "Écart type" in t and "point d'eau" in t.replace("’", "'"), t[-3000:]
+for fi in ("recensement-maternelle", "rentree-ep", "fin-ep", "rentree-em", "fin-em"):
+    for sc in ("public", "prive"):
+        ok(c.get(f"/juridiction/fiches/rubriques?fiche={fi}&sect={sc}&par=ecole"))
+x = ok(c.get("/juridiction/fiches/rubriques?export=xlsx")); assert x.data[:2] == b"PK"
 for fiche in ("recensement-primaire", "recensement-maternelle", "rentree-ep", "fin-ep", "rentree-em", "fin-em"):
     t = txt(ok(c.get("/juridiction/fiches/tableaux?fiche=" + fiche)))
     assert "Tableaux globaux des fiches" in t and "Rubrique" in t, fiche
@@ -247,6 +327,7 @@ assert "Tableaux globaux" in t and "/juridiction/effectifs" in t       # menu
 d = app.test_client(); ok(d.post("/login", data={"identifiant": "chef", "mdp": "demo1234"}), 302)
 ok(d.get("/juridiction/effectifs"))
 ok(d.get("/juridiction/infrastructures"))
+ok(d.get("/juridiction/ecoles-structure"))
 print("OK-" + config.EDITION)
 '''
 

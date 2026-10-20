@@ -382,13 +382,14 @@ def _t(s):
     return str(escape(str(s)))
 
 
-def svg_courbes(categories, series, aria="Courbes"):
-    """Courbes (une par série) sur les groupes en abscisse ; points avec info-bulle et valeur."""
-    if not categories or not series:
-        return Markup("")
+TYPES_GRAPHIQUE = [("ligne", "📈 Courbe"), ("barres", "📊 Histogramme"), ("empilees", "▤ Barres empilées"),
+                   ("aire", "◭ Aires"), ("points", "⁘ Points")]
+
+
+def _svg_graphique(categories, series, aria, kind):
+    """Un graphique SVG d'un type donné : ligne, barres (groupées), empilees, aire, points."""
     n = len(categories)
     larg = max(640, 70 * n + 90)
-    # légende sur plusieurs lignes si besoin
     leg, x, yl = [], 56, 15.5
     for nom, coul, _ in series:
         w = 28 + 6.6 * len(nom)
@@ -398,15 +399,21 @@ def svg_courbes(categories, series, aria="Courbes"):
         x += w
     dy = yl - 15.5
     x0, x1, y0, y1 = 56, larg - 20, 34 + dy, 236 + dy
-    vals = [v for _, _, vs in series for v in vs if v is not None]
+    if kind == "empilees":
+        vals = [sum(max(0, vs[i] or 0) for _, _, vs in series) for i in range(n)]
+    else:
+        vals = [v for _, _, vs in series for v in vs if v is not None]
     brut = max(vals + [1]) / 4
     puiss = 10 ** (len(str(int(brut))) - 1) if brut >= 1 else 1
     pas = next(k * puiss for k in (1, 2, 2.5, 5, 10) if k * puiss >= brut)
     m = pas * 4
+
     def X(i):
         return x0 + (x1 - x0) * (i + .5) / n
+
     def Y(v):
         return y1 - (y1 - y0) * v / m
+    bande = (x1 - x0) / n
     p = [f'<svg viewBox="0 0 {larg} {300 + dy:.0f}" width="100%" role="img" aria-label="{_t(aria)}" class="jsvg" '
          f'style="min-width:{min(larg, 900)}px">']
     for x, yl_, nom, coul in leg:
@@ -421,19 +428,90 @@ def svg_courbes(categories, series, aria="Courbes"):
         lib = str(c)
         lib = lib if len(lib) <= 16 else lib[:15] + "…"
         p.append(f'<text x="{X(i):.1f}" y="{y1 + 16}" text-anchor="end" transform="rotate(-30 {X(i):.1f} {y1 + 16})" class="lb">{_t(lib)}</text>')
-    for nom, coul, vs in series:
-        pts = [(X(i), Y(v)) for i, v in enumerate(vs) if v is not None]
-        if len(pts) > 1:
-            p.append(f'<polyline fill="none" stroke="{coul}" stroke-width="2.4" stroke-linejoin="round" '
-                     f'points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in pts)}"/>')
-        for i, v in enumerate(vs):
-            if v is None:
-                continue
-            p.append(f'<g><title>{_t(categories[i])} – {_t(nom)} : {v}</title><circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="3.6" '
-                     f'fill="{coul}"/>' + (f'<text x="{X(i):.1f}" y="{Y(v) - 7:.1f}" text-anchor="middle" class="vl">{v}</text>'
-                                           if n <= 14 else "") + "</g>")
+    etiq = n <= 14
+
+    def fv(v):
+        return (f"{v:.2f}".rstrip("0").rstrip(".") if isinstance(v, float) else str(v)).replace(".", ",")
+
+    def info(i, nom, v):
+        return f'<title>{_t(categories[i])} – {_t(nom)} : {v}</title>'
+    if kind == "barres":
+        ns = len(series)
+        lb = min(26, bande * .8 / max(1, ns))
+        for k, (nom, coul, vs) in enumerate(series):
+            for i, v in enumerate(vs):
+                if v is None:
+                    continue
+                xx = X(i) - lb * ns / 2 + k * lb
+                p.append(f'<g>{info(i, nom, v)}<rect x="{xx:.1f}" y="{Y(max(v, 0)):.1f}" width="{lb - 1:.1f}" '
+                         f'height="{max(0.5, y1 - Y(max(v, 0))):.1f}" fill="{coul}" rx="1.5"/>'
+                         + (f'<text x="{xx + lb / 2:.1f}" y="{Y(max(v, 0)) - 3:.1f}" text-anchor="middle" class="vl">{fv(v)}</text>'
+                            if etiq and ns <= 4 else "") + "</g>")
+    elif kind == "empilees":
+        lb = min(40, bande * .6)
+        base = [0.0] * n
+        for nom, coul, vs in series:
+            for i, v in enumerate(vs):
+                if not v or v <= 0:
+                    continue
+                ya, yb = Y(base[i] + v), Y(base[i])
+                p.append(f'<g>{info(i, nom, v)}<rect x="{X(i) - lb / 2:.1f}" y="{ya:.1f}" width="{lb:.1f}" height="{max(0.5, yb - ya):.1f}" '
+                         f'fill="{coul}"/>' + (f'<text x="{X(i):.1f}" y="{(ya + yb) / 2 + 3:.1f}" text-anchor="middle" '
+                                                f'class="vl" style="fill:#fff">{fv(v)}</text>' if etiq and yb - ya > 11 else "") + "</g>")
+                base[i] += v
+        if etiq:
+            for i in range(n):
+                if base[i]:
+                    p.append(f'<text x="{X(i):.1f}" y="{Y(base[i]) - 4:.1f}" text-anchor="middle" class="vl"><tspan font-weight="700">'
+                             f'{fv(round(base[i], 2))}</tspan></text>')
+    else:
+        for nom, coul, vs in series:
+            pts = [(X(i), Y(v)) for i, v in enumerate(vs) if v is not None]
+            if kind == "aire" and len(pts) > 1:
+                p.append(f'<polygon fill="{coul}" fill-opacity=".18" stroke="none" points="{pts[0][0]:.1f},{y1} '
+                         + " ".join(f"{a:.1f},{b:.1f}" for a, b in pts) + f' {pts[-1][0]:.1f},{y1}"/>')
+            if kind in ("ligne", "aire") and len(pts) > 1:
+                p.append(f'<polyline fill="none" stroke="{coul}" stroke-width="2.4" stroke-linejoin="round" '
+                         f'points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in pts)}"/>')
+            for i, v in enumerate(vs):
+                if v is None:
+                    continue
+                p.append(f'<g>{info(i, nom, v)}<circle cx="{X(i):.1f}" cy="{Y(v):.1f}" r="{5 if kind == "points" else 3.6}" '
+                         f'fill="{coul}"/>' + (f'<text x="{X(i):.1f}" y="{Y(v) - 7:.1f}" text-anchor="middle" class="vl">{fv(v)}</text>'
+                                               if etiq else "") + "</g>")
     p.append("</svg>")
-    return Markup("".join(p))
+    return "".join(p)
+
+
+_JS_GRAPHIQUE = ("<script>(function(){if(window.__jgraph)return;window.__jgraph=1;"
+                 "window.jgChoix=function(b){var w=b.closest('.jgraph'),k=b.dataset.k;"
+                 "w.querySelectorAll('.jg-v').forEach(function(s){s.hidden=s.dataset.k!==k});"
+                 "w.querySelectorAll('.jg-b').forEach(function(x){x.classList.toggle('on',x===b)});"
+                 "if(w.querySelector('.jg-tous').checked){try{localStorage.setItem('jgraph-type',k)}catch(e){}"
+                 "document.querySelectorAll('.jgraph').forEach(function(o){if(o!==w){var bb=o.querySelector('.jg-b[data-k=\"'+k+'\"]');"
+                 "if(bb){o.querySelectorAll('.jg-v').forEach(function(s){s.hidden=s.dataset.k!==k});"
+                 "o.querySelectorAll('.jg-b').forEach(function(x){x.classList.toggle('on',x===bb)})}}})}};"
+                 "document.addEventListener('DOMContentLoaded',function(){var k=null;try{k=localStorage.getItem('jgraph-type')}catch(e){}"
+                 "if(k)document.querySelectorAll('.jgraph .jg-b[data-k=\"'+k+'\"]').forEach(function(b){var w=b.closest('.jgraph');"
+                 "w.querySelectorAll('.jg-v').forEach(function(s){s.hidden=s.dataset.k!==k});"
+                 "w.querySelectorAll('.jg-b').forEach(function(x){x.classList.toggle('on',x===b)})})})})();</script>"
+                 "<style>.jgraph .jg-bar{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0;font-size:.82em}"
+                 ".jgraph .jg-b{border:1px solid #cbd5e1;background:#fff;border-radius:14px;padding:2px 9px;cursor:pointer}"
+                 ".jgraph .jg-b.on{background:#1f4e79;color:#fff;border-color:#1f4e79}.jgraph label{margin-left:8px;color:#6b7280}"
+                 "@media print{.jgraph .jg-bar{display:none}}</style>")
+
+
+def svg_courbes(categories, series, aria="Courbes", defaut="ligne"):
+    """Graphique au choix (courbe, histogramme, barres empilées, aires, points) : boutons au-dessus du graphique ;
+    « pour tous » applique le choix à tous les graphiques de la page et le retient."""
+    if not categories or not series:
+        return Markup("")
+    boutons = "".join(f'<button type="button" class="jg-b{" on" if k == defaut else ""}" data-k="{k}" onclick="jgChoix(this)">{lib}</button>'
+                      for k, lib in TYPES_GRAPHIQUE)
+    vues = "".join(f'<div class="jg-v" data-k="{k}"{"" if k == defaut else " hidden"}>{_svg_graphique(categories, series, aria, k)}</div>'
+                   for k, _l in TYPES_GRAPHIQUE)
+    return Markup(f'<div class="jgraph">{_JS_GRAPHIQUE}<div class="jg-bar noprint">Type de graphique : {boutons}'
+                  f'<label><input type="checkbox" class="jg-tous" checked> pour tous les graphiques</label></div>{vues}</div>')
 
 
 def enregistrer(app, H):

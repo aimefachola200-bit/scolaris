@@ -4,8 +4,9 @@
 {% if ep_existe('jur_alertes') and (peut('jur_ecoles') or peut('jur_visites') or peut('jur_cp_bilan') or peut('jur_transmission')) %}{{ lien('jur_alertes', 'Alertes de pilotage', ep=='jur_alertes', '🚨') }}{% endif %}
 {% if ep_existe('groupes_whatsapp') and groupes_whatsapp_autorise() %}{{ lien('groupes_whatsapp', 'Groupes WhatsApp (directeurs, enseignants)', ep.startswith('groupes_whatsapp'), '💬') }}{% endif %}
 {{ lien('jur_synoptique', 'Tableau synoptique de la ' ~ ('CS' if CS_ else 'DDEMP'), ep.startswith('jur_synoptique'), '▦') }}
-{% call groupe('jstat', 'Statistiques', ep.startswith('jur_stats') or ep in ('jur_classes', 'jur_financement', 'jur_effectifs', 'jur_infra'), '📊') %}
+{% call groupe('jstat', 'Statistiques', ep.startswith('jur_stats') or ep in ('jur_classes', 'jur_financement', 'jur_effectifs', 'jur_infra', 'jur_ecoles_struct'), '📊') %}
   {{ lien('jur_stats_ecoles', 'Écoles (nombre, classement)', ep=='jur_stats_ecoles') }}
+  {% if ep_existe('jur_ecoles_struct') %}{{ lien('jur_ecoles_struct', 'Écoles : structure, écarts types, équipements', ep=='jur_ecoles_struct') }}{% endif %}
   {% if ep_existe('jur_effectifs') %}{{ lien('jur_effectifs', 'Effectifs : apprenants, personnel, CAP / CEAP (courbes)', ep=='jur_effectifs') }}{% endif %}
   {% if ep_existe('jur_infra') %}{{ lien('jur_infra', 'Infrastructures et mobilier (courbes)', ep=='jur_infra') }}{% endif %}
   {{ lien('jur_stats_effectifs', 'Effectifs des apprenants', ep=='jur_stats_effectifs') }}
@@ -33,9 +34,10 @@
   {% if ep_existe('themes_up') %}{{ lien('themes_up', "Thèmes d'UP, conférences et formations", ep.startswith('themes_up')) }}{% endif %}
   {% if ep_existe('calendrier_officiel') %}{{ lien('calendrier_officiel', 'Calendrier scolaire officiel', ep.startswith('calendrier_officiel')) }}{% endif %}
 {% endcall %}
-{% call groupe('jfiche', 'Fiches des écoles', ep.startswith('jur_fiche'), '📋') %}
+{% call groupe('jfiche', 'Fiches des écoles', ep.startswith('jur_fiche') or ep == 'jur_rubriques', '📋') %}
   {{ lien('jur_fiches', 'Recensement, rentrée, fin d’année', ep.startswith('jur_fiche') and ep not in ('jur_fiches_synthese', 'jur_fiches_tableaux')) }}
   {{ lien('jur_fiches_synthese', 'Synthèse ' ~ ('de la CS' if CS_ else 'départementale'), ep=='jur_fiches_synthese') }}
+  {% if ep_existe('jur_rubriques') %}{{ lien('jur_rubriques', 'Rubriques des fiches (toutes, consolidées)', ep=='jur_rubriques') }}{% endif %}
   {% if ep_existe('jur_fiches_tableaux') %}{{ lien('jur_fiches_tableaux', 'Tableaux globaux (infrastructures, mobilier…) par ' ~ ('zone' if CS_ else 'CS'), ep=='jur_fiches_tableaux') }}{% endif %}
 {% endcall %}
 {% call groupe('jtrans', 'Transmissions', ep.startswith('jur_transmission'), '⇅') %}

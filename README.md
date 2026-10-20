@@ -28,6 +28,18 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Rubriques des fiches consolidées** (v1.10.6, Fiches des écoles) : toutes les rubriques de la fiche de recensement
+  (EP, EM), du rapport de rentrée et de la fiche de fin d'année (EP, EM), dans l'ordre des fiches officielles :
+  questions Oui / Non, cases et choix (nombre d'écoles et %), nombres et cellules de tableaux (somme, moyenne,
+  écart type, min, max) ; par CS, zone ou école ; secteur public et privé à part ; Excel de toutes les rubriques.
+- **Graphiques au choix** (v1.10.6) : chaque graphique des modules Effectifs, Infrastructures et Écoles s'affiche en
+  courbe, histogramme, barres empilées, aires ou points ; « pour tous les graphiques » applique et retient le choix.
+- **Module « Écoles : nombre, structure pédagogique et équipements »** (v1.10.6, Statistiques) : nombre d'écoles
+  (EP, EM, EE), classes / sections autorisées et ouvertes, salles existantes et utilisées, classes simples, jumelées
+  et multigrades, moyennes et **écarts types** (classes par école, élèves par école, élèves par classe), eau potable
+  et sa source (SONEB, forage, adduction villageoise, **puits**, citerne), électricité et sa source, cantine, latrines,
+  lavage des mains, clôture, domaine, jardin, bibliothèque, pharmacie, terrain de sport, titre de propriété ;
+  recensement, rentrée ou fin d'année ; par CS, zone ou école ; public et privé à part ; courbes ; Excel.
 - **Module « Infrastructures et mobilier »** (v1.10.5, Statistiques et division des infrastructures) : d'après la fiche
   de recensement, le rapport de rentrée ou la fiche de fin d'année (au choix), par CS, par zone ou par école, secteur
   public et privé à part : salles de classe (définitifs bon / mauvais état, mixtes, provisoires, sans mur ni toit, en
