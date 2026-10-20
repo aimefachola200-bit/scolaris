@@ -4,9 +4,10 @@
 {% if ep_existe('jur_alertes') and (peut('jur_ecoles') or peut('jur_visites') or peut('jur_cp_bilan') or peut('jur_transmission')) %}{{ lien('jur_alertes', 'Alertes de pilotage', ep=='jur_alertes', '🚨') }}{% endif %}
 {% if ep_existe('groupes_whatsapp') and groupes_whatsapp_autorise() %}{{ lien('groupes_whatsapp', 'Groupes WhatsApp (directeurs, enseignants)', ep.startswith('groupes_whatsapp'), '💬') }}{% endif %}
 {{ lien('jur_synoptique', 'Tableau synoptique de la ' ~ ('CS' if CS_ else 'DDEMP'), ep.startswith('jur_synoptique'), '▦') }}
-{% call groupe('jstat', 'Statistiques', ep.startswith('jur_stats') or ep in ('jur_classes', 'jur_financement', 'jur_effectifs'), '📊') %}
+{% call groupe('jstat', 'Statistiques', ep.startswith('jur_stats') or ep in ('jur_classes', 'jur_financement', 'jur_effectifs', 'jur_infra'), '📊') %}
   {{ lien('jur_stats_ecoles', 'Écoles (nombre, classement)', ep=='jur_stats_ecoles') }}
   {% if ep_existe('jur_effectifs') %}{{ lien('jur_effectifs', 'Effectifs : apprenants, personnel, CAP / CEAP (courbes)', ep=='jur_effectifs') }}{% endif %}
+  {% if ep_existe('jur_infra') %}{{ lien('jur_infra', 'Infrastructures et mobilier (courbes)', ep=='jur_infra') }}{% endif %}
   {{ lien('jur_stats_effectifs', 'Effectifs des apprenants', ep=='jur_stats_effectifs') }}
   {{ lien('jur_stats_enseignants', 'Enseignants (besoins, écarts)', ep=='jur_stats_enseignants') }}
   {{ lien('jur_classes', 'Classes par cours et par zone', ep=='jur_classes') }}

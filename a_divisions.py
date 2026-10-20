@@ -102,6 +102,7 @@ _TABLEAU = [("Tableau de bord (effectifs, classes par cours, CEP, visites)", "ju
 _STATS = [("Statistiques des écoles", "jur_stats_ecoles", None),
           ("Effectifs des apprenants (tableaux de recensement)", "jur_stats_effectifs", None),
           ("Effectifs : apprenants, personnel, catégories, CAP / CEAP (courbes)", "jur_effectifs", None),
+          ("Infrastructures et mobilier : salles, commodités, places assises, manuels (courbes)", "jur_infra", None),
           ("Enseignants : besoins et écarts", "jur_stats_enseignants", None)]
 _FICHES = [("Fiches de recensement, de rentrée et de fin d'année des écoles", "jur_fiches", "jur_fiches"),
            ("Fiches consolidées (synthèse)", "jur_fiches_synthese", "jur_fiches"),
@@ -188,6 +189,7 @@ MODULES_PAR_DIVISION = {
                  ("Statistiques des écoles", "jur_stats_ecoles", None)],
     "statistiques": _TABLEAU + _STATS + _FICHES + _CEP[:2] + _DONNEES + [("Fiches consolidées", "jur_fiches_synthese", "jur_fiches")],
     "infrastructures": [("Patrimoine et infrastructures", "patrimoine_accueil", None),
+                        ("Infrastructures et mobilier : salles, commodités, places assises, manuels (courbes)", "jur_infra", None),
                         ("Tableaux globaux des fiches : infrastructures, mobilier, équipements", "jur_fiches_tableaux", "jur_fiches"),
                         ("Classes par cours et par zone (salles)", "jur_classes", None),
                         ("Statistiques des écoles", "jur_stats_ecoles", None), ("Écoles de la juridiction", "jur_ecoles", "jur_ecoles")],

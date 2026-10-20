@@ -12,6 +12,7 @@ sys.path.insert(0, RACINE)
 
 import a_effectifs as E  # noqa: E402
 import a_fiches as F  # noqa: E402
+import a_infra as I  # noqa: E402
 
 PREFIXE = "GESCOL" if os.path.exists(os.path.join(RACINE, "GESCOL_PUBLIC.md")) else "SCOLARIS"
 
@@ -130,6 +131,45 @@ class TestRegles(unittest.TestCase):
         p = E.tableau_mat(tot["prive"]["mat"])
         self.assertEqual((p["ecoles"], p["rec"]["SP"], p["ages"]["vide"]), (1, [7, 8, 15], True))
 
+    def test_infrastructures(self):
+        rec_ep = {"primaire": {"valeurs": {
+            "t4.s1.m_dur": "1", "t4.s1.t_toles": "1", "t4.s1.em_bon": "1", "t4.s1.et_bon": "1",
+            "t4.s2.m_dur": "1", "t4.s2.t_toles": "1", "t4.s2.em_mauv": "1",
+            "t4.s3.m_semi": "1", "t4.s3.t_toles": "1",
+            "t4.s4.m_autre": "1", "t4.s4.t_paille": "1",
+            "t4.s5.m_sans": "1",
+            "t5.s1.t2": "10", "t5.s2.t3": "5", "t5.s1.t1": "2", "t5.s1.bureau": "1", "t5.bureau.armoire": "1",
+            "t631.fr.ci": "30", "t631.ma.ci": "10", "salles_existantes": "5", "salles_utilisees": "4",
+            "point_eau": "Oui", "electricite": "Non", "latrines": "Oui", "latrines_blocs": "1", "latrines_cabines": "3",
+            "cloture": "Non"}}}
+        rec_em = {"maternelle": {"valeurs": {"t8.salle.def_b": "2", "t8.salle.prov": "1", "t9.bon.chaises_enf": "20",
+                                             "t9.mauv.chaises_enf": "5", "t9.bon.tabourets": "10", "t9.bon.tables_enf": "6",
+                                             "eau": "Oui", "electricite": "Oui"}}}
+        rap = {"rentree-ep": {"valeurs": {"infra.salles.def": "3", "infra.salles.prov": "1", "mob.tb2.CI": "8",
+                                          "mob.tb3.CP": "4", "man.fr.CI": "20", "lavage": "oui"}}}
+        lignes = [{"id": 1, "nom": "EPP A", "type": "EP", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {"t": 80}, "_rec": rec_ep, "_rap": rap},
+                  {"id": 2, "nom": "EM B", "type": "EM", "secteur": "public", "cs_id": 1, "cs_nom": "C", "zone_id": 1,
+                   "zone_nom": "Z", "eff": {"t": 40}, "_rec": rec_em, "_rap": {}},
+                  {"id": 3, "nom": "EPP privée", "type": "EP", "secteur": "prive", "cs_id": 1, "cs_nom": "C", "zone_id": 2,
+                   "zone_nom": "Z2", "eff": {"t": 50}, "_rec": rec_ep, "_rap": {}}]
+        grp, tot = I.calculer(lignes, "recensement", "zone")
+        p = tot["pub"]
+        self.assertEqual(p["salles"], {"def_b": 3, "def_m": 1, "def_n": 0, "mix": 1, "prov": 2, "sans": 1, "cons": 0})
+        self.assertEqual((p["salles_tot"], p["fiches"], p["ecoles"]), (8, 2, 2))
+        self.assertEqual((p["places_ep"], p["eleves_ep"], p["deficit_ep"]), (2 + 20 + 15, 80, 80 - 37))
+        self.assertEqual((p["places_em"], p["eleves_em"], p["deficit_em"]), (35, 40, 5))
+        self.assertEqual(p["mob_em"]["mauvais"], 5)
+        self.assertEqual((p["com"]["eau"], p["com"]["elec"], p["com"]["cloture"]), ([2, 2], [1, 2], [0, 1]))
+        self.assertEqual((p["p_com"]["eau"], p["p_com"]["elec"]), (100.0, 50.0))
+        self.assertEqual((p["man"]["fr"], p["man_el"]["fr"]), (30, round(30 / 80, 2)))
+        self.assertEqual(p["el_salle"], round(120 / 4, 1))
+        self.assertEqual((tot["prv"]["ecoles"], tot["prv"]["places_ep"]), (1, 37))
+        self.assertEqual([g["nom"] for g in grp], ["Z", "Z2"])
+        _g, tot = I.calculer(lignes, "rentree", "cs")
+        self.assertEqual((tot["pub"]["fiches"], tot["pub"]["salles"]["def_n"], tot["pub"]["places_ep"], tot["pub"]["man"]["fr"],
+                          tot["pub"]["com"]["lavage"]), (1, 3, 16 + 12, 20, [1, 1]))
+
     def test_courbes(self):
         s = str(E.svg_courbes(["A", "B"], [("X", "#000", [1, 3]), ("Y", "#111", [2, None])]))
         self.assertIn("<polyline", s)
@@ -185,6 +225,18 @@ for k in ("1. Apprenants", "2. Personnel enseignant", "ACDPCTD (AME)", "Éducate
     assert k in t, k
 assert ok(c.get("/juridiction/effectifs?par=ecole")).status_code == 200
 x = ok(c.get("/juridiction/effectifs?export=xlsx")); assert x.data[:2] == b"PK"
+with app.app_context():
+    e = q("SELECT * FROM jur_ecoles WHERE type='EP' AND cs_id=? ORDER BY id", (c1["id"],), un=True)
+    ex("INSERT OR REPLACE INTO jur_sections (ecole_id, annee, section, donnees, source, maj) VALUES (?,?,?,?,?,datetime('now'))",
+       (e["id"], a, "recensement", json.dumps({"primaire": {"valeurs": {"t4.s1.m_dur": "1", "t4.s1.t_toles": "1", "t5.s1.t2": "12",
+                                                                        "point_eau": "Oui", "t631.fr.ci": "9"}}}), "test"))
+t = txt(ok(c.get("/juridiction/infrastructures")))
+for k in ("Infrastructures et mobilier", "1. Salles de classe", "2. Commodités", "Places assises", "Déficit de places",
+          "4. Mobilier de la maternelle", "5. Manuels du primaire", "Secteur public", "<polyline"):
+    assert k in t, k
+for u in ("?source=rentree", "?source=fin&par=ecole", "?par=zone"):
+    ok(c.get("/juridiction/infrastructures" + u))
+x = ok(c.get("/juridiction/infrastructures?export=xlsx")); assert x.data[:2] == b"PK"
 for fiche in ("recensement-primaire", "recensement-maternelle", "rentree-ep", "fin-ep", "rentree-em", "fin-em"):
     t = txt(ok(c.get("/juridiction/fiches/tableaux?fiche=" + fiche)))
     assert "Tableaux globaux des fiches" in t and "Rubrique" in t, fiche
@@ -194,6 +246,7 @@ assert "Tableaux globaux" in t and "/juridiction/effectifs" in t       # menu
 # division DOSP / statistiques : accès au module Effectifs et aux tableaux globaux
 d = app.test_client(); ok(d.post("/login", data={"identifiant": "chef", "mdp": "demo1234"}), 302)
 ok(d.get("/juridiction/effectifs"))
+ok(d.get("/juridiction/infrastructures"))
 print("OK-" + config.EDITION)
 '''
 

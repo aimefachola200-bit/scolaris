@@ -28,6 +28,12 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Module « Infrastructures et mobilier »** (v1.10.5, Statistiques et division des infrastructures) : d'après la fiche
+  de recensement, le rapport de rentrée ou la fiche de fin d'année (au choix), par CS, par zone ou par école, secteur
+  public et privé à part : salles de classe (définitifs bon / mauvais état, mixtes, provisoires, sans mur ni toit, en
+  construction ; existantes, utilisées ; élèves par salle), commodités (eau, électricité, latrines, lavage des mains,
+  clôture, en % des écoles), mobilier du primaire avec **places assises et déficit**, mobilier de la maternelle,
+  manuels par élève ; une courbe par tableau ; Excel.
 - **Tableaux globaux des fiches** (Fiches des écoles) : pour la fiche de recensement (EP, EM) et les rapports de
   rentrée et de fin d'année (EP, EM), chaque rubrique chiffrée (infrastructures, locaux, mobilier, équipements,
   effectifs, finances…) avec une colonne par CS (DDEMP) ou par zone (CS) et le total ; Excel de toutes les rubriques.
