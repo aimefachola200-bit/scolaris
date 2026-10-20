@@ -389,7 +389,7 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            # v1.9 : groupes WhatsApp des directeurs et des enseignants (école, CS, DDEMP)
            "m_groupes_whatsapp",
            # v1.10 : module Effectifs (apprenants, personnel, catégories, CAP / CEAP) des applications CS et DDEMP
-           "a_effectifs", "a_infra", "a_ecoles_struct", "a_rubriques", "a_cep_fiches",
+           "a_effectifs", "a_infra", "a_ecoles_struct", "a_rubriques", "a_cep_fiches", "a_saisie",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 

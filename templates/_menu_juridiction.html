@@ -35,6 +35,12 @@
   {% if ep_existe('themes_up') %}{{ lien('themes_up', "Thèmes d'UP, conférences et formations", ep.startswith('themes_up')) }}{% endif %}
   {% if ep_existe('calendrier_officiel') %}{{ lien('calendrier_officiel', 'Calendrier scolaire officiel', ep.startswith('calendrier_officiel')) }}{% endif %}
 {% endcall %}
+{% if ep_existe('jur_saisie') %}{% call groupe('jsaisie', 'Saisie manuelle (sans Excel)', ep.startswith('jur_saisie'), '✍️') %}
+  {{ lien('jur_saisie', 'Fiches des écoles : saisir / compléter', ep in ('jur_saisie', 'jur_saisie_fiche')) }}
+  {{ lien('jur_saisie', 'Personnel des écoles : noms, fonctions, carrière', ep == 'jur_saisie_personnel') }}
+  {{ lien('jur_saisie_directeurs', 'Directeurs des écoles', ep == 'jur_saisie_directeurs') }}
+  {% if ep_existe('jur_agents') %}{{ lien('jur_agents', 'Agents administratifs de la ' ~ ('circonscription' if CS_ else 'DDEMP'), false) }}{% endif %}
+{% endcall %}{% endif %}
 {% call groupe('jfiche', 'Fiches des écoles', ep.startswith('jur_fiche') or ep == 'jur_rubriques', '📋') %}
   {{ lien('jur_fiches', 'Recensement, rentrée, fin d’année', ep.startswith('jur_fiche') and ep not in ('jur_fiches_synthese', 'jur_fiches_tableaux')) }}
   {{ lien('jur_fiches_synthese', 'Synthèse ' ~ ('de la CS' if CS_ else 'départementale'), ep=='jur_fiches_synthese') }}

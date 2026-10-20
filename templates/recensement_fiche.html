@@ -47,7 +47,7 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
   <div><h1>{{ schema.titre_court }}</h1>
   <p class="sous">Année scolaire {{ annee }} — même forme que la fiche officielle du Ministère (rubriques, numérotation, tableaux). Les valeurs calculées par SCOLARIS sont proposées ; tout reste modifiable.</p></div>
   <div class="actions">
-    <a class="btn sec petit" href="{{ url_for('recensement_accueil', annee=annee) }}">← Carte d'identité</a>
+    {% if J %}<a class="btn sec petit" href="{{ J.retour }}">← Saisie manuelle</a>{% else %}<a class="btn sec petit" href="{{ url_for('recensement_accueil', annee=annee) }}">← Carte d'identité</a>{% endif %}
     <form method="get" class="filtres" style="margin:0"><label for="rc-annee" class="sr">Année</label>
       <select id="rc-annee" name="annee" onchange="this.form.submit()" aria-label="Année scolaire">
       {% for a in annees %}<option {{ 'selected' if a==annee }}>{{ a }}</option>{% endfor %}</select></form>
@@ -127,11 +127,13 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
 {% endfor %}
 {% endmacro %}
 
-<form id="rc-form" class="carte" data-typ="{{ typ }}" data-annee="{{ annee }}" data-url="{{ url_for('recensement_enregistrer', typ=typ) }}" onsubmit="return false">
+<form id="rc-form" class="carte" data-typ="{{ typ }}" data-annee="{{ annee }}" data-url="{{ J.enregistrer if J else url_for('recensement_enregistrer', typ=typ) }}" onsubmit="return false">
   {% call M.barre_doc() %}
-    <a class="btn petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee) }}" target="_blank" rel="noopener">📄 PDF rempli</a>
+    {% if J %}<a class="btn petit" href="{{ J.pdf }}" target="_blank" rel="noopener">📄 PDF rempli</a>
+    <a class="btn sec petit" href="{{ J.pdf_vierge }}" target="_blank" rel="noopener">📄 PDF vierge</a>
+    {% else %}<a class="btn petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee) }}" target="_blank" rel="noopener">📄 PDF rempli</a>
     <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee, vierge=1) }}" target="_blank" rel="noopener">📄 PDF vierge</a>
-    <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=typ, annee=annee) }}">📊 Excel</a>
+    <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=typ, annee=annee) }}">📊 Excel</a>{% endif %}
   {% endcall %}
   <div class="rc-legende" aria-label="Légende">
     <span><span class="rc-badge o-calculée">calculée</span> valeur proposée par SCOLARIS (laisser vide pour la garder)</span>
@@ -154,7 +156,7 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
   <p class="aide">Âges calculés au 31 décembre {{ (annee[:4]|int) + 1 }} (seconde année de l'année scolaire). « Sauvegarder » enregistre seulement les valeurs saisies ; les cases vides reprennent la valeur calculée. « Charger » recharge la dernière version enregistrée ; « Réinitialiser » vide le formulaire (retour aux valeurs calculées) — pensez à sauvegarder ensuite.</p>
 </form>
 
-<div class="grille2">
+{% if not J %}<div class="grille2">
   <form class="carte" method="post" enctype="multipart/form-data" action="{{ url_for('recensement_import', typ=typ, annee=annee) }}">
     <h3>Importer depuis Excel</h3>
     <p class="aide">Exportez la fiche (📊 Excel), modifiez la feuille « Données (import) » puis réimportez-la.</p>
@@ -169,7 +171,7 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
     <label for="rc-fic">Fichier</label><input id="rc-fic" type="file" name="fichier" accept=".pdf,image/*" required>
     <button class="btn petit">Téléverser</button>
   </form>
-</div>
+</div>{% endif %}
 
 <script>
 (function () {

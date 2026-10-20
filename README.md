@@ -28,6 +28,11 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Saisie manuelle sans Excel** (v1.11.0, CS et DDEMP) : nouvel onglet « Saisie manuelle (sans Excel) » : pour chaque
+  école, les six fiches officielles (recensement primaire et maternelle, rentrée et fin d'année EP et EM) se remplissent
+  à la main dans le formulaire officiel (mêmes calculs, mêmes contrôles, même PDF) ; état nominatif du personnel
+  (directeur, adjoints, enseignants, administratifs, agents de soutien) saisi ligne par ligne, repris dans la gestion de
+  carrière ; noms et téléphones des directeurs de toutes les écoles dans un seul tableau.
 - **Caméra avant / arrière fiable** (v1.10.10) : le bouton « Basculer » choisit l'appareil d'après son nom (avant /
   arrière), sinon le suivant ; face imposée puis préférée : la bascule marche aussi sur les téléphones qui ignoraient
   la demande et rouvraient toujours la même caméra (photos des élèves, prise de photos de classe, signatures…).

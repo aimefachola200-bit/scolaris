@@ -8,7 +8,7 @@
 </style>
 <div class="entete"><div><h1>Fiches officielles des écoles</h1>
   <p class="sous">Recensement, rapports de rentrée et de fin d'année transmis par les écoles · année {{ annee }}</p></div>
-  <div class="actions"><a class="btn sec" href="{{ url_for('jur_fiches_synthese', annee=annee) }}">Σ Fiches consolidées</a></div>
+  <div class="actions">{% if ep_existe('jur_saisie') %}<a class="btn" href="{{ url_for('jur_saisie', annee=annee) }}">✍️ Saisie manuelle</a>{% endif %}<a class="btn sec" href="{{ url_for('jur_fiches_synthese', annee=annee) }}">Σ Fiches consolidées</a></div>
 </div>
 <div class="grille indicateurs">
   {% for c in codes %}<div class="kpi"><div class="l">{{ FICHES[c][4] }}</div>
