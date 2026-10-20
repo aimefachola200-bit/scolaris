@@ -26,7 +26,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { depot: memp-cp-app, dossier: ".", exclure: "", id: bj.memp.cp, nom: "MEMP CP", fichier: MEMP-CP }
+          - { depot: memp-cp-app, dossier: ".", exclure: "dosp", id: bj.memp.cp, nom: "MEMP CP", fichier: MEMP-CP }
+          - { depot: memp-cp-app, dossier: "dosp", exclure: "", id: bj.memp.dosp, nom: "DOSP", fichier: DOSP }
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe }
@@ -81,7 +82,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { depot: memp-cp-app, dossier: ".", exclure: "", id: bj.memp.cp, nom: "MEMP CP", fichier: MEMP-CP, port: 8871 }
+          - { depot: memp-cp-app, dossier: ".", exclure: "dosp", id: bj.memp.cp, nom: "MEMP CP", fichier: MEMP-CP, port: 8871 }
+          - { depot: memp-cp-app, dossier: "dosp", exclure: "", id: bj.memp.dosp, nom: "DOSP", fichier: DOSP, port: 8877 }
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe, port: 8872 }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe, port: 8873 }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe, port: 8874 }
@@ -144,7 +146,7 @@ jobs:
           subprocess.run([sys.executable, "-m", "pip", "install", "-q", "qrcode[pil]"], check=True)
           import qrcode
           base = "https://github.com/${{ github.repository }}/releases/download"
-          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"]), ("edugestion", ["EduGestion-Pro", "EduGestion-Pro-Master"])):
+          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe", "DOSP"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"]), ("edugestion", ["EduGestion-Pro", "EduGestion-Pro-Master"])):
               os.makedirs(page, exist_ok=True)
               for f in fichiers:
                   for nom, suffixe in ((f + ".apk", "android"), (f + "-Installation.exe", "windows")):
@@ -165,6 +167,7 @@ jobs:
             | | Android | Windows |
             |---|---|---|
             | **MEMP CP** (générale) | [MEMP-CP.apk](https://github.com/${{ github.repository }}/releases/download/memp-cp/MEMP-CP.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-MEMP-CP-android.png) | [MEMP-CP-Installation.exe](https://github.com/${{ github.repository }}/releases/download/memp-cp/MEMP-CP-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-MEMP-CP-windows.png) |
+            | **DOSP** (Organisation scolaire et prévision) | [DOSP.apk](https://github.com/${{ github.repository }}/releases/download/memp-cp/DOSP.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-DOSP-android.png) | [DOSP-Installation.exe](https://github.com/${{ github.repository }}/releases/download/memp-cp/DOSP-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-DOSP-windows.png) |
             | **MEMP CP Pobè** | [MEMP-CP-Pobe.apk](https://github.com/${{ github.repository }}/releases/download/memp-cp/MEMP-CP-Pobe.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-MEMP-CP-Pobe-android.png) | [MEMP-CP-Pobe-Installation.exe](https://github.com/${{ github.repository }}/releases/download/memp-cp/MEMP-CP-Pobe-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/memp-cp/QR-MEMP-CP-Pobe-windows.png) |
 
             Scannez le QR code avec l'appareil photo du téléphone. Fabriquée chaque nuit avec la dernière version.
