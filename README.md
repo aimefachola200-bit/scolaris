@@ -28,6 +28,10 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Retour, mot de passe oublié** (v1.12.0) : bouton « ← Retour » (page précédente) et « 🏠 Accueil » en haut de chaque
+  page ; lien « Mot de passe oublié ? » à la connexion : question de secours (définie dans « Mon compte ») pour choisir
+  soi-même un nouveau mot de passe, ou demande à l'administrateur (Utilisateurs → « Mot de passe provisoire »), avec
+  message WhatsApp à l'école ; œil 👁 pour afficher le mot de passe sur tous les champs.
 - **Saisie manuelle sans Excel** (v1.11.0, CS et DDEMP) : nouvel onglet « Saisie manuelle (sans Excel) » : pour chaque
   école, les six fiches officielles (recensement primaire et maternelle, rentrée et fin d'année EP et EM) se remplissent
   à la main dans le formulaire officiel (mêmes calculs, mêmes contrôles, même PDF) ; état nominatif du personnel

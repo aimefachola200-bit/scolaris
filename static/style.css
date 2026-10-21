@@ -254,3 +254,9 @@ table.t.plan-m input[type=date]{font-size:11px;padding:2px 3px;width:118px}
 @media print{.noprint,.raccourcis{display:none!important}}
 .alerte-l details summary{cursor:pointer;font-size:13px;color:#1F4E79}
 .alerte-l ul{margin:6px 0 0 18px;padding:0;font-size:13px}
+
+/* v1.12 : bouton « ← Retour » en haut de chaque page */
+.retour-ligne{display:flex;gap:6px;margin:0 0 10px}
+.btn-retour{display:inline-flex;align-items:center;gap:4px;border:1px solid #CBD5E1;background:#fff;color:#1F4E79;border-radius:18px;padding:5px 12px;font-size:.92em;cursor:pointer;text-decoration:none;font-weight:600}
+.btn-retour:hover{background:#E8EEF5}.btn-retour.sec{color:#475467;font-weight:500}
+@media print{.retour-ligne{display:none}}
