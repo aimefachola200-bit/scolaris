@@ -36,7 +36,7 @@
     <td>{{ MODES_PAIEMENT.get(o.mode or '', o.mode or '') }}</td>
     <td class="num vert">{{ fcfa(o.montant) if o.type=='entree' else '' }}</td><td class="num rouge">{{ fcfa(o.montant) if o.type=='sortie' else '' }}</td>
     <td class="num">{{ fcfa(o.solde) }}</td>
-    <td class="num">{% if o.source=='manuel' %}<form method="post" onsubmit="return confirmer(this)"><input type="hidden" name="action" value="annuler"><input type="hidden" name="id" value="{{ o.id }}"><button class="btn sec petit" title="Annuler cette opération">✕</button></form>{% endif %}</td></tr>
+    <td class="num">{% if o.source=='manuel' %}<span style="display:inline-flex;gap:3px"><a class="btn sec petit" href="{{ url_for('tresorerie_modifier', tid=o.id) }}" title="Modifier cette opération">✏️</a><form method="post" action="{{ url_for('tresorerie_supprimer', tid=o.id) }}" onsubmit="return confirm('Supprimer définitivement cette opération ?')"><button class="btn danger petit" title="Supprimer cette opération">🗑</button></form><form method="post" onsubmit="return confirmer(this)"><input type="hidden" name="action" value="annuler"><input type="hidden" name="id" value="{{ o.id }}"><button class="btn sec petit" title="Annuler cette opération">✕</button></form></span>{% endif %}</td></tr>
   {% else %}<tr><td colspan="8" class="gris">Aucune opération ce mois-ci.</td></tr>{% endfor %}
 </table></div>
 <script>

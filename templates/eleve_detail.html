@@ -39,12 +39,25 @@
       {% if p.annule %}<span class="badge ko" title="{{ p.motif_annulation }}">annulé</span>{% endif %}</td>
     <td>{{ date_fr(p.date_paiement) }}</td><td>{{ MODES_PAIEMENT.get(p.mode, p.mode) }}</td><td>{{ p.reference or '' }}</td>
     <td class="num">{{ fcfa(p.montant) }}</td>
-    <td class="num">{% if not p.annule and g.user.role in ('admin','directeur') %}
+    <td class="num">{% if g.user.role in ('admin','directeur','fondateur') %}
+      <span class="actions" style="justify-content:flex-end;display:inline-flex;gap:4px">
+        <a class="btn sec petit" href="{{ url_for('paiement_modifier', pid=p.id) }}" title="Modifier ce paiement">✏️ Modifier</a>
+        <form method="post" action="{{ url_for('paiement_supprimer', pid=p.id) }}" style="display:inline" onsubmit="return confirm('Supprimer définitivement le reçu {{ p.numero_recu }} ?')"><button class="btn danger petit" title="Supprimer ce paiement">🗑 Supprimer</button></form>
+      </span>{% endif %}
+      {% if not p.annule and g.user.role in ('admin','directeur') %}
       <form method="post" action="{{ url_for('paiement_annuler', pid=p.id) }}" class="actions" style="justify-content:flex-end"
             onsubmit="return this.motif.value.trim().length>0">
         <input name="motif" placeholder="Motif d'annulation" style="width:170px"><button class="btn danger petit">Annuler</button></form>{% endif %}</td></tr>
   {% endfor %}
 </table></div>
+{% if g.user.role in ('admin','directeur','fondateur') %}
+<details class="carte" style="max-width:620px"><summary>♻ Réinitialiser les paiements de l'année de cet élève</summary>
+  <form method="post" action="{{ url_for('paiements_reinitialiser', eid=e.id) }}" class="f" onsubmit="return confirm('Supprimer TOUS les paiements de l\'année de cet élève ?')">
+    <p class="aide">Supprime tous les reçus de l'année {{ ANNEE }} de cet élève (erreur de saisie, élève inscrit par erreur…). L'opération est journalisée.</p>
+    <label for="ri-c">Tapez REINITIALISER pour confirmer</label><input id="ri-c" name="confirmation" autocomplete="off" required>
+    <p><button class="btn danger petit">Réinitialiser les paiements</button></p>
+  </form></details>
+{% endif %}
 {% endif %}
 {% endif %}
 

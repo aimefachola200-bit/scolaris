@@ -392,6 +392,8 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "a_effectifs", "a_infra", "a_ecoles_struct", "a_rubriques", "a_cep_fiches", "a_saisie",
            # v1.12 : mot de passe oublié (question de secours, demande à l'administrateur)
            "m_motdepasse",
+           # v1.13 : modifier / supprimer / réinitialiser (paiements, caisse, contribution de cantine)
+           "m_corrections",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
