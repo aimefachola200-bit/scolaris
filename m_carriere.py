@@ -42,6 +42,35 @@ GRADES = [f"{l}{n}-{e}" for l in "ABC" for n in (1, 2, 3) for e in range(1, 16)]
 AGES_RETRAITE = {"A": 60, "B": 58, "C": 55}
 DEPARTEMENTS = ["Alibori", "Atacora", "Atlantique", "Borgou", "Collines", "Couffo", "Donga", "Littoral",
                 "Mono", "Ouémé", "Plateau", "Zou"]
+
+
+def _sans_accent(t):
+    import unicodedata
+    return unicodedata.normalize("NFKD", str(t)).encode("ascii", "ignore").decode().lower().strip()
+
+
+def lire_departements(source, cle):
+    """Départements servis (plusieurs choix possibles, pour un agent passé par plusieurs départements).
+    source : formulaire (cases à cocher, getlist) ou dictionnaire (import Excel : « Atacora, Donga » ou « Atacora / Donga »).
+    -> (texte enregistré « Atacora, Donga » dans l'ordre officiel, liste des valeurs non reconnues)."""
+    brut = source.getlist(cle) if hasattr(source, "getlist") else [source.get(cle)]
+    morceaux = [m for b in brut if b is not None for m in re.split(r"[,;/\n]+|\s+et\s+", str(b)) if m.strip()]
+    index = {_sans_accent(d): d for d in DEPARTEMENTS}
+    choisis, inconnus = set(), []
+    for m in morceaux:
+        d = index.get(_sans_accent(m))
+        if d:
+            choisis.add(d)
+        else:
+            inconnus.append(m.strip())
+    return ", ".join(d for d in DEPARTEMENTS if d in choisis), inconnus
+
+
+def departements_de(texte):
+    """« Atacora, Donga » -> ["Atacora", "Donga"] (pour cocher les cases du formulaire)."""
+    return [d.strip() for d in str(texte or "").split(",") if d.strip()]
+
+
 DIPLOMES = ["CEP", "BEPC", "BAC", "DEUG", "DUT / BTS", "Licence", "Maîtrise", "Master", "Doctorat"]
 # champs que l'enseignant peut proposer lui-même (validés ensuite par le directeur)
 CHAMPS_ENSEIGNANT = ["diplome_academique", "diplome_academique_annee", "ceap", "ceap_annee", "cap", "cap_annee"]
@@ -89,7 +118,7 @@ LIBELLES = {
     "diplome_academique": "Diplôme académique le plus élevé", "diplome_academique_annee": "Année du diplôme académique",
     "ceap": "CEAP", "ceap_annee": "Année du CEAP", "cap": "CAP", "cap_annee": "Année du CAP",
     "visite_aptitude": "Visite d'aptitude", "visite_aptitude_note": "Note de la visite d'aptitude",
-    "departement_servir": "Département à servir", "visites_cp": "Visites de classe du CP",
+    "departement_servir": "Département(s) servi(s)", "visites_cp": "Visites de classe du CP",
     "visites_ccs": "Visites de classe du CCS", "participation_up": "Participation à l'UP (%)",
     "gestion_collegiale": "Gestion collégiale (responsabilités)", "note_evaluation": "Note d'évaluation du personnel",
 }
@@ -345,9 +374,9 @@ def lire_formulaire(form, auj=None):
     v.update(lire_diplomes(form, err, auj))
     v["visite_aptitude"] = texte("visite_aptitude", 3) if texte("visite_aptitude", 3) in ("oui", "non") else ""
     v["visite_aptitude_note"] = decimal("visite_aptitude_note", 0, 20)
-    v["departement_servir"] = texte("departement_servir", 30)
-    if v["departement_servir"] and v["departement_servir"] not in DEPARTEMENTS:
-        err.append("Département à servir invalide.")
+    v["departement_servir"], inconnus = lire_departements(form, "departement_servir")
+    if inconnus:
+        err.append("Département(s) servi(s) non reconnu(s) : " + ", ".join(inconnus) + ".")
     v["visites_cp"] = entier("visites_cp", 0, 99)
     v["visites_ccs"] = entier("visites_ccs", 0, 99)
     v["participation_up"] = decimal("participation_up", 0, 100)
@@ -383,7 +412,7 @@ ENTETES = ["N°", "Nom et prénoms", "Sexe", "NIP", "Matricule", "Catégorie", "
            "Indice réel", "Date de naissance", "1re prise de service", "Prise de service département",
            "Prise de service commune", "Prise de service école", "Ancienneté générale", "Ancienneté département",
            "Ancienneté commune", "Ancienneté école", "Retraite (date probable)", "Temps restant",
-           "Diplôme académique", "Année", "CEAP", "CAP", "Visite d'aptitude", "Note aptitude", "Département à servir",
+           "Diplôme académique", "Année", "CEAP", "CAP", "Visite d'aptitude", "Note aptitude", "Département(s) servi(s)",
            "Visites CP", "Visites CCS", "Participation UP (%)", "Gestion collégiale", "Note d'évaluation"]
 ENTETES_PDF = ["N°", "Nom et prénoms (sexe)", "NIP", "Caté-\ngorie", "Fonction", "Grade", "Ind.\npayé", "Ind.\nréel",
                "Naissance", "1re prise\nde service", "PS dépar-\ntement", "PS\ncommune", "PS école", "Anc.\ngén.",
@@ -701,7 +730,7 @@ def enregistrer(app, H):
                 ("Prise de service dans le département", fmt_date(f.get("date_service_dep"))),
                 ("Prise de service dans la commune", fmt_date(f.get("date_service_commune"))),
                 ("Prise de service dans l'école", fmt_date(f.get("date_service_ecole"))),
-                ("Département à servir", f.get("departement_servir") or "")]),
+                ("Département(s) servi(s)", f.get("departement_servir") or "")]),
             (f"3. Anciennetés au {f['reference'].strftime('%d/%m/%Y')}", [
                 (lib, f["anc_txt"][cle] if f["anc"][cle] else "—") for cle, _c, lib in ANCIENNETES]),
             ("4. Départ à la retraite", [("Date probable de départ", ret)]),

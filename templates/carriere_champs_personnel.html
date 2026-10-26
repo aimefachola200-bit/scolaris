@@ -37,8 +37,7 @@
   <div class="ligne">
     <div><label for="car-apt">Visite d'aptitude</label><select id="car-apt" name="visite_aptitude"><option value="">—</option><option value="oui" {{ 'selected' if car.visite_aptitude=='oui' }}>Oui</option><option value="non" {{ 'selected' if car.visite_aptitude=='non' }}>Non</option></select></div>
     <div><label for="car-aptn">Note de la visite d'aptitude (/20)</label><input id="car-aptn" name="visite_aptitude_note" inputmode="decimal" value="{{ car_fmt_nombre(car.visite_aptitude_note) }}"></div>
-    <div><label for="car-dep">Département à servir</label><select id="car-dep" name="departement_servir"><option value="">—</option>
-      {% for d in car_departements %}<option {{ 'selected' if car.departement_servir == d }}>{{ d }}</option>{% endfor %}</select></div>
+    <div class="champ-deps"><span class="lib-deps" id="car-dep">Département(s) servi(s)</span><div class="cases-deps" role="group" aria-labelledby="car-dep">{% set _deps = (car.departement_servir or "").split(", ") %}{% for d in car_departements %}<label class="case-dep"><input type="checkbox" name="departement_servir" value="{{ d }}" {{ "checked" if d in _deps }}> {{ d }}</label>{% endfor %}</div><small class="aide">Cochez tous les départements servis.</small></div>
     <div><label for="car-vcp">Visites de classe reçues : CP</label><input id="car-vcp" name="visites_cp" inputmode="numeric" value="{{ car.visites_cp if car.visites_cp is not none else '' }}"></div>
     <div><label for="car-vccs">Visites de classe reçues : CCS</label><input id="car-vccs" name="visites_ccs" inputmode="numeric" value="{{ car.visites_ccs if car.visites_ccs is not none else '' }}"></div>
     <div><label for="car-up">Participation à l'UP (%)</label><input id="car-up" name="participation_up" inputmode="decimal" value="{{ car_fmt_nombre(car.participation_up) }}"></div>

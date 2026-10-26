@@ -28,6 +28,7 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Registre d'appel et départements servis** (v1.16.0) : les absences prises par « Faire l'appel » entrent au registre (toutes les demi-journées du jour), une seule fois — une case corrigée dans le registre reste corrigée, un élève remis présent à l'appel en sort ; relevés et PDF les comptent. « Département(s) servi(s) » : plusieurs départements à cocher (fiche de carrière, personnel de la juridiction), import Excel « Atacora, Donga ».
 - **Documents vérifiables** (v1.15.0) : registre de présence, relevés mensuels, tableau d'affichage, statistiques
   de présence (nouveau PDF avec courbe mensuelle), statistiques et résultats d'évaluation, synthèse, bilan annuel,
   tableau d'honneur et tous les documents en tableau signés portent un **code de vérification et un QR** (page

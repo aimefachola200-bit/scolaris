@@ -73,7 +73,7 @@ CHAMPS_AGENT = [
     ("date_ps_departement", "Prise de service dans le département", "date"),
     ("date_ps_commune", "Prise de service dans la commune", "date"),
     ("date_ps_ecole", "Prise de service au poste (service)", "date"),
-    ("departement_a_servir", "Département à servir", "departement"),
+    ("departement_a_servir", "Département(s) servi(s)", "departement"),
     ("diplome_academique", "Diplôme académique", "texte"), ("annee_diplome", "Année du diplôme académique", "annee"),
     ("ceap", "CEAP (oui/non)", "bool"), ("annee_ceap", "Année du CEAP", "annee"),
     ("cap", "CAP (oui/non)", "bool"), ("annee_cap", "Année du CAP", "annee"), ("type_cap", "Type de CAP (EP/EM)", "type_cap"),
@@ -238,7 +238,7 @@ COLS = {   # clé : (libellé écran / Excel, fonction valeur)
     "apt": ("Visite d'aptitude", lambda f: f["apt_o"]),
     "apt_note": ("Note aptitude", lambda f: fmt_n(f["note_apt"])),
     "apt_an": ("Année aptitude", lambda f: _an(f, "annee_aptitude")),
-    "dep_servir": ("Département à servir", lambda f: f.get("departement_a_servir") or ""),
+    "dep_servir": ("Département(s) servi(s)", lambda f: f.get("departement_a_servir") or ""),
     "vis_cp": ("Visites CP", lambda f: fmt_n(f.get("nb_visites_cp"))),
     "vis_ccs": ("Visites CCS", lambda f: fmt_n(f.get("nb_visites_ccs"))),
     "up": ("Participation UP (%)", lambda f: fmt_n(f.get("participation_up"))),
@@ -671,7 +671,7 @@ def enregistrer(app, H):
                 ("Zone pédagogique", f.get("zone_nom") or ""), ("Circonscription scolaire", f.get("cs_nom") or ""),
                 ("Catégorie", f["categorie_lib"]), ("Grade", f["grade"]),
                 ("Indice payé", n(f.get("indice_paye"))), ("Indice réel", n(f.get("indice_reel"))),
-                ("Département à servir", f.get("departement_a_servir") or "")]),
+                ("Département(s) servi(s)", f.get("departement_a_servir") or "")]),
             ("3. Prises de service", [
                 ("Première prise de service", f["ps_txt"]["generale"]), ("Dans le département", f["ps_txt"]["departement"]),
                 ("Dans la commune", f["ps_txt"]["commune"]), ("Dans l'école / le service", f["ps_txt"]["ecole"])]),
@@ -1043,8 +1043,9 @@ def enregistrer(app, H):
                 if val and val not in ("EP", "EM"):
                     err.append("Type de CAP : EP ou EM.")
             elif typ == "departement":
-                if val and val not in MC.DEPARTEMENTS:
-                    err.append("Département à servir invalide.")
+                val, inconnus = MC.lire_departements(src, k)
+                if inconnus:
+                    err.append("Département(s) servi(s) non reconnu(s) : " + ", ".join(inconnus) + ".")
             v[k] = val
         if not v["nom"]:
             err.append("Le nom est obligatoire.")

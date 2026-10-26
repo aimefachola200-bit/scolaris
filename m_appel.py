@@ -84,6 +84,12 @@ def enregistrer(app, H):
                        "ON CONFLICT(classe_id, date) DO UPDATE SET fait_par=excluded.fait_par, fait_le=excluded.fait_le",
                        (cid, jour, g.user["id"], H.maintenant()))
             db.commit()
+            # registre d'appel par demi-journée : l'absence du jour y est reportée, ou retirée si l'élève est présent
+            import m_registre
+            for e in eleves:
+                if request.form.get(f"s_{e['id']}", "present") != "absent":
+                    m_registre.retirer_appel(H, e["id"], jour)
+            m_registre.reporter_appels(H, cid, jour, jour)
             n = 0
             if request.form.get("prevenir") == "1":
                 for e, st in nouveaux:

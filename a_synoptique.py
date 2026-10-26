@@ -462,8 +462,9 @@ def enregistrer(app, H):
                 if val and val not in ("EP", "EM"):
                     err.append("Type de CAP : EP ou EM.")
             elif typ == "departement":
-                if val and val not in MC.DEPARTEMENTS:
-                    err.append("Département à servir invalide.")
+                val, inconnus = MC.lire_departements(src, k)
+                if inconnus:
+                    err.append("Département(s) servi(s) non reconnu(s) : " + ", ".join(inconnus) + ".")
             v[k] = val
         if not v["nom"]:
             err.append("Le nom est obligatoire.")
@@ -1066,7 +1067,7 @@ def enregistrer(app, H):
         "visite_aptitude": ("Visite d'aptitude",), "note_aptitude": ("Note d'aptitude", "Note de la visite d'aptitude", "Note"),
         "annee_aptitude": ("Année de la visite d'aptitude",), "note_evaluation": ("Note d'évaluation",),
         "nb_visites_cp": ("Visites du CP",), "nb_visites_ccs": ("Visites du CCS",), "participation_up": ("Participation à l'UP",),
-        "gestion_collegiale": ("Gestion collégiale",), "departement_a_servir": ("Département à servir",),
+        "gestion_collegiale": ("Gestion collégiale",), "departement_a_servir": ("Département(s) servi(s)", "Départements servis", "Département à servir"),
         "telephone": ("Contact", "Téléphone"), "email": ("E-mail", "email"),
     }
 

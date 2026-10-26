@@ -38,7 +38,7 @@
     {{ champ('date_ps_commune', lib.date_ps_commune, max=10, ph='jj/mm/aaaa') }}
     {{ champ('date_ps_ecole', 'Prise de service dans la structure (poste actuel)', max=10, ph='jj/mm/aaaa') }}
     {{ champ('date_derniere_formation', lib.date_derniere_formation, max=10, ph='jj/mm/aaaa') }}
-    <div><label for="s-departement_a_servir">{{ lib.departement_a_servir }}</label><select id="s-departement_a_servir" name="departement_a_servir"><option value="">—</option>{% for d in departements %}<option {{ 'selected' if v.get('departement_a_servir') == d }}>{{ d }}</option>{% endfor %}</select></div>
+    <div class="champ-deps"><span class="lib-deps" id="s-departement_a_servir">{{ lib.departement_a_servir }}</span><div class="cases-deps" role="group" aria-labelledby="s-departement_a_servir">{% set _deps = (v.get('departement_a_servir') or "").split(", ") %}{% for d in departements %}<label class="case-dep"><input type="checkbox" name="departement_a_servir" value="{{ d }}" {{ "checked" if d in _deps }}> {{ d }}</label>{% endfor %}</div><small class="aide">Cochez tous les départements servis.</small></div>
   </div>
   {% if f %}
   <div class="grille" style="margin-top:12px">

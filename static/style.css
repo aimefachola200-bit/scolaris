@@ -260,3 +260,8 @@ table.t.plan-m input[type=date]{font-size:11px;padding:2px 3px;width:118px}
 .btn-retour{display:inline-flex;align-items:center;gap:4px;border:1px solid #CBD5E1;background:#fff;color:#1F4E79;border-radius:18px;padding:5px 12px;font-size:.92em;cursor:pointer;text-decoration:none;font-weight:600}
 .btn-retour:hover{background:#E8EEF5}.btn-retour.sec{color:#475467;font-weight:500}
 @media print{.retour-ligne{display:none}}
+/* 1.16 : départements servis — plusieurs choix */
+.champ-deps{grid-column:1/-1}.champ-deps .lib-deps{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}
+.cases-deps{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 12px;border:1px solid var(--bord);border-radius:6px;padding:8px 10px;background:#fff}
+.case-dep{display:flex;align-items:center;gap:6px;font-weight:400!important;margin:0!important;font-size:13.5px}
+.case-dep input{width:auto}

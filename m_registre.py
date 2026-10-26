@@ -256,6 +256,35 @@ def retour_sur(url, defaut):
     return url if url and url.startswith("/") and not url.startswith("//") else defaut
 
 
+# ============================================================ absences de l'appel reportées au registre
+def reporter_appels(H, classe_id, du, au):
+    """Les absences prises par « Faire l'appel » (table presences, une journée entière) entrent au registre :
+    chaque demi-journée de classe du jour est marquée absente. Chaque absence d'appel n'est reportée qu'une fois
+    (table registre_appel) : une case corrigée ensuite à la main dans le registre reste corrigée."""
+    du, au = str(du)[:10], str(au)[:10]
+    rows = H.q("""SELECT p.eleve_id, p.date FROM presences p JOIN eleves e ON e.id=p.eleve_id
+                  WHERE e.classe_id=? AND p.statut='absent' AND p.date BETWEEN ? AND ?
+                  AND NOT EXISTS (SELECT 1 FROM registre_appel ra WHERE ra.eleve_id=p.eleve_id AND ra.date=p.date)""",
+               (classe_id, du, au))
+    if not rows:
+        return 0
+    cal = Calendrier(H, H.eco())
+    for r in rows:
+        d = lire_date(r["date"])
+        for k in range(1, (cal.demi(d) if d else 0) + 1):
+            H.ex("INSERT OR IGNORE INTO registre (eleve_id, date, demi) VALUES (?,?,?)", (r["eleve_id"], r["date"], k))
+        H.ex("INSERT OR IGNORE INTO registre_appel (eleve_id, date) VALUES (?,?)", (r["eleve_id"], r["date"]))
+    return len(rows)
+
+
+def retirer_appel(H, eleve_id, jour):
+    """L'élève n'est plus absent à l'appel de ce jour : les demi-journées reportées depuis l'appel sont retirées
+    (et l'absence pourra être reportée de nouveau si l'appel la remet)."""
+    if H.q("SELECT 1 FROM registre_appel WHERE eleve_id=? AND date=?", (eleve_id, jour), un=True):
+        H.ex("DELETE FROM registre WHERE eleve_id=? AND date=?", (eleve_id, jour))
+        H.ex("DELETE FROM registre_appel WHERE eleve_id=? AND date=?", (eleve_id, jour))
+
+
 # ============================================================ calcul du relevé
 def releve_auto(H, cal, classe, annee, aujourdhui=None):
     """Valeurs calculées à partir du calendrier et du registre, pour chaque mois (None = mois à venir)."""
@@ -264,6 +293,7 @@ def releve_auto(H, cal, classe, annee, aujourdhui=None):
     # saisie dans SCOLARIS, pas la date d'arrivée réelle) ; l'effectif d'un mois se corrige à la main si besoin.
     eleves = {e["id"] for e in H.q("SELECT id FROM eleves WHERE classe_id=? AND statut='inscrit'", (classe["id"],))}
     a = int(annee[:4])
+    reporter_appels(H, classe["id"], f"{a}-09-01", min(f"{a + 1}-06-30", auj.isoformat()))
     rows = H.q("""SELECT r.eleve_id, r.date, r.demi FROM registre r JOIN eleves e ON e.id=r.eleve_id
                   WHERE e.classe_id=? AND e.statut='inscrit' AND r.date BETWEEN ? AND ?""",
                (classe["id"], f"{a}-09-01", f"{a + 1}-06-30"))
@@ -325,6 +355,10 @@ def releve_final(auto, saisies, annee):
 # ============================================================ module
 def enregistrer(app, H):
     q, ex = H.q, H.ex
+    H.schema("""CREATE TABLE IF NOT EXISTS registre_appel (   -- absences de l'appel déjà reportées au registre
+        eleve_id INTEGER NOT NULL REFERENCES eleves(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        PRIMARY KEY (eleve_id, date));""")
 
     def calendrier():
         return Calendrier(H, H.eco())
@@ -379,6 +413,7 @@ def enregistrer(app, H):
                 else (du - timedelta(days=du.weekday())).isoformat()}
 
     def absences_classe(cid, du, au):
+        reporter_appels(H, cid, du.isoformat(), au.isoformat())
         return {(r["eleve_id"], r["date"], r["demi"]) for r in q(
             """SELECT r.eleve_id, r.date, r.demi FROM registre r JOIN eleves e ON e.id=r.eleve_id
                WHERE e.classe_id=? AND r.date BETWEEN ? AND ?""", (cid, du.isoformat(), au.isoformat()))}
@@ -396,6 +431,7 @@ def enregistrer(app, H):
             d1, d2 = p["du"].isoformat(), p["au"].isoformat()
             resume = []
             for c in cls:
+                reporter_appels(H, c["id"], d1, d2)
                 eff = q("SELECT COUNT(*) n FROM eleves WHERE classe_id=? AND statut='inscrit'", (c["id"],), un=True)["n"]
                 na = q("""SELECT COUNT(*) n FROM registre r JOIN eleves e ON e.id=r.eleve_id
                           WHERE e.classe_id=? AND e.statut='inscrit' AND r.date BETWEEN ? AND ?""", (c["id"], d1, d2), un=True)["n"]
