@@ -89,8 +89,8 @@ def ecrire_edition():
     edition = ""
     if "--edition" in sys.argv:
         edition = sys.argv[sys.argv.index("--edition") + 1].lower()
-        if edition not in ("privee", "publique", "cs", "ddemp"):
-            raise SystemExit("--edition : privee, publique, cs ou ddemp")
+        if edition not in ("privee", "publique", "cs", "ddemp", "enseignant"):
+            raise SystemExit("--edition : privee, publique, cs, ddemp ou enseignant")
     with open(os.path.join(PY, "scolaris_edition.py"), "w", encoding="utf-8") as f:
         f.write(f'# Écrit par preparer.py\nEDITION = "{edition}"\n')
     if edition in MARQUES:
@@ -99,7 +99,8 @@ def ecrire_edition():
 
 
 # pastille de l'icône : lettre et couleur de chaque application jumelle
-MARQUES = {"publique": ("P", (0, 135, 81, 255)), "cs": ("C", (191, 90, 0, 255)), "ddemp": ("D", (122, 31, 162, 255))}
+MARQUES = {"publique": ("P", (0, 135, 81, 255)), "cs": ("C", (191, 90, 0, 255)), "ddemp": ("D", (122, 31, 162, 255)),
+           "enseignant": ("E", (0, 121, 107, 255))}
 
 
 def marquer_icones(lettre="P", couleur=(0, 135, 81, 255)):

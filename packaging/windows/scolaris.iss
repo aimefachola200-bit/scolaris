@@ -1,10 +1,10 @@
 ﻿; Inno Setup : fabrique SCOLARIS-Installation-x.y.z.exe à partir de dist\SCOLARIS
 ; Compiler depuis la racine du projet :  iscc /DVersion=1.3.0 packaging\windows\scolaris.iss
-; Applications jumelles :  iscc /DVersion=1.12.0 /DEdition=publique|cs|ddemp packaging\windows\scolaris.iss
+; Applications jumelles :  iscc /DVersion=1.14.0 /DEdition=publique|cs|ddemp|enseignant packaging\windows\scolaris.iss
 ;   -> SCOLARIS-Public-Installation-x.y.z.exe (dossier, données, port 5101 et raccourcis séparés)
 
 #ifndef Version
-  #define Version "1.12.0"
+  #define Version "1.14.0"
 #endif
 #ifndef Edition
   #define Edition "privee"
@@ -27,12 +27,23 @@
   #define Donnees "SCOLARIS_DDEMP"
   #define Port "5103"
   #define Id "{{07A8651F-A359-4DAE-9B08-6E7E76C225FC}"
+#elif Edition == "enseignant"
+  #define Nom "SCOLARIS Enseignant"
+  #define Fichier "SCOLARIS-Enseignant-Installation-"
+  #define Donnees "SCOLARIS_Enseignant"
+  #define Port "5104"
+  #define Id "{{182F82A5-9860-41F1-BB14-C99FEF4E0DB1}"
 #else
   #define Nom "SCOLARIS"
   #define Fichier "SCOLARIS-Installation-"
   #define Donnees "SCOLARIS"
   #define Port "5100"
   #define Id "{{615F2F30-6FE0-4293-BD01-EB6D706FE8E7}"
+#endif
+#if Edition == "enseignant"
+  #define Premiere "Premier lancement : renseignez votre profil, votre école et vos classes, puis créez votre compte."
+#else
+  #define Premiere "Première connexion : admin / admin123."
 #endif
 
 [Setup]
@@ -85,7 +96,7 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=
 Type: files; Name: "{app}\edition.txt"
 
 [Messages]
-french.FinishedLabel={#Nom} est installé.%n%nVos données sont enregistrées dans le dossier « {#Donnees} » de votre profil Windows : elles sont conservées si vous désinstallez ou mettez à jour {#Nom}.%n%nPremière connexion : admin / admin123.
+french.FinishedLabel={#Nom} est installé.%n%nVos données sont enregistrées dans le dossier « {#Donnees} » de votre profil Windows : elles sont conservées si vous désinstallez ou mettez à jour {#Nom}.%n%n{#Premiere}
 
 #if Edition != "privee"
 [Code]

@@ -106,6 +106,8 @@ DROITS = {
     "jur_comptes": {"admin", "responsable", "chef_service"},
     "jur_financement": {"admin", "responsable", "chef_service", "agent"},
 }
+# v1.14 : droits supplémentaires de l'enseignant dans SON application personnelle (SCOLARIS Enseignant)
+DROITS_ENSEIGNANT_AUTONOME = {"synoptique"}
 TYPES_DOCS = {
     "carte": "Carte d'élève",
     "certificat_frequentation": "Certificat de fréquentation",
@@ -156,6 +158,10 @@ def peut(module):
     if module.startswith("jur_") and reel != role:   # droits de juridiction : toujours selon le rôle réel
         return reel in DROITS[module]
     if role in DROITS[module]:
+        return True
+    # v1.14 : application personnelle de l'enseignant — il tient lui-même les emplois du temps et la planification
+    # de SES niveaux (m_perimetre_enseignant limite toujours aux niveaux de ses classes)
+    if config.EDITION == "enseignant" and role == "enseignant" and module in DROITS_ENSEIGNANT_AUTONOME:
         return True
     # applications CS / DDEMP : droits « école » hérités du rôle équivalent (jamais pour les droits jur_*)
     if config.juridiction() and role in EQUIV_ROLES_JUR and not module.startswith("jur_"):
@@ -364,7 +370,9 @@ def appliquer_parametres():
     config.PERIODES = PERIODES_TYPES.get(v.get("periodes"), PERIODES_TYPES["trimestres"])
     config.URL_PUBLIQUE = v.get("url_publique", "")
     if config.EDITION_IMPOSEE not in config.EDITIONS:   # édition choisie dans les paramètres
-        config.EDITION = v.get("edition") if v.get("edition") in config.EDITIONS else "privee"
+        config.EDITION = v.get("edition") if v.get("edition") in config.EDITIONS_PARAMETRES else "privee"
+    # v1.14 : application de l'enseignant — secteur de son école (indicateurs, cantine, carrière…)
+    config.SECTEUR_ENSEIGNANT = "privee" if v.get("secteur_enseignant") == "privee" else "publique"
 
 
 MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous les autres modules)
@@ -394,6 +402,8 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_motdepasse",
            # v1.13 : modifier / supprimer / réinitialiser (paiements, caisse, contribution de cantine)
            "m_corrections",
+           # v1.14 : SCOLARIS Enseignant — application personnelle de l'enseignant et portail /enseignant des écoles
+           "m_enseignant",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
@@ -436,7 +446,7 @@ def create_app(test_config=None):
         return dict(ECOLE=config.ECOLE, ANNEE=config.ANNEE_ACTIVE, PERIODES=config.PERIODES,
                     ROLES=ROLES, peut=peut, fcfa=fcfa, date_fr=pdfs.date_fr,
                     MODES_PAIEMENT=config.MODES_PAIEMENT, TYPES_DOCS=TYPES_DOCS, VERSION=config.VERSION, AUTONOME=config.AUTONOME,
-                    EDITION=config.EDITION, PUBLIQUE=config.publique(), EDITIONS=config.EDITIONS,
+                    EDITION=config.EDITION, PUBLIQUE=config.publique(), EDITIONS=config.EDITIONS_PARAMETRES if config.EDITION_IMPOSEE not in config.EDITIONS else config.EDITIONS,
                     JURIDICTION=config.juridiction(), NOM_APPLI=config.NOMS_APPLI.get(config.EDITION, "SCOLARIS"),
                     ROLES_EDITION={k: ROLES[k] for k in (ROLES_JURIDICTION if config.juridiction() else ROLES_ECOLE)},
                     EDITION_IMPOSEE=config.EDITION_IMPOSEE in config.EDITIONS, CONCEPTEUR=config.CONCEPTEUR,
@@ -530,6 +540,9 @@ def create_app(test_config=None):
     @app.route("/logout")
     def logout():
         session.pop("uid", None)
+        # v1.14 : portail « SCOLARIS Enseignant » (et application de l'enseignant) : retour à sa page de connexion
+        if (session.pop("portail", None) == "enseignant" or config.EDITION == "enseignant") and "ens_portail" in app.view_functions:
+            return redirect(url_for("ens_portail"))
         return redirect(url_for("login"))
 
     @app.route("/mon-compte", methods=["GET", "POST"])
@@ -1426,7 +1439,7 @@ def create_app(test_config=None):
                             periodes=per if per in PERIODES_TYPES else "trimestres")
                 if config.EDITION_IMPOSEE not in config.EDITIONS:
                     ed = request.form.get("edition")
-                    nouv["edition"] = ed if ed in config.EDITIONS else "privee"
+                    nouv["edition"] = ed if ed in config.EDITIONS_PARAMETRES else "privee"
                 db = get_db()
                 for k, v in nouv.items():
                     db.execute("INSERT INTO parametres (cle, valeur) VALUES (?,?) "

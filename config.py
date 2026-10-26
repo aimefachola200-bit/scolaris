@@ -6,13 +6,14 @@ import os
 
 import sys
 
-VERSION = "1.12.0"
+VERSION = "1.14.0"
 # v1.8 : vérification des nouvelles versions (page « Releases » du dépôt GitHub) et fichiers à proposer par édition
 DEPOT_MAJ = os.environ.get("SCOLARIS_DEPOT_MAJ", "aimefachola200-bit/scolaris")
 FICHIERS_MAJ = {"privee": ("SCOLARIS-Installation.exe", "SCOLARIS-Autonome.apk"),
                 "publique": ("SCOLARIS-Public-Installation.exe", "SCOLARIS-Public.apk"),
                 "cs": ("SCOLARIS-Circonscription-Installation.exe", "SCOLARIS-Circonscription.apk"),
-                "ddemp": ("SCOLARIS-DDEMP-Installation.exe", "SCOLARIS-DDEMP.apk")}
+                "ddemp": ("SCOLARIS-DDEMP-Installation.exe", "SCOLARIS-DDEMP.apk"),
+                "enseignant": ("SCOLARIS-Enseignant-Installation.exe", "SCOLARIS-Enseignant.apk")}
 APK_CLIENT = "SCOLARIS.apk"
 CONCEPTEUR = "Maître Aimé FACHE"   # mention « Conception » en bas de chaque écran et document
 
@@ -43,16 +44,30 @@ def _edition_fichier():
 
 EDITION_IMPOSEE = (os.environ.get("SCOLARIS_EDITION") or _edition_fichier() or "").lower()
 EDITIONS = {"privee": "École privée", "publique": "École publique",
-            "cs": "Circonscription scolaire (CS)", "ddemp": "Direction départementale (DDEMP)"}
+            "cs": "Circonscription scolaire (CS)", "ddemp": "Direction départementale (DDEMP)",
+            # v1.14 : application personnelle de l'enseignant (son profil, ses classes, ses documents)
+            "enseignant": "Enseignant (application personnelle)"}
+# éditions choisies dans Administration → Paramètres (l'application de l'enseignant est fixée par l'installation)
+EDITIONS_PARAMETRES = {k: v for k, v in EDITIONS.items() if k != "enseignant"}
 EDITION = EDITION_IMPOSEE if EDITION_IMPOSEE in EDITIONS else "privee"
 # applications d'administration : la CS rassemble les écoles de sa juridiction, la DDEMP les CS du département
-NOMS_APPLI = {"privee": "SCOLARIS", "publique": "SCOLARIS Public", "cs": "SCOLARIS Circonscription", "ddemp": "SCOLARIS DDEMP"}
-DOSSIERS = {"privee": "SCOLARIS", "publique": "SCOLARIS_Public", "cs": "SCOLARIS_CS", "ddemp": "SCOLARIS_DDEMP"}
-PORTS = {"privee": 5100, "publique": 5101, "cs": 5102, "ddemp": 5103}
+NOMS_APPLI = {"privee": "SCOLARIS", "publique": "SCOLARIS Public", "cs": "SCOLARIS Circonscription", "ddemp": "SCOLARIS DDEMP",
+              "enseignant": "SCOLARIS Enseignant"}
+DOSSIERS = {"privee": "SCOLARIS", "publique": "SCOLARIS_Public", "cs": "SCOLARIS_CS", "ddemp": "SCOLARIS_DDEMP",
+            "enseignant": "SCOLARIS_Enseignant"}
+PORTS = {"privee": 5100, "publique": 5101, "cs": 5102, "ddemp": 5103, "enseignant": 5104}
+NOM_PORTAIL_ENSEIGNANT = "SCOLARIS Enseignant"
+# application de l'enseignant : secteur de SON école (« publique » ou « privee »), choisi au premier lancement
+SECTEUR_ENSEIGNANT = "publique"
 
 
 def publique():
-    return EDITION == "publique"
+    return EDITION == "publique" or (EDITION == "enseignant" and SECTEUR_ENSEIGNANT == "publique")
+
+
+def enseignant():
+    """Vrai pour l'application personnelle de l'enseignant (SCOLARIS Enseignant)."""
+    return EDITION == "enseignant"
 
 
 def juridiction():

@@ -98,6 +98,13 @@ CALENDRIER_LECTURE = {"calendrier_officiel", "calendrier_officiel_pdf", "calendr
 MOTS_ECRITURE = ("form", "modifier", "nouveau", "nouvelle", "ajouter", "supprimer", "import", "reinit", "meta",
                  "preparer", "recharger", "retablir", "valider", "enregistrer")
 
+# v1.14 — application personnelle de l'enseignant (édition « enseignant ») : il est seul dans SA base ; il ajoute,
+# importe, exporte et retire lui-même ses élèves (toujours dans ses classes) et tient l'emploi du temps et la
+# planification annuelle de SES niveaux. Rien de cela n'est ouvert dans les applications d'école.
+AUTONOME_OUVERTS = {"eleves_import", "eleves_modele_xlsx", "eleves_export", "eleve_supprimer"}
+SYNOPTIQUE_AUTONOME = {"synoptique_edt_form", "synoptique_edt_reinit", "synoptique_planification_form",
+                       "synoptique_planification_reinit", "synoptique_planification_import"}
+
 # préfixes de routes où <int:eid> désigne un élève (ailleurs : école, épreuve…)
 ROUTES_ELEVE = ("/eleves/", "/cep/fiche/", "/carte/")
 
@@ -173,6 +180,9 @@ def enregistrer(app, H):
         va = request.view_args or {}
         # 1. tableau de bord → Ma classe (v1.8), à défaut Mon espace (CS / DDEMP : a_integration ouvre l'école du compte)
         if ep == "accueil":
+            # v1.14 : application de l'enseignant et portail /enseignant → son tableau de bord
+            if getattr(H, "menu_enseignant", None) and H.menu_enseignant() and "ens_tableau" in app.view_functions:
+                return redirect(url_for("ens_tableau"))
             if config.juridiction():
                 return None
             for cible in ("ma_classe", "espace_enseignant"):
@@ -180,10 +190,19 @@ def enregistrer(app, H):
                     return redirect(url_for(cible))
             return None
         # 2. domaine du directeur
-        if est_interdit(ep):
+        autonome = config.enseignant()
+        if est_interdit(ep) and not (autonome and ep in AUTONOME_OUVERTS):
             refuser()
         if ep == "eleve_form" and not va.get("eid"):
-            refuser()                                   # inscription d'un élève
+            if not autonome:
+                refuser()                               # inscription d'un élève : secrétariat / direction
+            if request.method == "POST":
+                brut_c = request.form.get("classe_id", "")
+                exiger_classe(int(brut_c) if brut_c.isdigit() else None)     # application : dans SES classes
+        if autonome and ep in SYNOPTIQUE_AUTONOME:
+            if va.get("niveau") not in niveaux_enseignant():
+                refuser()                               # emploi du temps / planification de SES niveaux
+            return None
         # 3. modules en lecture seule (sauf la planification mensuelle de ses classes : règle 4)
         if ep.startswith(LECTURE_SEULE) and not ep.startswith(SYNOPTIQUE_CLASSE):
             if request.method != "GET":

@@ -15,7 +15,7 @@ on:
       - ".github/workflows/applications-web.yml"
 
 env:
-  VERSION: "1.12.0"
+  VERSION: "1.14.0"
 
 jobs:
   tests:
@@ -66,7 +66,7 @@ jobs:
           if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
           & $iscc "/DVersion=${env:VERSION}" packaging\windows\scolaris.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup a échoué (SCOLARIS)" }
-          foreach ($ed in @("publique", "cs", "ddemp")) {
+          foreach ($ed in @("publique", "cs", "ddemp", "enseignant")) {
             & $iscc "/DVersion=${env:VERSION}" "/DEdition=$ed" packaging\windows\scolaris.iss
             if ($LASTEXITCODE -ne 0) { throw "Inno Setup a échoué ($ed)" }
           }
@@ -147,6 +147,10 @@ jobs:
             id: bj.scolaris.ddemp
             nom: SCOLARIS DDEMP
             fichier: SCOLARIS-DDEMP
+          - edition: enseignant
+            id: bj.scolaris.enseignant
+            nom: SCOLARIS Enseignant
+            fichier: SCOLARIS-Enseignant
     steps:
       - uses: actions/checkout@v4
       - name: Décompresser le code source (scolaris_source.zip)
@@ -230,6 +234,8 @@ jobs:
           cp SCOLARIS-DDEMP-[0-9]*.apk SCOLARIS-DDEMP.apk
           cp SCOLARIS-Circonscription-Installation-*.exe SCOLARIS-Circonscription-Installation.exe
           cp SCOLARIS-DDEMP-Installation-*.exe SCOLARIS-DDEMP-Installation.exe
+          cp SCOLARIS-Enseignant-[0-9]*.apk SCOLARIS-Enseignant.apk
+          cp SCOLARIS-Enseignant-Installation-*.exe SCOLARIS-Enseignant-Installation.exe
           ls -l
       - uses: softprops/action-gh-release@v2
         with:
@@ -242,6 +248,7 @@ jobs:
             **SCOLARIS Public (écoles publiques)** : SCOLARIS-Public.apk (Android) et SCOLARIS-Public-Installation.exe (Windows).
             **SCOLARIS Circonscription (CS)** : SCOLARIS-Circonscription.apk et SCOLARIS-Circonscription-Installation.exe.
             **SCOLARIS DDEMP** : SCOLARIS-DDEMP.apk et SCOLARIS-DDEMP-Installation.exe.
+            **SCOLARIS Enseignant** (application personnelle de l'enseignant) : SCOLARIS-Enseignant.apk et SCOLARIS-Enseignant-Installation.exe.
             **Android connecté** : SCOLARIS.apk se connecte au serveur de l'école ou à la version en ligne.
             **Windows** : SCOLARIS-Installation.exe installe SCOLARIS sur un PC.
 

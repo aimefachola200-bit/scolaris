@@ -28,6 +28,15 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **SCOLARIS Enseignant** (v1.14.0) : application personnelle de l'enseignant (SCOLARIS-Enseignant.apk,
+  SCOLARIS-Enseignant-Installation.exe), sans passer par l'application de l'école. Premier lancement : son profil
+  (NIP, matricule, grade, catégorie, dates de prise de service, diplômes), son école (secteur, CS, DDEMP, directeur)
+  et ses classes ; menu réduit à son périmètre : ma classe (élèves ajoutés ou importés par lui, appel, notes,
+  bulletins), emplois du temps, planifications annuelle et mensuelle, calendrier officiel, règlement intérieur,
+  thèmes d'UP, documents officiels et « Mes certificats » (PDF pré-remplis), ma carrière, mon compte. Dans les
+  applications d'école, portail `/enseignant` « SCOLARIS Enseignant » (installable) avec le même menu sur les données
+  de l'école et le même périmètre. **Corrections** (v1.13) : modifier / supprimer un paiement ou une opération de
+  caisse, réinitialiser les paiements d'un élève ou la contribution de cantine d'une classe.
 - **Retour, mot de passe oublié** (v1.12.0) : bouton « ← Retour » (page précédente) et « 🏠 Accueil » en haut de chaque
   page ; lien « Mot de passe oublié ? » à la connexion : question de secours (définie dans « Mon compte ») pour choisir
   soi-même un nouveau mot de passe, ou demande à l'administrateur (Utilisateurs → « Mot de passe provisoire »), avec

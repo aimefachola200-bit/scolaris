@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ VERSION }}">
 <script src="{{ url_for('static', filename='scolaris.js') }}?v={{ VERSION }}" defer></script>
 {% if g.user %}<script src="{{ url_for('referentiel_js') }}" defer></script>{% endif %}
-<link rel="manifest" href="{{ url_for('manifeste') }}">
+<link rel="manifest" href="{{ url_for('ens_manifeste') if PORTAIL_ENSEIGNANT is defined and PORTAIL_ENSEIGNANT() else url_for('manifeste') }}">
 <meta name="theme-color" content="#1F4E79">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,7 +36,8 @@
     {% if JURIDICTION and ep_existe('jur_ecole_fermer') %}<button type="submit" class="btn sec petit" style="margin-top:4px;font-size:11px;padding:1px 7px" formaction="{{ url_for('jur_ecole_fermer') }}" onclick="this.form.onsubmit=null">Fermer l'école</button>{% endif %}
   </form>{% endif %}
   <nav id="menu">
-    {% if JURIDICTION %}{% include "_menu_juridiction.html" %}{% else %}
+    {% if MENU_ENSEIGNANT is defined and MENU_ENSEIGNANT() %}{% include "_menu_enseignant.html" %}{# v1.14 : SCOLARIS Enseignant #}
+    {% elif JURIDICTION %}{% include "_menu_juridiction.html" %}{% else %}
     {% set ENS = g.user.role == 'enseignant' %}{# périmètre de l'enseignant : ses classes, hors domaine du directeur (m_perimetre_enseignant) #}
     {% if peut('synoptique') and ep_existe('synoptique_accueil') %}{{ lien('synoptique_accueil', "Tableau synoptique de l'école", ep.startswith('synoptique'), '🏫') }}{% endif %}
     {% if not ENS %}{{ lien('accueil', 'Tableau de bord', ep=='accueil', '⌂') }}{% endif %}

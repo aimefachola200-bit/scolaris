@@ -41,6 +41,12 @@ GROUPES = [
         ("autonome", "SCOLARIS-DDEMP.apk", "Android – SCOLARIS DDEMP", "Pour la Direction départementale : rassemble les circonscriptions du département."),
         ("windows", "SCOLARIS-DDEMP-Installation.exe", "Windows – SCOLARIS DDEMP", "Installe l'application de la DDEMP sur un PC (adresse http://localhost:5103)."),
     ]),
+    ("SCOLARIS Enseignant — l'application de l'enseignant", "Ma classe (élèves, appel, notes, bulletins), emplois du temps, "
+     "planifications annuelle et mensuelle, calendrier officiel, règlement intérieur, thèmes d'UP, documents officiels et "
+     "certificats pré-remplis, ma carrière — sur son propre téléphone ou ordinateur, sans l'application de l'école.", [
+        ("autonome", "SCOLARIS-Enseignant.apk", "Android – SCOLARIS Enseignant", "Application personnelle de l'enseignant : premier lancement = son profil, son école et ses classes."),
+        ("windows", "SCOLARIS-Enseignant-Installation.exe", "Windows – SCOLARIS Enseignant", "Installe l'application de l'enseignant sur un PC (adresse http://localhost:5104)."),
+    ]),
 ]
 
 
