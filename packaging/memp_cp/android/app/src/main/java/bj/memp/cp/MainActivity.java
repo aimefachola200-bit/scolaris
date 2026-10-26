@@ -65,9 +65,19 @@ public class MainActivity extends Activity {
     /** Petit script ajouté à chaque page : téléchargements (liens « download » et blob:) et impression. */
     private static final String PONT_JS =
             "(function(){if(window.__mempPont)return;window.__mempPont=1;"
-            + "function envoyer(href,nom){fetch(href).then(function(r){return r.blob();}).then(function(b){var f=new FileReader();"
-            + "f.onload=function(){var d=String(f.result);MempCP.enregistrer(nom||'document',b.type||'application/octet-stream',d.substring(d.indexOf(',')+1));};"
-            + "f.readAsDataURL(b);}).catch(function(e){alert('Enregistrement impossible : '+e);});}"
+            // les fichiers créés par la page (Excel, PDF…) sont gardés le temps de les enregistrer : plus de fichier
+            // vide quand la page libère l'adresse « blob: » avant qu'Android ait fini de la lire
+            + "var memo={},co=URL.createObjectURL,ro=URL.revokeObjectURL;"
+            + "URL.createObjectURL=function(o){var u=co.apply(URL,arguments);try{if(o instanceof Blob)memo[u]=o;}catch(x){}return u;};"
+            + "URL.revokeObjectURL=function(u){setTimeout(function(){delete memo[u];ro.call(URL,u);},120000);};"
+            + "function lire(b,nom){var f=new FileReader();"
+            + "f.onload=function(){var d=String(f.result);MempCP.enregistrer(nom||'document',b.type||'',d.substring(d.indexOf(',')+1));};"
+            + "f.onerror=function(){alert('Enregistrement impossible : fichier illisible');};f.readAsDataURL(b);}"
+            + "function envoyer(href,nom){if(memo[href]){lire(memo[href],nom);return;}"
+            + "fetch(href).then(function(r){return r.blob();}).then(function(b){lire(b,nom);}).catch(function(e){alert('Enregistrement impossible : '+e);});}"
+            // lien créé puis cliqué par programme (même sans être placé dans la page)
+            + "var clic=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){var h=this.getAttribute('href')||'';"
+            + "if(this.hasAttribute('download')&&(h.indexOf('blob:')===0||h.indexOf('data:')===0)){envoyer(this.href,this.getAttribute('download'));return;}return clic.apply(this,arguments);};"
             + "document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[download]');"
             + "if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('blob:')===0||h.indexOf('data:')===0){e.preventDefault();e.stopPropagation();envoyer(a.href,a.getAttribute('download'));}},true);"
             + "window.print=function(){MempCP.imprimer(document.title||'MEMP CP');};"
@@ -250,6 +260,12 @@ public class MainActivity extends Activity {
         try {
             byte[] octets = Base64.decode(base64, Base64.DEFAULT);
             String propre = nom.replaceAll("[\\\\/:*?\"<>|]", "_");
+            if (type == null || type.isEmpty() || type.startsWith("application/octet-stream")) {
+                String ext = android.webkit.MimeTypeMap.getFileExtensionFromUrl(propre.replace(' ', '_')).toLowerCase();
+                String devine = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                if ("xlsx".equals(ext)) devine = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                type = devine != null ? devine : "application/octet-stream";
+            }
             if (Build.VERSION.SDK_INT >= 29) {
                 ContentValues v = new ContentValues();
                 v.put(MediaStore.Downloads.DISPLAY_NAME, propre);
