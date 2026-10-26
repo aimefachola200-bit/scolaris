@@ -135,8 +135,19 @@ table.em select{max-width:260px}
         <button class="btn petit" type="button" onclick="var s=document.getElementById('mn-classe');if(s.value)location.href=s.value">⬇ Télécharger rempli</button>
       </form>
       {% else %}<p class="gris">Aucune classe du primaire accessible.</p>{% endif %}
-      <p class="aide">Les notes du fichier sont destinées à EducMaster (chargement sur la plateforme) : aucun import de ce modèle dans SCOLARIS —
-        utilisez « Déposer le fichier EducMaster » ci-dessus pour mettre à jour les élèves à partir d'un fichier de la plateforme.</p>
+      {% if classes_primaire %}
+      <form method="post" id="f-import-notes" enctype="multipart/form-data"
+            onsubmit="var s=document.getElementById('in-classe');this.action=s.value;return !!s.value">
+        <p><label for="in-classe">Importer un modèle de notes rempli (EducMaster ou enseignant) dans la classe</label><br>
+          <select id="in-classe">{% for c in classes_primaire %}<option value="{{ url_for('educmaster_modele_notes_importer', cid=c.id) }}">{{ c.nom }}</option>{% endfor %}</select></p>
+        <p><input type="file" name="fichier" accept=".xlsx,.xlsm" required aria-label="Modèle de notes rempli"></p>
+        <p><label style="font-weight:normal"><input type="checkbox" name="creer" value="1" checked> créer les évaluations manquantes (formative 1, sommatives 1 à 3)</label></p>
+        <div class="actions"><button class="btn sec petit" name="simuler" value="1">Simuler</button>
+          <button class="btn petit" data-confirmer="Importer les notes de ce fichier dans SCOLARIS (les notes existantes de ces évaluations seront remplacées) ?">⬆ Importer les notes</button></div>
+      </form>
+      <p class="aide">Chaque feuille va dans l'évaluation correspondante de la classe ; élève retrouvé par matricule EducMaster puis
+        par nom + prénoms ; « Note obtenue » importée (0 à 20), « Note perf. » (barème) ignorée.</p>
+      {% endif %}
     </div>
 
     <div class="carte">

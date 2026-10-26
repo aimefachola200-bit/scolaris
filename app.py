@@ -118,7 +118,22 @@ TYPES_DOCS = {
     "recu": "Reçu de paiement",
     "bulletin_paie": "Bulletin de paie",
     "carte_candidat": "Carte scolaire du candidat (CEP)",
+    # v1.15 : documents en tableau signés (registres, relevés, affichage, statistiques, synthèses…)
+    "registre": "Registre de présence (appel)",
+    "releve": "Tableau des relevés mensuels",
+    "affichage": "Tableau d'affichage des résultats",
+    "statistiques": "Statistiques et courbes",
+    "evaluation": "Évaluation : résultats et analyse",
+    "synthese": "Synthèse des évaluations",
+    "bilan": "Bilan annuel",
+    "tableau": "Document officiel (tableau signé)",
 }
+pdfs.TYPES_TABLEAU.update({
+    "REGISTRE": "registre", "TABLEAU DE RELEVÉS": "releve", "RELEVÉ": "releve", "TABLEAU D'AFFICHAGE": "affichage",
+    "TABLEAU D’AFFICHAGE": "affichage", "STATISTIQUE": "statistiques", "COURBE": "statistiques",
+    "PRÉSENCES ET ABSENCES": "statistiques", "SYNTHÈSE": "synthese", "BILAN": "bilan", "RAPPORT D": "evaluation",
+    "ANALYSE": "evaluation", "RÉSULTATS": "evaluation", "FICHE DE REMÉDIATION": "evaluation", "REMÉDIATION": "evaluation",
+})
 EXT_PHOTO = {".jpg", ".jpeg", ".png"}
 
 # Formulaire public « Inscrire mon école »
@@ -271,6 +286,9 @@ def enregistrer_document(type_doc, eleve_id, libelle, cle=None):
        "VALUES (?,?,?,?,?,?,?,?)",
        (code, type_doc, cle, eleve_id, libelle, empreinte, horodatage, g.user["id"] if g.user else None))
     return code
+
+
+pdfs.ENREGISTREUR = lambda type_doc, libelle, cle: enregistrer_document(type_doc, None, libelle, cle=cle)
 
 
 def pdf_reponse(contenu, nom):
@@ -1256,7 +1274,10 @@ def create_app(test_config=None):
                 if p and p["annule"]:
                     doc = dict(doc)
                     doc["annule"] = True
-        return render_template("verifier.html", code=code, doc=doc, eleve=eleve)
+        signataire = None
+        if doc and doc["cree_par"]:
+            signataire = q("SELECT nom, role FROM utilisateurs WHERE id=?", (doc["cree_par"],), un=True)
+        return render_template("verifier.html", code=code, doc=doc, eleve=eleve, signataire=signataire)
 
     # ------------------------------------------------------------ utilisateurs & journal
     def divisions_comptes():

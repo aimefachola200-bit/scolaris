@@ -1226,6 +1226,12 @@ def pdf_tableau_honneur(H, cl, source, retenus, msg, criteres, v, img_tit, img_d
             _cadre(c, W, Hh)
             ys = _entete_officiel(H, c, W, Hh, cl, v) - 20
         _signatures_canevas(H, c, W, ys, cl, v, img_tit, img_dir)
+        # v1.15 : tableau d'honneur vérifiable (code + QR)
+        code = H.enregistrer_document(
+            "affichage", None, f"Tableau d'honneur {source} – {cl['nom']} ({v.get('annee') or ''})"[:250],
+            cle="tab-honneur:" + hashlib.sha1(f"{cl['id']}|{source}|{criteres}|"
+                                              f"{[(e['eleve']['id'] if isinstance(e, dict) and 'eleve' in e else str(e)) for e in retenus]}".encode()).hexdigest()[:24])
+        P._qr(c, code, 18 * mm, 10 * mm, 14 * mm)
         c.showPage()
         break
     c.save()

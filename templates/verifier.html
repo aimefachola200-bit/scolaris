@@ -12,6 +12,7 @@
       <dt>Type</dt><dd>{{ TYPES_DOCS.get(doc.type, doc.type) }}</dd>
       <dt>Objet</dt><dd>{{ doc.libelle }}</dd>
       {% if eleve %}<dt>Élève</dt><dd>{{ eleve.nom }} {{ eleve.prenoms }} ({{ eleve.matricule }})</dd>{% endif %}
+      {% if signataire %}<dt>Émis et signé par</dt><dd>{{ signataire.nom }} ({{ ROLES.get(signataire.role, signataire.role) if ROLES is defined else signataire.role }})</dd>{% endif %}
       <dt>Émis le</dt><dd>{{ date_fr(doc.cree_le) }} à {{ doc.cree_le[11:16] }}</dd>
       <dt>Empreinte</dt><dd style="font-family:monospace;font-size:12px">{{ doc.empreinte[:24] }}…</dd>
     </dl>

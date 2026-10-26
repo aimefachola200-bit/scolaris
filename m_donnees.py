@@ -951,6 +951,147 @@ def enregistrer(app, H):
             flash("Feuilles sans évaluation SCOLARIS correspondante (élèves seuls, sans notes) : " + ", ".join(sans_ev), "info")
         return reponse_classeur(wb, f"EducMaster_notes_{nom_fichier(cl['nom'])}_{H.config.ANNEE_ACTIVE}.xlsx")
 
+    # --- a bis) v1.15 : importer dans SCOLARIS le modèle de notes rempli (sur EducMaster ou par l'enseignant)
+    def lire_note_modele(v):
+        """Cellule « Note obtenue » -> note sur 20 (None si vide). ValueError si illisible ou hors de 0 à 20."""
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        x = float(str(v).strip().replace(",", ".").replace(" ", "")) if not isinstance(v, (int, float)) else float(v)
+        if not 0 <= x <= 20:
+            raise ValueError
+        return round(x, 2)
+
+    @app.route("/educmaster/modeles/notes-primaire/<int:cid>/importer", methods=["POST"])
+    @H.connexion_requise()
+    def educmaster_modele_notes_importer(cid):
+        """Chaque feuille (Évaluation formative 1, sommatives 1 à 3) va dans l'évaluation SCOLARIS correspondante de la
+        classe (créée si demandé) ; élève retrouvé par matricule EducMaster puis par nom + prénoms ; « Note perf. »
+        (barème) n'est pas importée. Rapport détaillé ligne par ligne ; mode simulation."""
+        if not H.peut("donnees") and g.user["role"] != "enseignant":
+            abort(403)
+        H.verifier_classe(cid)
+        cl = H.classe_ou_404(cid)
+        retour = redirect(url_for("educmaster_accueil") + "#rapport-modeles")
+        if cl["cycle"] != "primaire":
+            flash("Le modèle de notes EducMaster concerne les classes du primaire.", "warning")
+            return retour
+        f = request.files.get("fichier")
+        if not f or not f.filename or not f.filename.lower().endswith((".xlsx", ".xlsm")):
+            flash("Choisissez le modèle de notes EducMaster rempli (.xlsx).", "warning")
+            return retour
+        contenu = f.read()
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(io.BytesIO(contenu), data_only=True)
+        except Exception:  # noqa: BLE001
+            flash("Classeur illisible (fichier abîmé, protégé, ou ce n'est pas un fichier Excel).", "danger")
+            return retour
+        simuler = bool(request.form.get("simuler"))
+        creer = bool(request.form.get("creer"))
+        eleves = list(EC.eleves_classe(cl["id"]))
+        idx = index_eleves(eleves)
+        evaluations = EC.evaluations_classe(cl["id"])
+        mats = {m["code"]: m for m in EC.matieres_cycle("primaire")}
+        db = H.get_db()
+        stats = {"maj": 0, "inchanges": 0, "crees": 0, "ignores": 0}
+        details = []
+        for ws in wb.worksheets:
+            cols = colonnes_modele_notes(ws)
+            if not cols:
+                details.append([ws.title, "—", "Ignoré", "aucune colonne de matière reconnue"])
+                continue
+            ev = evaluation_pour_feuille(ws.title, evaluations)
+            lignes = []
+            for r in range(LIGNE_DONNEES_NOTES, min(ws.max_row, MAX_LIGNES_MODELE) + 1):
+                mat, nom, pre = (ws.cell(row=r, column=k).value for k in (1, 2, 3))
+                notes, err = {}, []
+                for code, c in cols.items():
+                    try:
+                        v = lire_note_modele(ws.cell(row=r, column=c).value)
+                    except (ValueError, TypeError):
+                        err.append(f"{code} « {ws.cell(row=r, column=c).value} »")
+                        continue
+                    if v is not None:
+                        notes[code] = v
+                if any(x not in (None, "") for x in (mat, nom, pre)) or notes:
+                    lignes.append((r, str(mat or "").strip(), str(nom or "").strip(), str(pre or "").strip(), notes, err))
+            if not any(l[4] for l in lignes):
+                details.append([ws.title, "—", "Ignoré", "aucune note dans cette feuille"])
+                continue
+            if ev is None:
+                m_ = re.search(r"(formative|sommative|diagnostique|certificative)\D*(\d+)", normaliser(ws.title))
+                if not (creer and m_):
+                    stats["ignores"] += len(lignes)
+                    details.append([ws.title, "—", "Ignoré", "pas d'évaluation correspondante dans la classe "
+                                    "(cochez « créer les évaluations manquantes »)"])
+                    continue
+                type_, num = m_.group(1), int(m_.group(2))
+                codes = sorted({c for l in lignes for c in l[4]} & set(mats), key=lambda c: mats[c]["ordre"] or 0)
+                lib = EC.libelle(type_, num)
+                ev = {"id": None, "type": type_, "numero": num, "libelle": lib, "annee": H.config.ANNEE_ACTIVE,
+                      "matieres_ids": [mats[c]["id"] for c in codes], "titre": f"{EC.TYPES.get(type_, type_)} N° {num}"}
+                if not simuler:
+                    ev["id"] = ex("""INSERT INTO evaluations (classe_id, annee, type, numero, libelle, date, matieres, cree_le)
+                                     VALUES (?,?,?,?,?,NULL,?,?)""",
+                                  (cl["id"], H.config.ANNEE_ACTIVE, type_, num, lib, json.dumps(ev["matieres_ids"]),
+                                   H.maintenant()))
+                    evaluations.append(ev)
+                stats["crees"] += 1
+                details.append([ws.title, "—", "Créé", f"évaluation « {ev['titre']} » ({len(codes)} matière(s))"])
+            ids_ev = {m["id"] for m in EC.matieres_de(ev, cl)}
+            anciens = {}
+            if eleves:
+                marque = ",".join("?" * len(eleves))
+                for n in q(f"SELECT * FROM notes WHERE periode=? AND annee=? AND eleve_id IN ({marque})",
+                           [ev["libelle"], ev["annee"]] + [e["id"] for e in eleves]):
+                    anciens[(n["eleve_id"], n["matiere_id"])] = n
+            hors = set()
+            for r, mat, nom, pre, notes, err in lignes:
+                qui = f"{nom} {pre}".strip() or mat or f"ligne {r}"
+                el = retrouver(idx, {"matricule_em": mat, "nom": nom, "prenoms": pre})
+                if el is None:
+                    stats["ignores"] += 1
+                    details.append([f"{ws.title} l.{r}", qui, "Ignoré", "élève introuvable dans " + cl["nom"]
+                                    + (f" (matricule {mat})" if mat else "")])
+                    continue
+                n_maj = n_id = 0
+                for code, v in notes.items():
+                    m = mats.get(code)
+                    if not m or m["id"] not in ids_ev:
+                        hors.add(code)
+                        continue
+                    a = anciens.get((el["id"], m["id"]))
+                    if a and a["valeur"] == v and not a["dispense"]:
+                        n_id += 1
+                        continue
+                    if not simuler:
+                        db.execute("""INSERT INTO notes (eleve_id, matiere_id, periode, annee, valeur, dispense, saisi_par, modifie_le)
+                                      VALUES (?,?,?,?,?,0,?,?) ON CONFLICT(eleve_id, matiere_id, periode, annee)
+                                      DO UPDATE SET valeur=excluded.valeur, dispense=0, saisi_par=excluded.saisi_par,
+                                                    modifie_le=excluded.modifie_le""",
+                                   (el["id"], m["id"], ev["libelle"], ev["annee"], v, g.user["id"], H.maintenant()))
+                    n_maj += 1
+                if n_maj:
+                    stats["maj"] += 1
+                    details.append([f"{ws.title} l.{r}", qui, "Mis à jour", f"{n_maj} note(s) → {ev['titre']}"
+                                    + (f" ; refusé : {', '.join(err)}" if err else "")])
+                elif err:
+                    stats["ignores"] += 1
+                    details.append([f"{ws.title} l.{r}", qui, "Ignoré", "notes illisibles : " + ", ".join(err)])
+                else:
+                    stats["inchanges"] += 1
+            if hors:
+                details.append([ws.title, "—", "Ignoré", "matières non évaluées dans « " + ev["titre"] + " » : "
+                                + ", ".join(sorted(hors))])
+        wb.close()
+        if not simuler:
+            db.commit()
+            H.journal("educmaster_import_notes", f"{cl['nom']} : {stats['maj']} élève(s) mis à jour")
+        enregistrer_rapport(f"Import du modèle de notes — {cl['nom']}", stats, details, simuler)
+        flash(("Simulation : " if simuler else "") + f"notes importées pour {stats['maj']} élève(s), {stats['inchanges']} "
+              f"inchangé(s), {stats['ignores']} ligne(s) ignorée(s). Détail ci-dessous.", "info" if simuler else "success")
+        return retour
+
     # --- b) modèle des élèves par classe
     def eleves_niveau(niveau):
         return q("""SELECT e.*, c.nom classe_nom FROM eleves e JOIN classes c ON c.id=e.classe_id

@@ -965,9 +965,45 @@ def _entete_primaire(c, W, H, marge, infos_haut=None, cycle=None):
     return min(yy, y - 20 * mm) - 4
 
 
+# v1.15 : enregistrement des documents vérifiables (réglé par app.py : enregistrer_document) —
+# (type, libellé, clé) -> code. Sans lui (hors requête, tests de pdfs seuls) : pas de QR.
+ENREGISTREUR = None
+TYPES_TABLEAU = {}   # titre en capitales (début) -> type de document vérifiable
+
+
+def code_tableau(titre, sous_titre, infos, lignes, total, verif=None):
+    """Code de vérification d'un document en tableau signé : même contenu = même code (clé = empreinte du contenu)."""
+    if ENREGISTREUR is None:
+        return None
+    import hashlib
+    import re as _re
+
+    def txt(v):
+        if isinstance(v, Paragraph):
+            return v.getPlainText()
+        return "" if v is None else str(v)
+    try:
+        if verif:
+            type_doc, libelle = verif
+        else:
+            t = _re.sub(r"<[^>]+>", "", str(titre)).strip()
+            type_doc = next((v for k, v in TYPES_TABLEAU.items() if k in t.upper()), "tableau")
+            st = _re.sub(r"<[^>]+>", "", str(sous_titre or "")).strip()
+            libelle = (t + (" – " + st if st else ""))[:200]
+            ident = " · ".join(f"{a} {txt(b)}" for a, b in (infos or [])[:4] if txt(b))
+            if ident:
+                libelle = (libelle + " – " + ident)[:250]
+        brut = "|".join([str(titre), str(sous_titre)] + [f"{a}={txt(b)}" for a, b in (infos or [])]
+                        + ["\t".join(txt(x) for x in l) for l in (lignes or [])] + ["\t".join(txt(x) for x in (total or []))])
+        cle = type_doc + "|" + hashlib.sha256(brut.encode("utf-8")).hexdigest()[:32]
+        return ENREGISTREUR(type_doc, libelle, cle)
+    except Exception:  # noqa: BLE001 — un document reste imprimable même sans code
+        return None
+
+
 def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, largeurs=None, paysage=False,
                      signatures=None, notes_bas=None, infos_haut=None, total=None, taille=7.5, avant=None, apres=None,
-                     alignements=None, surlignes=None, cycle=None):
+                     alignements=None, surlignes=None, cycle=None, code=None, verif=None, qr_bloc=True):
     """PDF d'un tableau (répété sur chaque page) avec en-tête officiel, bloc d'infos, signatures.
     colonnes : liste d'intitulés (ou liste de listes pour un en-tête sur plusieurs lignes)
     lignes : liste de listes ; total : ligne de total mise en gras
@@ -1062,9 +1098,17 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
         histoire.append(Spacer(1, 4))
         for n in notes_bas:
             histoire.append(Paragraph(n, ParagraphStyle("nb", fontName="Helvetica", fontSize=7.5, leading=9.5)))
+    # v1.15 : document signé = document vérifiable (code + QR, page /verifier)
+    if code is None and (signatures or verif):
+        code = code_tableau(titre, sous_titre, infos, lignes, total, verif)
     if signatures:
         histoire.append(Spacer(1, 6))
-        histoire.append(KeepTogether([_BlocSignatures(signatures, utile)]))
+        bloc = [_BlocSignatures(signatures, utile, code=code if len(signatures) <= 2 else None)]
+        if code and len(signatures) > 2:
+            bloc.append(_BlocQR(code, utile))
+        histoire.append(KeepTogether(bloc))
+    elif code and qr_bloc:
+        histoire += [Spacer(1, 6), _BlocQR(code, utile)]
 
     haut_entete = [0]
 
@@ -1075,6 +1119,8 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
         c.setFillColor(colors.grey)
         c.drawString(marge, 7 * mm, f"SCOLARIS · {config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
         c.drawRightString(W - marge, 7 * mm, f"Page {doc.page} · imprimé le {date.today().strftime('%d/%m/%Y')}")
+        if code:
+            c.drawCentredString(W / 2, 7 * mm, f"Document vérifiable · code {code}")
         c.setFillColor(colors.black)
 
     doc = SimpleDocTemplate(buf, pagesize=taille_page, leftMargin=marge, rightMargin=marge,
@@ -1086,13 +1132,29 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
 from reportlab.platypus.flowables import Flowable as _Flowable  # noqa: E402
 
 
+class _BlocQR(_Flowable):
+    """QR de vérification + légende (code, adresse), sous les signatures."""
+
+    def __init__(self, code, largeur, taille=20 * mm):
+        super().__init__()
+        self.code, self.largeur, self.taille = code, largeur, taille
+        self.height = taille + 2
+
+    def wrap(self, *_):
+        return self.largeur, self.height
+
+    def draw(self):
+        _qr(self.canv, self.code, 0, 1, taille=self.taille)
+
+
 class _BlocSignatures(_Flowable):
     """Signatures côte à côte : (titre, nom, image, cachet)."""
 
-    def __init__(self, signatures, largeur):
+    def __init__(self, signatures, largeur, code=None):
         super().__init__()
         self.sigs = signatures
         self.largeur = largeur
+        self.code = code   # v1.15 : QR de vérification entre les signatures (1 ou 2 signataires)
         self.height = 38 * mm
 
     def wrap(self, *_):
@@ -1101,6 +1163,15 @@ class _BlocSignatures(_Flowable):
     def draw(self):
         c = self.canv
         n = len(self.sigs)
+        if self.code:
+            t = 19 * mm
+            x0 = (self.largeur / 2 - t / 2) if n == 2 else 0
+            _qr(c, self.code, x0, 6 * mm, taille=t, legende=False)
+            c.setFont("Helvetica", 6.5)
+            c.setFillColor(colors.black)
+            xc = x0 + t / 2
+            c.drawCentredString(xc, 3.6 * mm, f"Document vérifiable · code {self.code}")
+            c.drawCentredString(xc, 1 * mm, url_verif(self.code)[:70])
         for i, s in enumerate(self.sigs):
             titre, nom, image, avec_cachet = (list(s) + [None, None, False])[:4]
             x = self.largeur * (i + 0.5) / n

@@ -69,7 +69,7 @@ def _dessiner_signature(c, pdfs, x, y, titre, nom="", image=None, cachet=False, 
     c.restoreState()
 
 
-def _flowable_signatures(pdfs, signatures, largeur):
+def _flowable_signatures(pdfs, signatures, largeur, code=None):
     """Flowable ReportLab : signatures côte à côte [(titre, nom, image, cachet)] (sans chevauchement du nom)."""
     from reportlab.lib.units import mm
     from reportlab.platypus.flowables import Flowable
@@ -80,6 +80,13 @@ def _flowable_signatures(pdfs, signatures, largeur):
 
         def draw(self):
             n = max(1, len(signatures))
+            if code:   # v1.15 : QR de vérification entre les signatures
+                t = 18 * mm
+                x0 = largeur / 2 - t / 2 if n == 2 else 0
+                pdfs._qr(self.canv, code, x0, 6 * mm, taille=t, legende=False)
+                self.canv.setFont("Helvetica", 6.5)
+                self.canv.drawCentredString(x0 + t / 2, 3.6 * mm, "Document vérifiable")
+                self.canv.drawCentredString(x0 + t / 2, 1 * mm, f"code {code}")
             for i, (titre, nom, image, cachet) in enumerate(signatures):
                 _dessiner_signature(self.canv, pdfs, largeur * (i + 0.5) / n, 36 * mm - 8, titre, nom, image, cachet)
 
@@ -683,6 +690,8 @@ def enregistrer(app, H):
         from reportlab.platypus import KeepTogether, Spacer, Table, TableStyle
         bloc_g = pdfs.mini_tableau(t_stats, [45 * mm, 20 * mm, 20 * mm, 20 * mm])
         sigs = signatures_ecole(v)
+        code = pdfs.code_tableau(f"RÉSULTATS DE L'{ev['titre'].upper()}", cl["nom"], None, rows, None,
+                                 verif=("evaluation", f"Résultats {ev['titre']} {ev['annee']} – {cl['nom']}"))
         petite = False
         if not maternelle:
             extra = [["Indicateur", "Valeur"],
@@ -706,7 +715,7 @@ def enregistrer(app, H):
                 gauche.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0)]))
                 droite = [t_om]
                 if petite:  # les signatures prennent place sous l'ordre de mérite : tout tient sur une page
-                    droite += [Spacer(1, 8), _flowable_signatures(pdfs, sigs, 160 * mm)]
+                    droite += [Spacer(1, 8), _flowable_signatures(pdfs, sigs, 160 * mm, code)]
                 duo = Table([[pdfs.paragraphe("<b>STATISTIQUES</b>", 9, espace=0),
                               pdfs.paragraphe("<b>ORDRE DE MÉRITE</b>", 9, espace=0)], [gauche, droite]],
                             colWidths=[112 * mm, 162 * mm])
@@ -736,8 +745,8 @@ def enregistrer(app, H):
             sous_titre=f"{cl['nom']} – Année scolaire {v.get('annee') or ev['annee']}",
             infos=infos, largeurs=largeurs, paysage=True, infos_haut=infos_haut(v, cl), taille=7.5 if n < 12 else 6.5,
             apres=apres + [Spacer(1, 4)] + [pdfs.paragraphe(t, 7.5, espace=1) for t in notes_bas]
-            + ([] if petite else [Spacer(1, 6), KeepTogether([_flowable_signatures(pdfs, sigs, 270 * mm)])]),
-            signatures=None, surlignes=surl)
+            + ([] if petite else [Spacer(1, 6), KeepTogether([_flowable_signatures(pdfs, sigs, 270 * mm, code)])]),
+            signatures=None, surlignes=surl, code=code, qr_bloc=False)
         H.journal("evaluation_rapport", f"{cl['nom']} {ev['libelle']}")
         return H.pdf_reponse(contenu, nom_fichier(ev, cl, "rapport", "pdf"))
 

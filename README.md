@@ -28,6 +28,12 @@ paiements et reçus, documents officiels avec QR code de vérification.
   de fin d'année EM (début, fin, besoin spécifique, abandons), public et privé à part ;
   par circonscription (DDEMP), par zone pédagogique (CS) ou par école ; une **courbe** par tableau ; Excel.
   Rattaché aux divisions des statistiques / de l'organisation scolaire et des ressources humaines.
+- **Documents vérifiables** (v1.15.0) : registre de présence, relevés mensuels, tableau d'affichage, statistiques
+  de présence (nouveau PDF avec courbe mensuelle), statistiques et résultats d'évaluation, synthèse, bilan annuel,
+  tableau d'honneur et tous les documents en tableau signés portent un **code de vérification et un QR** (page
+  `/verifier` : type, objet, date, auteur) à côté des signatures (titulaire, directeur + cachet). **EducMaster** :
+  import du modèle officiel de notes rempli (4 feuilles, élève retrouvé par matricule EducMaster puis nom ; simulation ;
+  évaluations manquantes créées) en plus de l'export rempli et de l'import des élèves par classe.
 - **SCOLARIS Enseignant** (v1.14.0) : application personnelle de l'enseignant (SCOLARIS-Enseignant.apk,
   SCOLARIS-Enseignant-Installation.exe), sans passer par l'application de l'école. Premier lancement : son profil
   (NIP, matricule, grade, catégorie, dates de prise de service, diplômes), son école (secteur, CS, DDEMP, directeur)
