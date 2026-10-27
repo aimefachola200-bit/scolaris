@@ -558,6 +558,7 @@ def enregistrer(app, H):
                 ctx["jour"] = journee(cl, d)
             elif vue == "semaine":
                 ctx["semaine"] = semaine(cl, d)
+                ctx["resumes_sem"] = MP.resumes_semaine(cl["niveau"], semaine_fiches(cl, lundi_de(d)))
             else:
                 ctx["pm"], ctx["ligne"], ctx["semaines"] = mois_classe(cl, d.year, d.month)
                 ctx["cols"] = [(k, v) for k, v in [("francais", "Français"), ("maths", "Mathématiques"), ("es_morale", "ES — morale"), ("es_civisme", "ES — civisme"),

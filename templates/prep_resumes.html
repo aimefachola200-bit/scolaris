@@ -10,6 +10,12 @@
   <label>Domaine <select name="domaine" onchange="this.form.submit()"><option value="">Tous</option>{% for d in DOMS %}<option value="{{ d }}" {{ 'selected' if d == dom }}>{{ d }}</option>{% endfor %}</select></label>
   <noscript><button class="btn sec petit">Afficher</button></noscript>
 </form>
+<details class="carte" style="margin:8px 0" {{ 'open' if not (col or cours or mat or dom) }}><summary><b>Résumés par cours et par matière</b></summary>
+<div class="tw"><table class="t" aria-label="Nombre de résumés par cours et par matière"><thead><tr><th>Cours</th>{% for m in MATS_RES %}<th>{{ prep_nom_matiere(m) }}</th>{% endfor %}<th>Total</th></tr></thead><tbody>
+{% for c in COURS_RES %}<tr><td><a href="{{ url_for('prep_resumes', cours=c) }}">{{ PREP_COURS_LIB[c] }}</a></td>{% for m in MATS_RES %}<td>{% if table[(c, m)] %}<a href="{{ url_for('prep_resumes', cours=c, matiere=m) }}">{{ table[(c, m)] }}</a>{% else %}<span class="badge">0</span>{% endif %}</td>{% endfor %}<td><b>{% set ns = namespace(t=0) %}{% for m in MATS_RES %}{% set ns.t = ns.t + table[(c, m)] %}{% endfor %}{{ ns.t }}</b></td></tr>{% endfor %}
+</tbody></table></div>
+<p class="aide">Chaque résumé est rattaché à son cours, sa matière et sa SA / unité : la planification (vue semaine) affiche les « résumés de la semaine » à côté des fiches. Résumés conçus selon le programme — à valider par le conseiller pédagogique.</p>
+</details>
 {% if n %}
 <div class="actions" style="margin:6px 0 12px">
   <a class="btn petit" href="{{ url_for('prep_resumes_pdf', col=col, cours=cours, matiere=mat, domaine=dom) }}">PDF enseignant ({{ n }})</a>

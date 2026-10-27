@@ -40,6 +40,10 @@
 {% for c in js %}<tr><td>{{ c.horaire }}</td><td>{{ 'Vie de la classe' if c.matiere == 'dg' else prep_nom_matiere(c.matiere) }}</td><td>{{ c.sous_matiere or c.libelle }} <span class="aide">{{ c.duree }}</span></td><td>{% if c.fiche_id and not c.fiche_id.startswith('mes-') %}<a href="{{ url_for('prep_fiche', fid=c.fiche_id) }}">{{ c.fiche_titre }}</a>{% else %}{{ c.fiche_titre }}{% endif %}{% if c.modifie %} <span class="badge ok">modifié</span>{% endif %}</td></tr>{% endfor %}
 </tbody></table></div>
 {% endfor %}
+<h3>Résumés de la semaine</h3>
+{% if resumes_sem %}<p class="aide">« L'essentiel à retenir » rattaché aux SA / unités des fiches de la semaine (règle, méthode, exemple, 3 exercices corrigés ; version élève à imprimer).</p>
+<ul>{% for m, liste in resumes_sem.items() %}<li><b>{{ prep_nom_matiere(m) }}</b> : {% for r in liste %}<a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a> <a class="aide" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1) }}">(élève)</a>{% if not loop.last %} · {% endif %}{% endfor %}</li>{% endfor %}</ul>
+{% else %}<p class="aide">Aucun résumé rattaché aux fiches de cette semaine — voir l'onglet <a href="{{ url_for('prep_resumes', cours=cl.niveau) }}">Résumés</a>.</p>{% endif %}
 {% else %}
 <h3>Mois {{ d.strftime('%m/%Y') }}</h3>
 {% if ligne %}<div class="tw"><table class="t"><thead><tr><th>Matière (planification annuelle)</th><th>Contenu du mois</th></tr></thead><tbody>

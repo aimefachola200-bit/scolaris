@@ -26,6 +26,9 @@ pédagogique » et ne sont jamais présentés comme officiels.
 * v1.19 — ``/preparation/resumes`` : « Résumés — l'essentiel à retenir » (Mathématiques CE1 → CM2, Français CM1,
   révision CEP : règle, méthode, exemple, 3 exercices corrigés), version enseignant (corrigé) et version élève
   imprimable (sans les réponses), PDF à l'unité ou par lot (collection / cours / matière).
+* v1.23 — résumés pour chaque cours (CI → CM2) dans chaque matière (Français, Mathématiques, Éducation sociale, EST,
+  EPS, Éducation artistique), rattachés aux SA / unités : tableau cours × matière dans l'onglet Résumés et « Résumés de la
+  semaine » à côté des fiches dans la planification (vue semaine).
 Droit « preparation » (app.DROITS) : enseignant, directeur, administrateur, conseillers et responsables (CS / DDEMP,
 lecture). L'enseignant n'écrit que pour ses classes (H.classes_autorisees()).
 """
@@ -280,8 +283,63 @@ class _GuideVersPdf(HTMLParser):
 
 
 # ---------------------------------------------------------------- v1.19 : résumés (PDF enseignant / élève)
-COLLECTIONS_RES = [("maths", "Mathématiques CE1 → CM2"), ("francais-cm1", "Français CM1"), ("es", "Éducation sociale CE1 → CM2"), ("cep", "Révision CEP")]
-COLLECTION_DE = {"Mathématiques": "maths", "Français CM1": "francais-cm1", "Éducation sociale": "es", "Révision CEP": "cep"}
+COLLECTIONS_RES = [("maths", "Mathématiques CI → CM2"), ("francais", "Français CI → CM2"), ("francais-cm1", "Français CM1 (par unité)"),
+                   ("es", "Éducation sociale CI → CM2"), ("est", "Éducation scientifique et technologique CI → CM2"),
+                   ("eps", "Éducation physique et sportive CI → CM2"), ("ea", "Éducation artistique CI → CM2"), ("cep", "Révision CEP")]
+COLLECTION_DE = {"Mathématiques": "maths", "Français": "francais", "Français CM1": "francais-cm1", "Éducation sociale": "es",
+                 "Éducation scientifique et technologique": "est", "Éducation physique et sportive": "eps",
+                 "Éducation artistique": "ea", "Révision CEP": "cep"}
+COURS_RES = ["CI", "CP", "CE1", "CE2", "CM1", "CM2"]
+MATS_RES = ["francais", "maths", "es", "est", "eps", "ea"]
+
+
+def table_resumes(rs):
+    """v1.23 — nombre de résumés par cours × matière (toutes collections confondues)."""
+    t = {(c, m): 0 for c in COURS_RES for m in MATS_RES}
+    for r in rs:
+        if (r["cours"], r["matiere"]) in t:
+            t[(r["cours"], r["matiere"])] += 1
+    return t
+
+
+def _num_fiche(f):
+    """Numéro de SA / unité / dossier d'une fiche (Français : numéro d'unité)."""
+    if f.get("matiere") == "francais":
+        m = re.search(r"(\d+)", str(f.get("unite") or ""))
+        if m:
+            return int(m.group(1))
+    for k in ("sa", "dossier"):
+        if isinstance(f.get(k), int):
+            return f[k]
+    m = re.search(r"(?:SA|DOSSIER|UNIT[EÉ])\s*N?°?\s*(\d+)", str(f.get("unite") or ""), re.I)
+    return int(m.group(1)) if m else None
+
+
+def resumes_semaine(cours, fiches_par_mat):
+    """v1.23 — résumés « l'essentiel à retenir » qui accompagnent les fiches d'une semaine : même cours, même matière,
+    même SA / unité (champ « sa » du résumé) et, si le résumé en porte, une sous-matière concordante (« mots_cles »)."""
+    out = {}
+    rs = [r for r in corpus().get("resumes") or [] if r["cours"] == cours and r.get("collection") != "Révision CEP"]
+    for mat, fiches in fiches_par_mat.items():
+        if not fiches:
+            continue
+        nums = {_num_fiche(f) for f in fiches} - {None}
+        sous = " | ".join((f.get("sous_matiere") or "").lower() for f in fiches).strip(" |")
+        liste = []
+        for r in rs:
+            if r["matiere"] != mat:
+                continue
+            sa, mc = r.get("sa") or [], r.get("mots_cles") or []
+            mc_ok = any(k in sous for k in mc)
+            if sa:
+                if not set(sa) & nums or (mc and sous and not mc_ok):
+                    continue
+            elif not mc_ok:
+                continue
+            liste.append(r)
+        if liste:
+            out[mat] = liste
+    return out
 _GLYPHES = {"→": "->", "−": "-", "ᵉ": "e", "ɔ": "o", "≈": "~", "≤": "<=", "≥": ">="}
 
 
@@ -939,7 +997,7 @@ def enregistrer(app, H):
             groupes.setdefault((r["collection"], r["cours"]), {}).setdefault(r["domaine"], []).append(r)
         ordre = sorted(groupes, key=lambda k: ([c for c, _l in COLLECTIONS_RES].index(COLLECTION_DE[k[0]]), COURS.index(k[1])))
         return render_template("prep_resumes.html", groupes=groupes, ordre=ordre, col=col, cours=cours, mat=mat, dom=dom, n=len(rs),
-                               COLLECTIONS=COLLECTIONS_RES, COURS=[c for c in COURS if any(r["cours"] == c for r in tous)],
+                               table=table_resumes(tous), COURS_RES=COURS_RES, MATS_RES=MATS_RES, COLLECTIONS=COLLECTIONS_RES, COURS=[c for c in COURS if any(r["cours"] == c for r in tous)],
                                MATS=[m for m in ORDRE_MAT if any(r["matiere"] == m for r in tous)],
                                DOMS=sorted({r["domaine"] for r in tous}))
 

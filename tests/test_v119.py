@@ -66,7 +66,7 @@ I = C["inventaire_cm1"]
 assert {m["matiere"]: m["restent"] for m in I["matieres"]} == {m: 0 for m in ("francais", "maths", "es", "est", "eps", "ea")}
 R = C["resumes"]
 assert len(R) >= 110 and all(len(r["exercices"]) == 3 for r in R)
-assert {r["cours"] for r in R if r["collection"] == "Mathématiques"} == {"CE1", "CE2", "CM1", "CM2"}
+assert {r["cours"] for r in R if r["collection"] == "Mathématiques"} >= {"CE1", "CE2", "CM1", "CM2"}  # v1.23 : + CI, CP
 assert {r["matiere"] for r in R if r["collection"] == "Révision CEP"} == {"francais", "maths", "es", "est"}
 assert sum(1 for r in R if r["collection"] == "Français CM1") >= 30
 # ---- lot 2

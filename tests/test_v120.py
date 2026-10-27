@@ -65,7 +65,7 @@ assert "109 députés" in an["je_retiens"] and "83 députés" not in an["je_reti
 assert not any("le maître complète avec le président issu" in f.get("je_retiens", "") for f in C["fiches"])
 assert not any("5 ans, renouvelable une fois" in f.get("je_retiens", "") for f in C["fiches"] if f["matiere"] == "es")
 RES = [r for r in C["resumes"] if r["collection"] == "Éducation sociale"]
-assert {r["cours"] for r in RES} == {"CE1", "CE2", "CM1", "CM2"} and len(RES) >= 16 and all(len(r["exercices"]) == 3 for r in RES)
+assert {r["cours"] for r in RES} >= {"CE1", "CE2", "CM1", "CM2"} and len(RES) >= 16 and all(len(r["exercices"]) == 3 for r in RES)  # v1.23 : + CI, CP
 assert all("Sources vérifiées le 27/10/2026" in r["mention"] for r in RES)
 senat = next(r for r in RES if "Sénat" in r["titre"] and r["cours"] == "CM2")
 gact = C["guide_par_id"]["g-es-actualite"]
