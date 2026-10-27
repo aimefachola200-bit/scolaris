@@ -111,7 +111,7 @@ ENDPOINTS_COMMUNS = {
     "uascep_renouveler", "uascep_xlsx", "uascep_modele", "uascep_import", "uascep_pdf",
 }
 # v1.25 : familles d'endpoints de la structure (sport scolaire, pilotage, moteur des registres)
-PREFIXES_EP_COMMUNS = ("sport_", "pilotage", "reg_", "liaison_", "inspection_", "examens_")   # v1.26 : communication et alertes
+PREFIXES_EP_COMMUNS = ("sport_", "pilotage", "reg_", "liaison_", "inspection_", "examens_", "examen_blanc", "uascep_")   # v1.26 : communication et alertes
 # adresses accessibles sans école ouverte (structure, administration, connexion, fichiers, espaces publics et API) :
 # toute autre adresse est une page de module d'école et demande une école ouverte (page « Choisissez une école »)
 PREFIXES_STRUCTURE = (
@@ -120,7 +120,7 @@ PREFIXES_STRUCTURE = (
     "/paiements/en-ligne/reglages", "/paie/parametres", "/manifest.webmanifest", "/sw.js", "/hors-ligne",
     "/installer", "/referentiel.js", "/rejoindre", "/sante", "/signatures", "/cachet.svg",
     "/groupes-whatsapp", "/acces", "/uascep",
-    "/sport", "/pilotage", "/reg", "/liaison", "/inspection", "/examens",   # v1.25 : sport scolaire, pilotage, registres (structure ; registres d'école : école ouverte)
+    "/sport", "/pilotage", "/reg", "/liaison", "/inspection", "/examens", "/examen-blanc",   # v1.25 : sport scolaire, pilotage, registres (structure ; registres d'école : école ouverte)
     # espaces publics (élèves, parents), API de transmission et de notification, retours de paiement en ligne
     "/eleve", "/parent", "/api", "/webhooks", "/paiement",
 )

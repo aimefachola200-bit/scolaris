@@ -2,7 +2,7 @@
 {% block contenu %}
 <div class="entete">
   <div><h1>Examen blanc du CEP</h1>
-  <p class="sous">Gestion du centre : candidats, notes, maîtrise, ordre de mérite, relevés de notes</p></div>
+  <p class="sous">Gestion du centre : candidats, notes, maîtrise, ordre de mérite, relevés de notes{% if ep_existe('examen_blanc') %} — voir aussi l'<a href="{{ url_for('examen_blanc') }}">examen blanc commun aux applications (9 épreuves, CS Pobè)</a>{% endif %}</p></div>
   <div class="actions">
     <form method="post" action="{{ url_for('cep_blanc_nouvelle') }}" class="ligne" style="gap:6px;align-items:flex-end">
       <label>N° de l'examen blanc<br><input type="number" name="numero" min="1" max="99" value="{{ (sessions[0].numero + 1) if sessions else 1 }}" style="width:90px"></label>

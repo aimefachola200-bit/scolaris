@@ -1,10 +1,10 @@
 ﻿; Inno Setup : fabrique SCOLARIS-Installation-x.y.z.exe à partir de dist\SCOLARIS
 ; Compiler depuis la racine du projet :  iscc /DVersion=1.3.0 packaging\windows\scolaris.iss
-; Applications jumelles :  iscc /DVersion=1.27.1 /DEdition=publique|cs|ddemp|enseignant packaging\windows\scolaris.iss
+; Applications jumelles :  iscc /DVersion=1.28.0 /DEdition=publique|cs|ddemp|enseignant packaging\windows\scolaris.iss
 ;   -> SCOLARIS-Public-Installation-x.y.z.exe (dossier, données, port 5101 et raccourcis séparés)
 
 #ifndef Version
-  #define Version "1.27.1"
+  #define Version "1.28.0"
 #endif
 #ifndef Edition
   #define Edition "privee"

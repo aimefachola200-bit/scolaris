@@ -493,7 +493,16 @@ def enregistrer(app, H):
                 zones = [dict(x) for x in H.jur_zones()]
             except Exception:  # noqa: BLE001
                 pass
-        return render_template("pilotage.html", G=G, ep_actif="pilotage", annee=annee, comparer=comparer, par=par, flt=flt, res=res, comp=comp, kpi=kpi, fmt=fmt, ecart=ecart,
+        eb = None                                   # v1.28 : examen blanc (ebComposes, ebAdmis, ebTaux)
+        f_eb = getattr(H, "examen_blanc_synthese", None)
+        if callable(f_eb):
+            try:
+                d_eb = f_eb(annee)
+                c_eb, a_eb = sum(v["ebComposes"] for v in d_eb.values()), sum(v["ebAdmis"] for v in d_eb.values())
+                eb = {"ebComposes": c_eb, "ebAdmis": a_eb, "ebTaux": round(a_eb / c_eb * 100, 1) if c_eb else None, "ecoles": d_eb} if d_eb else None
+            except Exception:  # noqa: BLE001
+                eb = None
+        return render_template("pilotage.html", G=G, ep_actif="pilotage", annee=annee, eb=eb, comparer=comparer, par=par, flt=flt, res=res, comp=comp, kpi=kpi, fmt=fmt, ecart=ecart,
                                charts=charts, annees=R.annees_proposees([annee, comparer]), JUR=R.juridiction(), zones=zones, cs=cs,
                                TYPES_EVAL=TYPES_EVAL, instantanes=[r["annee"] for r in q("SELECT annee FROM pilotage_instantanes WHERE portee=? ORDER BY annee DESC", (portee(),))])
 

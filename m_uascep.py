@@ -214,7 +214,7 @@ def enregistrer(app, H):
         return ["ECOLE", "UP", "ZONE"]
 
     def niveaux_ecriture():
-        role = g.user["role"]
+        role = g.get("role_reel") or g.user["role"]     # v1.28 : rôle réel (CP, chef de service…) même sur une page d'école
         if config.EDITION == "enseignant" or role == "enseignant":
             return []
         if juridiction():
@@ -222,6 +222,8 @@ def enregistrer(app, H):
                 return niveaux_visibles()
             if role == "cp":
                 return ["ECOLE", "UP", "ZONE"]
+            if role == "directeur":                     # v1.28 : directeur d'une école de la juridiction
+                return ["ECOLE"]
             return []
         return ["ECOLE"] if role in ("admin", "fondateur", "directeur") else []
 
@@ -303,6 +305,100 @@ def enregistrer(app, H):
                 out.append((b, m))
         return out
 
+    # ------------------------------------------------------------------ v1.28 : onglets « Ajouter un membre », Bureaux, Vie du bureau…
+    QUI_ECRIT = {"ECOLE": "le directeur / la directrice de l'école ou l'administrateur",
+                 "UP": "le conseiller pédagogique (CP / RUP) ou l'administrateur de l'application de la circonscription",
+                 "ZONE": "le conseiller pédagogique (CP) ou l'administrateur de l'application de la circonscription",
+                 "CS": "le chef de la circonscription scolaire ou l'administrateur de l'application CS",
+                 "DDEMP": "le directeur départemental ou l'administrateur de l'application DDEMP"}
+
+    def contexte_onglets(actif):
+        return {"u_onglet": actif, "ecrire": niveaux_ecriture(), "NIV_LIB": NIV_LIB, "QUI_ECRIT": QUI_ECRIT,
+                "NIVEAUX": [(c, l) for c, l in NIVEAUX if c in niveaux_visibles()], "role_lib": g.get("role_reel") or g.user["role"]}
+
+    def resoudre_entite(niveau, texte):
+        """Entité saisie (clé, libellé, ou saisie libre) -> (clé, libellé, infos)."""
+        t = (texte or "").strip()
+        if not juridiction() and niveau == "ECOLE" and entites("ECOLE"):
+            return entites("ECOLE")[0]                  # édition école : l'école elle-même
+        n = re.sub(r"\s+", " ", t).lower()
+        for k, l, i in entites(niveau):
+            if n in (str(k).lower(), (l or "").lower()):
+                return k, l, i
+        return t, t, {}
+
+    @app.route("/uascep/ajouter", methods=["GET", "POST"])
+    @H.connexion_requise("uascep")
+    def uascep_ajouter():
+        ecr = niveaux_ecriture()
+        niveau = (request.values.get("niveau") or (ecr[0] if ecr else "")).strip()
+        entite_txt = (request.values.get("entite") or "").strip()
+        if not entite_txt and niveau in ecr and not juridiction():
+            ents = entites(niveau)
+            entite_txt = ents[0][1] if ents else (config.ECOLE.get("nom") or "" if niveau == "ECOLE" else "")
+        m = {"ordre": "", "duree": 2}
+        if request.method == "POST":
+            if niveau not in ecr:
+                abort(403)
+            f = request.form
+            d = {k: (f.get(k) or "").strip()[:300] for k in CHAMPS_M}
+            err = []
+            if not entite_txt:
+                err.append("Indiquez l'entité (école, UP, zone, CS ou DDEMP) : choisissez-la dans la liste ou saisissez son nom.")
+            if not d["nom"]:
+                err.append("Le nom est obligatoire.")
+            d["sexe"] = d["sexe"] if d["sexe"] in ("M", "F") else ""
+            for k in ("date_election", "date_fin", "date_installation"):
+                d[k] = iso(d[k]) if d[k] else ""
+            try:
+                d["duree"] = int(d["duree"] or 2)
+                d["ordre"] = int(d["ordre"]) if d["ordre"] else None
+            except ValueError:
+                err.append("N° d'ordre et durée du mandat : nombres entiers.")
+            if d["email"] and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", d["email"]):
+                err.append("Adresse e-mail invalide.")
+            if err:
+                for e in err:
+                    flash(e, "danger")
+                return render_template("uascep_ajouter.html", m=dict(m, **d), niveau=niveau, entite=entite_txt, FONCTIONS=FONCTIONS, QUALITES=QUALITES,
+                                       entites_par={c: entites(c) for c in ecr}, **contexte_onglets("ajouter")), 400
+            cle, lib, info = resoudre_entite(niveau, entite_txt)
+            b = bureau_actif(niveau, cle, creer=True, lib=lib)
+            if not b["date_election"] and d["date_election"]:
+                ex("UPDATE uascep_bureaux SET date_election=?, duree=?, date_fin=?, maj=? WHERE id=?",
+                   (d["date_election"], d["duree"], d["date_fin"] or fin_mandat(d["date_election"], d["duree"]), H.maintenant(), b["id"]))
+            for k in ("ecole", "up", "zone", "rup"):
+                d[k] = d[k] or info.get(k, "")
+            if d["ordre"] is None:
+                d["ordre"] = q("SELECT COALESCE(MAX(ordre),0)+1 n FROM uascep_membres WHERE bureau_id=?", (b["id"],), un=True)["n"]
+            if d["date_election"] and not d["date_fin"]:
+                d["date_fin"] = fin_mandat(d["date_election"], d["duree"])
+            mid = ex("INSERT INTO uascep_membres (bureau_id, " + ", ".join(CHAMPS_M) + ", maj) VALUES (?," + ",".join("?" * len(CHAMPS_M)) + ",?)",
+                     (b["id"],) + tuple(d[k] for k in CHAMPS_M) + (H.maintenant(),))
+            H.journal("uascep_membre", f"{NIV_LIB[niveau]} {cle} : {d['nom']} {d['prenoms']}")
+            flash(f"Membre enregistré dans le bureau {NIV_LIB[niveau]} — {lib}. Vous pouvez maintenant créer son cachet et sa signature.", "success")
+            if f.get("suite") == "autre":
+                return redirect(url_for("uascep_ajouter", niveau=niveau, entite=lib))
+            if f.get("suite") == "cachet":
+                return redirect(url_for("uascep_cachet", mid=mid))
+            return redirect(url_for("uascep", onglet=niveau, entite=cle))
+        return render_template("uascep_ajouter.html", m=m, niveau=niveau, entite=entite_txt, FONCTIONS=FONCTIONS, QUALITES=QUALITES,
+                               entites_par={c: entites(c) for c in ecr}, **contexte_onglets("ajouter"))
+
+    def bureaux_visibles(statut="actif"):
+        vis = niveaux_visibles()
+        return [dict(b, n=q("SELECT COUNT(*) n FROM uascep_membres WHERE bureau_id=?", (b["id"],), un=True)["n"], mandat=statut_mandat(b["date_fin"]))
+                for b in q("SELECT * FROM uascep_bureaux WHERE COALESCE(ecole_id,0)=COALESCE(?,0) AND statut=? AND niveau IN ({}) ORDER BY niveau, entite_lib, entite"
+                           .format(",".join("?" * len(vis))), (cle_ecole(), statut, *vis))]
+
+    @app.route("/uascep/onglet/<quoi>")
+    @H.connexion_requise("uascep")
+    def uascep_onglet(quoi):
+        if quoi not in ("bureaux", "vie", "documents", "logo", "importer", "aide"):
+            abort(404)
+        return render_template("uascep_onglet.html", quoi=quoi, bureaux=bureaux_visibles(), jjmmaaaa=jjmmaaaa, ENT_MEMBRES=ENT_MEMBRES,
+                               **contexte_onglets(quoi))
+
     # ------------------------------------------------------------------ pages
     @app.route("/uascep")
     @H.connexion_requise("uascep")
@@ -311,8 +407,7 @@ def enregistrer(app, H):
         onglet = request.args.get("onglet") or vis[0]
         if onglet not in vis + ["SYNTHESE", "ANCIENS"]:
             abort(404)
-        ctx = {"NIVEAUX": [(c, l) for c, l in NIVEAUX if c in vis], "onglet": onglet, "ecrire": niveaux_ecriture(), "FONCTIONS": FONCTIONS,
-               "jjmmaaaa": jjmmaaaa, "statut_mandat": statut_mandat}
+        ctx = dict(contexte_onglets("membres"), onglet=onglet, FONCTIONS=FONCTIONS, jjmmaaaa=jjmmaaaa, statut_mandat=statut_mandat)
         if onglet in vis:
             ents = entites(onglet)
             f = {k: (request.args.get(k) or "").strip() for k in ("zone", "up", "ecole") if request.args.get(k)}
@@ -534,7 +629,8 @@ def enregistrer(app, H):
     def uascep_modele():
         ex_ = ["École", "EPP Exemple", 1, "NOM", "Prénoms", "F", "EPP Exemple", "UP 1", "Zone 1", "", "Présidente", "Enseignante", "", "",
                "15/10/2026", 2, "15/10/2028", "", "", ""]
-        return H.xlsx.reponse_classeur("modele_uascep.xlsx", [("Membres UASCEP", ENT_MEMBRES, [ex_], {}), ("Bureaux", ENT_BUREAUX, [], {})])
+        lignes = [] if request.args.get("vide") else [ex_]       # v1.28 : modèle vierge (en-têtes seuls)
+        return H.xlsx.reponse_classeur("modele_uascep.xlsx", [("Membres UASCEP", ENT_MEMBRES, lignes, {}), ("Bureaux", ENT_BUREAUX, [], {})])
 
     @app.route("/uascep/import", methods=["POST"])
     @H.connexion_requise("uascep")

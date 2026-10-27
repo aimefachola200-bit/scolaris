@@ -117,11 +117,12 @@
       {{ lien('patrimoine_pvs_reprendre', "Reprendre l'inventaire", ep=='patrimoine_pvs_reprendre') }}
     {% endcall %}{% endif %}
     {% if peut('examens_pvs') and ep_existe('examens_session') and not ENS %}
-    {% call groupe('examc', 'Examens et concours', ep.startswith('examens_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens'), 'examen') %}
+    {% call groupe('examc', 'Examens et concours', ep.startswith('examen') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens'), 'examen') %}
       {{ lien('examens_session', 'Session CEP', ep=='examens_session') }}
       <a href="{{ url_for('reg_page', gcle='examens', rcle='candidats') }}">Candidats</a>
       {{ lien('examens_notes', 'Saisie des notes', ep=='examens_notes') }}
       {{ lien('examens_deliberation', 'Délibération et résultats', ep=='examens_deliberation') }}
+      {{ lien('examen_blanc', 'Examen blanc du CEP', ep.startswith('examen_blanc')) }}
       <a href="{{ url_for('reg_page', gcle='examens', rcle='concours') }}">Concours scolaires</a>
     {% endcall %}{% endif %}
     {% if peut('pilotage') and ep_existe('pilotage') and not ENS %}{{ lien('pilotage', 'Tableau de bord du pilotage', ep.startswith('pilotage'), 'progression') }}{% endif %}

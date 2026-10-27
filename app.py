@@ -432,6 +432,8 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_communication", "m_sante_scolaire",
            # v1.27 : inspection et formation (grille APC, recommandations, animations), patrimoine et matériel, examens (CEP) et concours
            "m_inspection", "m_patrimoine_pvs", "m_examens",
+           # v1.28 : examen blanc du CEP, modèle commun (CS Pobè)
+           "m_examen_blanc",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
