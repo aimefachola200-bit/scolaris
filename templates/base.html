@@ -6,6 +6,7 @@
 <title>{% block titre %}SCOLARIS{% endblock %} – {{ ECOLE.sigle }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ VERSION }}">
 <script src="{{ url_for('static', filename='scolaris.js') }}?v={{ VERSION }}" defer></script>
+<script src="{{ url_for('static', filename='choix.js') }}?v={{ VERSION }}" defer></script>
 {% if g.user %}<script src="{{ url_for('referentiel_js') }}" defer></script>{% endif %}
 <link rel="manifest" href="{{ url_for('ens_manifeste') if PORTAIL_ENSEIGNANT is defined and PORTAIL_ENSEIGNANT() else url_for('manifeste') }}">
 <meta name="theme-color" content="#1F4E79">
@@ -68,6 +69,16 @@
       {% if ep_existe('themes_up') %}{{ lien('themes_up', "Thèmes d'UP, conférences et formations", ep.startswith('themes_up')) }}{% endif %}
       {{ lien('matieres', 'Matières et domaines', ep=='matieres') }}
     {% endcall %}
+    {% if peut('preparation') and ep_existe('prep_accueil') %}{# v1.18 : préparation de classe (programmes, guides, fiches APC) #}
+    {% call groupe('prep', 'Préparation de classe', ep.startswith('prep_'), '📝') %}
+      {{ lien('prep_accueil', 'Cette semaine (planification et fiches)', ep=='prep_accueil') }}
+      {{ lien('prep_programmes', 'Programmes et progressions', ep.startswith('prep_programme')) }}
+      {{ lien('prep_guides', 'Guides pédagogiques', ep.startswith('prep_guide')) }}
+      {{ lien('prep_fiches', 'Fiches de préparation (bibliothèque)', ep.startswith('prep_fiche')) }}
+      {{ lien('prep_preparer', 'Préparer une fiche', ep=='prep_preparer') }}
+      {{ lien('prep_mes_fiches', 'Mes fiches' if ENS else 'Fiches des enseignants', ep.startswith('prep_ma') or ep=='prep_mes_fiches') }}
+      {{ lien('prep_manquants', 'Fiches et guides manquants', ep=='prep_manquants') }}
+    {% endcall %}{% endif %}
     {% if peut('cep') and (not ENS or (classes_enseignant_cm2 is defined and classes_enseignant_cm2())) %}
     {% call groupe('cep', 'Examens (CEP)', ep.startswith('cep') or ep.startswith('carte'), '🎓') %}
       {{ lien('cep_accueil', "Fiches d'inscription au CEP", ep.startswith('cep_fiche') or ep=='cep_accueil') }}

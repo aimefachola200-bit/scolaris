@@ -18,6 +18,7 @@
   <a href="{{ url_for('synoptique_edt') }}"><span class="ico" aria-hidden="true">🗓</span><b>Emploi du temps</b><span class="d">{{ 'à tenir' if application else 'en consultation' }}</span></a>
   <a href="{{ url_for('synoptique_planification') }}"><span class="ico" aria-hidden="true">🧭</span><b>Planification annuelle</b><span class="d">par niveau</span></a>
   <a href="{{ url_for('synoptique_planification_mensuelle') }}"><span class="ico" aria-hidden="true">📅</span><b>Planification mensuelle</b><span class="d">de mes classes</span></a>
+  {% if peut('preparation') and ep_existe('prep_accueil') %}<a href="{{ url_for('prep_accueil') }}"><span class="ico" aria-hidden="true">📝</span><b>Préparation de classe</b><span class="d">fiches APC, guides, programmes</span></a>{% endif %}
   <a href="{{ url_for('ens_certificats') }}"><span class="ico" aria-hidden="true">📄</span><b>Mes certificats</b><span class="d">PDF pré-remplis</span></a>
   <a href="{{ url_for('carriere_moi_fiche') }}"><span class="ico" aria-hidden="true">🎖</span><b>Ma carrière</b><span class="d">fiche, ancienneté</span></a>
   <a href="{{ url_for('calendrier_officiel') }}"><span class="ico" aria-hidden="true">📘</span><b>Calendrier officiel</b><span class="d">MEMP</span></a>

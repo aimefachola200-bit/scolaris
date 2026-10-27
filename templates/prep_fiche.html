@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block titre %}{{ f.titre }}{% endblock %}
+{% block contenu %}{% set onglet = 'mes' if propre else 'fiches' %}{% include "_prep_onglets.html" %}
+{% set cid = request.args.get('classe', type=int) %}
+<section class="carte prep-fiche">
+  <div class="entete"><div><h2 style="margin:0">{{ f.titre }}</h2>
+    <p class="sous">{{ prep_nom_matiere(f.matiere) }} · {{ PREP_COURS_LIB.get(f.cours, f.cours) }}{% if f.sous_matiere %} · {{ f.sous_matiere }}{% endif %}{% if f.unite %} · {{ f.unite }}{% endif %}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · séance {{ f.seance }}{% endif %}{% if f.duree %} · {{ f.duree }}{% endif %}{% if propre and f.date_seance %} · séance du {{ f.date_seance }}{% endif %}</p></div>
+    <div class="actions">
+      {% if propre %}
+      <a class="btn petit" href="{{ url_for('prep_ma_fiche_pdf', mid=f.id) }}">📄 PDF</a>
+      <a class="btn sec petit" href="{{ url_for('prep_ma_fiche_doc', mid=f.id) }}">Word</a>
+      {% if auteur %}<a class="btn sec petit" href="{{ url_for('prep_ma_fiche', mid=f.id, modifier=1) }}">✎ Modifier</a>
+      <form method="post" action="{{ url_for('prep_ma_fiche_dupliquer', mid=f.id) }}" style="display:inline"><button class="btn sec petit">⧉ Dupliquer</button></form>
+      <form method="post" action="{{ url_for('prep_ma_fiche_supprimer', mid=f.id) }}" style="display:inline" onsubmit="return confirm('Supprimer cette fiche ?')"><button class="btn danger petit">Supprimer</button></form>{% endif %}
+      {% else %}
+      <a class="btn petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid) }}">📄 PDF</a>
+      <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}">Word</a>
+      {% if classes %}<a class="btn sec petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">✎ Adapter pour ma classe</a>{% endif %}
+      {% endif %}
+      <button class="btn sec petit" type="button" onclick="window.print()">Imprimer</button>
+    </div></div>
+  {% if f.mention %}<div class="flash warning">{{ f.mention }}</div>{% endif %}
+  {% if f.intitule and f.intitule != f.titre %}<p><b>Intitulé :</b> {{ f.intitule }}</p>{% endif %}
+  <dl class="prep-dl">{% for k, lib in CHAMPS %}{% if k in ('cd','ct','contenus','objectifs','strategies','materiel') and f[k] %}<dt>{{ lib }}</dt><dd>{{ f[k]|prep_txt }}</dd>{% endif %}{% endfor %}</dl>
+  <h3>Déroulement</h3>
+  <div class="tw"><table class="t prep-deroul"><thead><tr><th>Phases / étapes</th><th>Activités de l'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus</th></tr></thead>
+  <tbody>{% for l in f.deroulement or [] %}<tr><td><b>{{ l[0]|prep_txt }}</b></td><td>{{ (l[1] if l|length > 1 else '')|prep_txt }}</td><td>{{ (l[2] if l|length > 2 else '')|prep_txt }}</td></tr>{% endfor %}</tbody></table></div>
+  {% for k, lib in CHAMPS %}{% if k in ('evaluation','projection','je_retiens','observations') and f[k] %}<h3>{{ lib }}</h3><p>{{ f[k]|prep_txt }}</p>{% endif %}{% endfor %}
+  {% if f.source and not propre %}<p class="aide">Source : {{ f.source }}</p>{% endif %}
+</section>
+{% endblock %}

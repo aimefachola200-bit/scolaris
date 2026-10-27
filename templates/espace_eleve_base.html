@@ -8,6 +8,7 @@
 <title>{% block titre %}Espace élève{% endblock %} – {{ ECOLE.sigle or ECOLE.nom }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ VERSION }}">
 <script src="{{ url_for('static', filename='scolaris.js') }}?v={{ VERSION }}" defer></script>
+<script src="{{ url_for('static', filename='choix.js') }}?v={{ VERSION }}" defer></script>
 <link rel="manifest" href="{{ url_for('manifeste') }}">
 <meta name="theme-color" content="#5B2C83">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">

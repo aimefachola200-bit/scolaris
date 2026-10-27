@@ -279,3 +279,15 @@ main.travail form h2,main.travail form h3,main form .sec-titre,.titre-fixe{posit
 main.travail .carte form h2,main.travail .carte form h3,main.travail form .carte h2,main.travail form .carte h3{background:var(--carte)}
 @media print{.tw{max-height:none!important;overflow:visible!important}table .th-fixe,table .col-fixe{position:static!important;box-shadow:none}
   main.travail form h2,main.travail form h3,.titre-fixe{position:static}}
+/* v1.18 — Préparation de classe (programmes, guides, fiches APC) */
+.prep-dl{display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:6px 14px;margin:10px 0}
+.prep-dl dt{font-weight:600;color:#1F4E79}.prep-dl dd{margin:0}
+@media (max-width:640px){.prep-dl{grid-template-columns:1fr}.prep-dl dd{margin-bottom:6px}}
+.prep-deroul td{vertical-align:top}.prep-deroul td:first-child{width:18%}.prep-deroul td:last-child{width:24%}
+.prep-form .grille-prep,.prep-form .grille-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.prep-form label.bloc{display:block;margin:10px 0}.prep-form label.bloc input,.prep-form label.bloc textarea{width:100%;box-sizing:border-box}
+.prep-form .prep-deroul textarea{width:100%;box-sizing:border-box;min-width:120px}
+tr.prep-vide{display:none}
+.prep-contenu table{border-collapse:collapse;width:100%;margin:8px 0}.prep-contenu td,.prep-contenu th{border:1px solid #98A2B3;padding:4px 6px;vertical-align:top}
+.prep-semaine{margin-bottom:14px}
+@media print{#menu,.onglets,.actions,.filtres{display:none!important}}

@@ -93,6 +93,7 @@ DROITS = {
     "docs_enseignant": {"admin", "directeur", "secretaire", "enseignant"},
     # v1.6
     "synoptique": {"admin", "directeur", "secretaire"},          # tableau synoptique de l'école
+    "preparation": {"admin", "fondateur", "directeur", "enseignant", "cp", "responsable", "chef_service"},   # v1.18 : préparation de classe
     "stock": {"admin", "directeur", "comptable", "secretaire"},   # vivres et stock de la cantine
     "epreuves": {"admin", "directeur", "enseignant"},             # comité d'évaluation, épreuves et grilles
     "jur_up": {"admin", "responsable", "cp", "chef_service"},     # activités des unités pédagogiques (CS / DDEMP)
@@ -127,6 +128,7 @@ TYPES_DOCS = {
     "synthese": "Synthèse des évaluations",
     "bilan": "Bilan annuel",
     "tableau": "Document officiel (tableau signé)",
+    "fiche_preparation": "Fiche de préparation (APC)",   # v1.18
 }
 pdfs.TYPES_TABLEAU.update({
     "REGISTRE": "registre", "TABLEAU DE RELEVÉS": "releve", "RELEVÉ": "releve", "TABLEAU D'AFFICHAGE": "affichage",
@@ -407,7 +409,7 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           "m_synoptique", "m_preparation", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)

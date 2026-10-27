@@ -1,0 +1,14 @@
+{# v1.18 — en-tête et onglets du module « Préparation de classe » (variable : onglet) #}
+<div class="entete">
+  <div><h1>Préparation de classe</h1>
+    <p class="sous">Programmes et progressions, guides pédagogiques et fiches de préparation selon l'APC — {{ ECOLE.nom }} · {{ ANNEE }}</p></div>
+  <div class="actions"><a class="btn petit" href="{{ url_for('prep_preparer') }}">+ Préparer une fiche</a></div>
+</div>
+<nav class="onglets" aria-label="Rubriques de la préparation de classe">
+  <a class="{{ 'actif' if onglet == 'semaine' }}" href="{{ url_for('prep_accueil') }}">Cette semaine</a>
+  <a class="{{ 'actif' if onglet == 'programmes' }}" href="{{ url_for('prep_programmes') }}">Programmes et progressions</a>
+  <a class="{{ 'actif' if onglet == 'guides' }}" href="{{ url_for('prep_guides') }}">Guides pédagogiques</a>
+  <a class="{{ 'actif' if onglet == 'fiches' }}" href="{{ url_for('prep_fiches') }}">Fiches de préparation</a>
+  <a class="{{ 'actif' if onglet == 'mes' }}" href="{{ url_for('prep_mes_fiches') }}">{{ 'Mes fiches' if g.user.role == 'enseignant' else 'Fiches des enseignants' }}</a>
+  <a class="{{ 'actif' if onglet == 'manquants' }}" href="{{ url_for('prep_manquants') }}">Fiches et guides manquants</a>
+</nav>

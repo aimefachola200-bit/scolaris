@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block titre %}Fiches et guides manquants{% endblock %}
+{% block contenu %}{% set onglet = 'manquants' %}{% include "_prep_onglets.html" %}
+<h2>Fiches et guides manquants</h2>
+<p class="aide">Comparaison entre la planification annuelle officielle (SA prévues par cours et matière) et les fiches et guides des documents fournis. Les fiches et guides ajoutés pour combler les manques portent la mention : <b>{{ mention }}</b></p>
+{% for titre, lignes in [('Après les fiches et guides conçus', apres), ('Avant (documents fournis seuls)', avant)] %}
+<h3>{{ titre }}</h3>
+<div class="tw"><table class="t">
+  <thead><tr><th>Cours</th><th>Matière</th><th>Fiches</th><th>Guides</th><th>SA prévues</th><th>SA sans fiche</th></tr></thead>
+  <tbody>{% for l in lignes %}<tr>
+    <td>{{ l.cours }}</td><td>{{ prep_nom_matiere(l.matiere) }}</td><td>{{ l.fiches }}</td><td>{{ l.guides }}</td>
+    <td>{{ l.sa_prevues|join(', ') if l.sa_prevues else '—' }}</td>
+    <td>{% if l.sa_sans_fiche %}<span class="badge ko">{{ l.sa_sans_fiche|join(', ') }}</span>{% else %}<span class="badge ok">aucune</span>{% endif %}</td>
+  </tr>{% endfor %}</tbody></table></div>
+{% endfor %}
+<h3>Fiches conçues selon l'APC (à valider)</h3>
+{% for (c, m), fs in par.items()|sort %}
+<p><b>{{ c }} — {{ prep_nom_matiere(m) }}</b> ({{ fs|length }}) : {% for f in fs %}<a href="{{ url_for('prep_fiche', fid=f.id) }}">{{ f.titre }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+{% endfor %}
+<h3>Guides conçus</h3>
+<ul>{% for x in guides_c %}<li><a href="{{ url_for('prep_guide', gid=x.id) }}">{{ x.titre }}</a> — {{ prep_nom_matiere(x.matiere) }}</li>{% endfor %}</ul>
+<p class="aide">Les SA restées sans fiche ne figurent dans la planification que par leur numéro (aucun titre ni contenu dans les documents) : préparez-les avec « Préparer une fiche » à partir du guide de la matière.</p>
+{% endblock %}

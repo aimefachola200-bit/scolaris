@@ -18,6 +18,16 @@
   {{ lien('synoptique_planification', 'Planification annuelle', ep.startswith('synoptique_planification') and not ep.startswith('synoptique_planification_mensuelle')) }}
   {{ lien('synoptique_planification_mensuelle', 'Planification mensuelle', ep.startswith('synoptique_planification_mensuelle')) }}
 {% endcall %}
+{% if peut('preparation') and ep_existe('prep_accueil') %}{# v1.18 : préparation de classe (programmes, guides, fiches APC) #}
+{% call groupe('prep', 'Préparation de classe', ep.startswith('prep_'), '📝') %}
+  {{ lien('prep_accueil', 'Cette semaine (planification et fiches)', ep=='prep_accueil') }}
+  {{ lien('prep_programmes', 'Programmes et progressions', ep.startswith('prep_programme')) }}
+  {{ lien('prep_guides', 'Guides pédagogiques', ep.startswith('prep_guide')) }}
+  {{ lien('prep_fiches', 'Fiches de préparation (bibliothèque)', ep.startswith('prep_fiche')) }}
+  {{ lien('prep_preparer', 'Préparer une fiche', ep=='prep_preparer') }}
+  {{ lien('prep_mes_fiches', 'Mes fiches', ep.startswith('prep_ma') or ep=='prep_mes_fiches') }}
+  {{ lien('prep_manquants', 'Fiches et guides manquants', ep=='prep_manquants') }}
+{% endcall %}{% endif %}
 {% call groupe('ens_off', 'Textes officiels', ep.startswith('calendrier_officiel') or ep.startswith('synoptique_reglement') or ep.startswith('themes_up'), '📘') %}
   {{ lien('calendrier_officiel', 'Calendrier scolaire officiel (MEMP)', ep.startswith('calendrier_officiel')) }}
   {{ lien('synoptique_reglement', 'Règlement intérieur', ep.startswith('synoptique_reglement')) }}

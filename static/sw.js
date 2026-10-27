@@ -4,10 +4,10 @@
    - Sans connexion au serveur, une page explicative s'affiche.
    - v1.8 : les pages de saisie en classe (appel, notes, Ma classe) déjà ouvertes restent consultables sans connexion
      (copie locale, effacée à la déconnexion) ; les saisies faites hors ligne sont envoyées plus tard (scolaris.js). */
-const VERSION = "scolaris-1.17.1";
+const VERSION = "scolaris-1.18.0";
 const PAGES = "scolaris-pages";
 const CLASSE = /^\/(appel\/\d+\/|evaluations\/\d+\/(saisie|donnees\.json)|ma-classe)/;
-const STATIQUES = ["/hors-ligne", "/static/style.css", "/static/icons/icon-192.png", "/static/icons/icon-512.png"];
+const STATIQUES = ["/hors-ligne", "/static/style.css", "/static/choix.js", "/static/icons/icon-192.png", "/static/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(STATIQUES)).then(() => self.skipWaiting()));
