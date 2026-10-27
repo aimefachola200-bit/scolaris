@@ -1,4 +1,8 @@
-# Inventaire CM1 et lot 2 — fiches de préparation APC
+# Inventaire des fiches et guides — SCOLARIS / GESCOL Enseignant (v1.20)
+
+Sommaire : CM1 et lot 2 (v1.19) ; lot 3 (v1.20) — CI, CP, CE2, CM2, EST CM2 de la CS, guides officiels CM1, titres de SA, actualisation de l'Éducation sociale, doublons, intrus, ce qui manque encore.
+
+## Inventaire CM1 et lot 2 — fiches de préparation APC (v1.19)
 
 _Document de travail établi le 27 octobre 2026._
 
@@ -178,3 +182,265 @@ Fiches CP de Mathématiques : 140 (une par jour de la progression) — 95 repris
 - CE2 Éducation sociale : SA prévues sans fiche 3, 4, 5, 6
 - CE2 EPS : SA prévues sans fiche 2, 3, 4, 5
 - CM2 Éducation sociale : SA prévues sans fiche 2, 3
+
+---
+
+# Lot 3 (v1.20)
+
+Recueils d'auteurs tiers (CI, CP, CE2, CM2 ; versions « sans filigrane » comprises) : **documents de référence seulement**. On n'en a relevé que la structure (matière, sous-matière, thème, semaine, SA, séance, leçon / étape, titre) pour repérer les séances absentes ; les fiches ajoutées sont des rédactions originales. Aucune fiche tierce n'a été importée ni n'a remplacé une fiche existante. Les scans ne sont pas livrés.
+
+## CI — inventaire (recueil « FICHES CI AU COMPLET », couche texte)
+
+Période d'immersion (communication orale, graphisme, éveil à la lecture, lecture récréative), lecture-écriture, intégration, structures de la langue, mathématiques, ES (morale, civisme, langue nationale), EST, EPS, EA.
+
+Séances de référence : 1090 ; déjà dans l'application : 33 ; fiches conçues (« Conçue selon l'APC — à valider par le conseiller pédagogique ») : 810 ; doublons internes au recueil écartés : 247 ; intrus écartés : 0.
+
+| Matière | Fiches conçues |
+|---|---|
+| Français | 432 |
+| Mathématiques | 127 |
+| Éducation sociale | 102 |
+| EST | 31 |
+| EPS | 56 |
+| Éducation artistique | 62 |
+
+<details><summary>Détail par sous-matière</summary>
+
+- Français — Communication orale : 46
+- Français — Graphisme-écriture : 50
+- Français — Intégration : 54
+- Français — Lecture : 57
+- Français — Lecture récréative : 1
+- Français — Lecture-écriture : 215
+- Français — Structures de la langue : 9
+- Mathématiques — Mathématiques : 127
+- Éducation sociale — Civisme : 66
+- Éducation sociale — Morale : 36
+- EST — EST : 31
+- EPS — EPS : 56
+- Éducation artistique — Activités manuelles : 2
+- Éducation artistique — Chant : 12
+- Éducation artistique — Collage : 1
+- Éducation artistique — Coloriage : 1
+- Éducation artistique — Conte : 19
+- Éducation artistique — Dessin (imprégnation) : 14
+- Éducation artistique — Modelage : 1
+- Éducation artistique — Poésie : 12
+
+</details>
+
+## CP — inventaire (recueil « FICHES CP AU COMPLET », sans filigrane)
+
+Lecture-écriture et intégration (une fiche par leçon et par étape : découverte, syllabes, écriture 1, mots, écriture 2, lecture individuelle, lecture récréative, expression écrite), communication orale, structures de la langue, ES, EST, EPS, EA. Les 135 fiches de mathématiques du recueil sont couvertes par la progression du guide officiel CP (140 fiches).
+
+Séances de référence : 799 ; déjà dans l'application : 50 ; fiches conçues (« Conçue selon l'APC — à valider par le conseiller pédagogique ») : 621 ; doublons internes au recueil écartés : 25 ; intrus écartés : 103.
+
+| Matière | Fiches conçues |
+|---|---|
+| Français | 441 |
+| Éducation sociale | 73 |
+| EST | 32 |
+| EPS | 68 |
+| Éducation artistique | 7 |
+
+<details><summary>Détail par sous-matière</summary>
+
+- Français — Communication orale : 22
+- Français — Intégration : 79
+- Français — Lecture-écriture : 320
+- Français — Structures de la langue : 20
+- Éducation sociale — Civisme : 24
+- Éducation sociale — Géographie : 6
+- Éducation sociale — Histoire : 17
+- Éducation sociale — Morale : 26
+- EST — EST : 32
+- EPS — EPS : 68
+- Éducation artistique — Chant : 3
+- Éducation artistique — Conte : 1
+- Éducation artistique — Dessin (imprégnation) : 1
+- Éducation artistique — Dessin (libre) : 1
+- Éducation artistique — Poésie : 1
+
+</details>
+
+Intrus écartés :
+
+- couverte par la progression du guide officiel de Mathématiques CP (140 fiches déjà dans l'application) : 90 (pages 1000, 1004, 1008, 1012, 1016, 1020, 1022, 1034, 1052, 1068, 1072, 1074, 1078, 1080, 1088, 1092, 1094, 1096, 1100, 1104, 1110, 1114, 1120, 1122, 1126, 1130, 1134, 1138, 1142, 1146, 1172, 1176, 1184, 1188, 1190, 1198, 1212, 1214, 1226, 1230, 1234, 1238, 1240, 1244, 1246, 1250, 1258, 1270, 1274, 1278, …)
+- page sans titre de séance (fiche incomplète ou mal numérisée) : 12 (pages 105, 109, 123, 822, 1107, 1150, 1154, 1156, 1158, 1429, 1501, 1521)
+- page illisible : 1 (pages 1025)
+
+## CE2 — inventaire (recueil CE2 numérisé, OCR des en-têtes)
+
+Recueil numérisé sans couche texte : les en-têtes de page ont été lus par OCR ; les titres illisibles sont classés parmi les intrus.
+
+Séances de référence : 259 ; déjà dans l'application : 18 ; fiches conçues (« Conçue selon l'APC — à valider par le conseiller pédagogique ») : 227 ; doublons internes au recueil écartés : 5 ; intrus écartés : 9.
+
+| Matière | Fiches conçues |
+|---|---|
+| Français | 129 |
+| Mathématiques | 12 |
+| Éducation sociale | 51 |
+| EST | 14 |
+| EPS | 21 |
+
+<details><summary>Détail par sous-matière</summary>
+
+- Français — Communication orale : 12
+- Français — Conjugaison : 7
+- Français — Expression écrite : 22
+- Français — Grammaire : 2
+- Français — Graphisme-écriture : 34
+- Français — Lecture : 24
+- Français — Orthographe : 11
+- Français — Vocabulaire : 17
+- Mathématiques — Mathématiques : 12
+- Éducation sociale — Civisme : 18
+- Éducation sociale — Géographie : 8
+- Éducation sociale — Histoire : 5
+- Éducation sociale — Morale : 20
+- EST — EST : 14
+- EPS — EPS : 21
+
+</details>
+
+Intrus écartés :
+
+- matière illisible : 9 (pages 67, 241, 251, 311, 317, 561, 607, 823, 869)
+
+## CM2 — inventaire (recueil CM2, sans filigrane)
+
+Priorités traitées : ES (SA 1 civisme, SA 2 géographie, SA 3 histoire, patrimoine), Éducation artistique, puis Français, EPS, Mathématiques.
+
+Séances de référence : 603 ; déjà dans l'application : 385 ; fiches conçues (« Conçue selon l'APC — à valider par le conseiller pédagogique ») : 209 ; doublons internes au recueil écartés : 5 ; intrus écartés : 4.
+
+| Matière | Fiches conçues |
+|---|---|
+| Français | 34 |
+| Mathématiques | 1 |
+| Éducation sociale | 99 |
+| EST | 1 |
+| EPS | 9 |
+| Éducation artistique | 65 |
+
+<details><summary>Détail par sous-matière</summary>
+
+- Français — Communication orale : 4
+- Français — Conjugaison : 1
+- Français — Expression écrite : 1
+- Français — Expression écrite — 1er jet : 3
+- Français — Expression écrite — imprégnation : 1
+- Français — Lecture libre : 2
+- Français — Lecture oralisée : 5
+- Français — Orthographe : 1
+- Français — Vocabulaire fonctionnel : 5
+- Français — Vocabulaire systématique : 6
+- Français — Vocabulaire thématique : 5
+- Mathématiques — Géométrie : 1
+- Éducation sociale — Civisme : 30
+- Éducation sociale — Géographie : 42
+- Éducation sociale — Histoire : 27
+- EPS — EPS : 9
+- Éducation artistique — Chant : 9
+- Éducation artistique — Conte : 9
+- Éducation artistique — Couture : 22
+- Éducation artistique — Dessin (imprégnation) : 8
+- Éducation artistique — Dessin (libre) : 8
+- Éducation artistique — Poésie : 9
+
+</details>
+
+Intrus écartés :
+
+- page sans titre de séance (fiche incomplète ou mal numérisée) : 3 (pages 710, 938, 1014)
+- matière illisible : 1 (pages 686)
+
+## EST CM2 — fiches transmises par la CS (EST_CM2_COMPLET.pdf)
+
+32 fiches lues, 31 importées (source « Fiches d'EST CM2 transmises par la CS », texte relevé automatiquement, à relire), 14 fiches existantes de même objet remplacées, 1 doublon interne au fichier. Les fusions figurent dans la section « Doublons ».
+
+## Guides officiels CM1 (MEMP / INFRE)
+
+Les quatre guides numérisés (Français 188 p., Mathématiques 173 p., EPS 137 p., EST 100 p.) ont été lus par OCR ; les scans ne sont pas livrés. Dans « Guides pédagogiques » (groupe « Guides officiels ») : orientations, démarche et répertoires (texte officiel, à relire), planification des SA (Français : 7 thèmes / 12 unités ; Mathématiques : 5 dossiers ; EPS : 3 SA ; EST : 7 SA).
+Contrôle des fiches CM1 : 39 fiches d'EPS réalignées sur les SA du guide (SA 1 lancer / saut après course d'élan, SA 2 coopération / opposition, SA 3 attitudes posturales) ; intitulés des SA d'EST harmonisés ; programmes CM1 d'EPS et de Mathématiques ajoutés.
+
+## Titres de SA ajoutés aux programmes (ES, EPS)
+
+Relevés dans les recueils de référence (structure) pour les SA qui n'avaient pas de titre dans l'application :
+
+- CP EPS SA 1 : J’apprends à exécuter des actions avec l’ensemble
+- CP EPS SA 2 : Les actions locomotrices et non locomotrices: Situation de départ
+- CP EPS SA 3 : J’apprends à marcher au pas cadencé
+- CP EPS SA 4 : harmoniser rythme et mouvemnts : Situation de départ
+- CP EPS SA 5 : Une danse traditionnele : Situation de départ
+- CP EPS SA 6 : Se déplacer en évitant les obstacles
+- CP EPS SA 7 : J’apprends à sauter de différentes façons
+- CP EPS SA 8 : Modifications des appuis et rythme en sautant
+- CP EPS SA 9 : Lancer des objets sur cibles fixes
+- CP EPS SA 10 : Jeux de corde
+- CP EPS SA 11 : Réalises une tâche sans contact corporel
+- CP EPS SA 12 : S’oppposer à un adversaire sans utiliser un objet
+- CP EPS SA 13 : Jouer seul contre plusieurs adversaire
+- CP Éducation sociale SA 1 : Je sais saluer
+- CP Éducation sociale SA 2 : J’apprends a demander une permission
+- CP Éducation sociale SA 3 : J’apprends a presenter des excuses
+- CP Éducation sociale SA 4 : J’apprends a accueillir
+- CP Éducation sociale SA 5 : Le code de la route : le déplacement dans
+- CP Éducation sociale SA 6 : Découvrir les activités socio-économiques et leur impacts sur l’environnement
+- CP Éducation sociale SA 7 : Je connais mes droits et devoirs en famille
+- CP Éducation sociale SA 8 : Situer quelques activités et evènements dans l’année
+- CP Éducation sociale SA 9 : Découvrir les activités socio-économiques et leur impacts sur l’environnement
+- CM2 EPS SA 1 : Pratique des activites physiques d’adaptation
+- CM2 EPS SA 2 : Tenir et enchainer diverses attitudes posturales
+- CM2 EPS SA 3 : Tenir et enchainer diverses attitudes posturales
+- CM2 EPS SA 4 : Tenir et enchainer diverses attitudes posturales
+- CM2 Éducation sociale SA 1 : L’enfant dans la cite
+- CM2 Éducation sociale SA 2 : Decouvrons le benin en afrique et dans le monde
+- CM2 Éducation sociale SA 3 : Le benin : les grandes periodes de son histoire et son rayonnement
+- CM2 Éducation sociale SA 7 : Le benin : les grandes periodes de son histoire et son rayonnement
+
+## Éducation sociale — actualisation (faits vérifiés le 27/10/2026)
+
+19 fiches existantes corrigées (mandat de sept ans, 109 députés élus le 11/01/2026, président Wadagni, Sénat, recensement…) ; 19 résumés « Éducation sociale » CE1 → CM2 ; guide « Repères d'actualité institutionnelle du Bénin ». Faits non confirmés écrits « à vérifier auprès de … ».
+
+Sources :
+
+- [Révision constitutionnelle promulguée (loi n° 2025-20 du 17/12/2025)](https://fr.apanews.net/news/benin-la-reforme-constitutionnelle-promulguee/)
+- [Septennat, limite de deux mandats, Sénat](https://afrique.le360.ma/politique/revision-constitutionnelle-au-benin-septennat-pour-le-president-et-creation-dun-senat_URXOCX4KMNAHZBHOKQMFUUM6GE/)
+- [Législatives du 11/01/2026 : 109 sièges](https://tchadinfos.com/2026/01/20/benin-deux-partis-raflent-les-109-sieges-de-lassemblee-nationale/)
+- [Joseph Djogbénou élu président de l'Assemblée nationale (8/02/2026)](https://beninwebtv.bj/benin-joseph-djogbenou-elu-president-de-lassemblee-nationale-pour-la-10%E1%B5%89-legislature/)
+- [Présidentielle du 12/04/2026 : résultats provisoires de la CENA](https://fr.apanews.net/news/benin-large-victoire-du-duo-wadagni-talata-cena/)
+- [Investiture de Romuald Wadagni (24/05/2026)](https://tchadinfos.com/2026/05/24/benin-romuald-wadagni-investi-president-de-la-republique/)
+- [Gouvernement du 24/05/2026 (24 ministres)](https://burkina24.com/?p=442184)
+- [Installation du Sénat (30/07/2026)](https://africa24tv.com/?p=203574)
+- [Patrice Talon élu président du Sénat (6/08/2026)](https://tchadinfos.com/2026/08/06/benin-patrice-talon-elu-president-du-senat/)
+- [Recensement RGPH4 (INStaD)](https://www.instad.bj/images/docs/insae-statistiques/demographiques/population/Resultats definitifs RGPH4.pdf)
+
+## Doublons (lot 3)
+
+| Type | Cours | Référence | Titre | Conservée | Retirée | Raison |
+|---|---|---|---|---|---|---|
+| doublon interne (fiche répétée dans le fichier CS) | CM2 | SA 1 séance 10 | Les conducteurs et les isolants | csest-cm2-sa1-s6-les-conducteurs-et-les-isolants | copie répétée | même SA et même titre |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 1 | Le circuit électrique (Situation de départ) | csest-cm2-sa1-s1-le-circuit-electrique-situation-d | p10-f8e1c243f2f5 | même SA et même objet (« Situation de départ. ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 1 | Le circuit électrique (Situation de départ) | csest-cm2-sa1-s1-le-circuit-electrique-situation-d | eaf-5d0a4f69387f | même SA et même objet (« Fiche n°1 — Le circuit électrique : situation de départ ») ; la fiche CS, complète et numérotée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 2 | Le circuit électrique : les éléments d’un circuit électrique | csest-cm2-sa1-s2-le-circuit-electrique-les-element | eaf-f991c5969b20 | même SA et même objet (« Fiche n°2 — Les éléments d'un circuit électrique ») ; la fiche CS, complète et numérotée, est c |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 5 | Les conditions d’allumage d’une lampe électrique dans un cir | csest-cm2-sa1-s5-les-conditions-d-allumage-d-une-l | p10-70eb6a1edccd | même SA et même objet (« Conditions d’allumage d’une lampe électrique. ») ; la fiche CS, complète et numérotée, est cons |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 6 | Les conducteurs et les isolants | csest-cm2-sa1-s6-les-conducteurs-et-les-isolants | p10-1cd3f9a4f82f | même SA et même objet (« Les corps conducteurs et les corps isolants ») ; la fiche CS, complète et numérotée, est conser |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 8 | Le circuit électrique : montage des piles en série et en opp | csest-cm2-sa1-s8-le-circuit-electrique-montage-des | p10-8d565d9f147e | même SA et même objet (« Le montage de piles. ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 1 séance 9 | Le circuit électrique : fabrication d’une lampe torche | csest-cm2-sa1-s9-le-circuit-electrique-fabrication | p10-8ee5145f40f1 | même SA et même objet (« La fabrication d’une lampe de porche. ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 2 séance 5 | Bien manger pour vivre : la sous-alimentation | csest-cm2-sa2-s5-bien-manger-pour-vivre-la-sous-al | p10-73eb07ea7f20 | même SA et même objet (« La malnutrition et la sous-alimentation. ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 2 séance 11 | Bien manger pour vivre : la digestion | csest-cm2-sa2-s11-bien-manger-pour-vivre-la-digest | p10-9545a0261025 | même SA et même objet (« La digestion des aliments. ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 3 séance 3 | La préhistoire : les premiers hommes sont-ils différents de  | csest-cm2-sa3-s3-la-prehistoire-les-premiers-homme | apc-cm2-est-3-1 | même SA et même objet (« SA3 — Les premiers hommes étaient différents de nous ») ; la fiche CS, complète et numérotée, e |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 4 séance 1 | L’énergie autour de nous : les différentes formes d’énergie  | csest-cm2-sa4-s1-l-energie-autour-de-nous-les-diff | p10-8bd8470c263a | même SA et même objet (« Les différentes formes d’énergie et leurs sources ») ; la fiche CS, complète et numérotée, est  |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 4 séance 3 | La transformation de l’énergie solaire en énergie électrique | csest-cm2-sa4-s3-la-transformation-de-l-energie-so | p10-471c81753bc4 | même SA et même objet (« La transformation de l’énergie solaire en énergie électrique ») ; la fiche CS, complète et numé |
+| fusion EST CM2 (CS / corpus) | CM2 | SA 5 séance 1 | Fonctionnement de quelques machines simples : principe du le | csest-cm2-sa5-s1-fonctionnement-de-quelques-machin | p10-60ef005b22ec | même SA et même objet (« Le levier et la poulie ») ; la fiche CS, complète et numérotée, est conservée |
+| fusion EST CM2 (CS / fiche conçue) | CM2 | SA 5 | Description, fonctionnement et principes du levier | csest-cm2-sa5-s1-fonctionnement-de-quelques-machin | lot3-cm2-est-est-5-4-ement-et-principes-du-levier | la séance est couverte par une fiche transmise par la CS |
+
+## Ce qui manque encore (après le lot 3)
+
+- CI Éducation sociale : SA prévues sans fiche 4, 5, 8
+- CP Éducation sociale : SA prévues sans fiche 10, 11
+- CE1 Éducation sociale : SA prévues sans fiche 3, 6
+- CE1 EPS : SA prévues sans fiche 2, 3, 4, 5, 6
+- CE2 Éducation sociale : SA prévues sans fiche 3, 5, 6
+- CE2 EPS : SA prévues sans fiche 3
+- Les fiches conçues sont à valider par le conseiller pédagogique ; textes des contes, poèmes et chants à prendre dans le recueil de la classe.

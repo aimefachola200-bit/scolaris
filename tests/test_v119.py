@@ -202,7 +202,7 @@ class TestFichiers(unittest.TestCase):
         for interdit in ("MARIUS", "97125727", "ABOGOUNRIN", "Yaslo", "PIOILALOUBI", "PIO ILALOU", "97235640", "HOUNGBEDJI",
                          "@jacques", "gmail", "Propriété privée", "CamScanner"):
             self.assertNotIn(interdit, brut)
-        doc = self.lire("docs", "inventaire_cm1.md")
+        doc = self.lire("docs", "inventaire_fiches.md")
         self.assertIn("Inventaire CM1", doc)
         self.assertIn("## 9. Doublons", doc)
         self.assertNotIn("PIO ILALOU", doc)

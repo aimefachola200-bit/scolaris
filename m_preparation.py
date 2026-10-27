@@ -280,8 +280,8 @@ class _GuideVersPdf(HTMLParser):
 
 
 # ---------------------------------------------------------------- v1.19 : résumés (PDF enseignant / élève)
-COLLECTIONS_RES = [("maths", "Mathématiques CE1 → CM2"), ("francais-cm1", "Français CM1"), ("cep", "Révision CEP")]
-COLLECTION_DE = {"Mathématiques": "maths", "Français CM1": "francais-cm1", "Révision CEP": "cep"}
+COLLECTIONS_RES = [("maths", "Mathématiques CE1 → CM2"), ("francais-cm1", "Français CM1"), ("es", "Éducation sociale CE1 → CM2"), ("cep", "Révision CEP")]
+COLLECTION_DE = {"Mathématiques": "maths", "Français CM1": "francais-cm1", "Éducation sociale": "es", "Révision CEP": "cep"}
 _GLYPHES = {"→": "->", "−": "-", "ᵉ": "e", "ɔ": "o", "≈": "~", "≤": "<=", "≥": ">="}
 
 
@@ -913,7 +913,7 @@ def enregistrer(app, H):
         concues = [f for f in C["fiches"] if f.get("statut") == "concue"]
         par = {}
         for f in concues:
-            if not f["id"].startswith(("cm1i-", "l2c-", "cp22-")):      # inventaires (CM1, lot 2, CP) : résumés dans leurs tableaux
+            if not f["id"].startswith(("cm1i-", "l2c-", "cp22-", "lot3-")):      # inventaires (CM1, lot 2, CP, lot 3) : résumés dans leurs tableaux
                 par.setdefault((f["cours"], f["matiere"]), []).append(f)
         guides_c = [x for x in C["guides"] if x.get("statut") == "concu"]
         return render_template("prep_manquants.html", avant=m.get("avant", []), apres=m.get("apres", []), par=par,
