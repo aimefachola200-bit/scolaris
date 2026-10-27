@@ -3,9 +3,9 @@
   <div><h1>Tableau synoptique de l'école</h1>
     <p class="sous">{{ ident.epp or ECOLE.nom }} — année scolaire {{ ANNEE }}{% if ident.ddemp %} · DDEMP {{ ident.ddemp }}{% endif %}{% if ident.cs %} · CS {{ ident.cs }}{% endif %}</p></div>
   <div class="actions">
-    <a class="btn petit" href="{{ url_for('synoptique_pdf') }}" target="_blank">📄 PDF complet</a>
-    <a class="btn sec petit" href="{{ url_for('synoptique_xlsx') }}">⬇ Excel</a>
-    {% if ecrire %}<a class="btn sec petit" href="{{ url_for('synoptique_import') }}">⬆ Import / export</a>{% endif %}
+    <a class="btn petit" href="{{ url_for('synoptique_pdf') }}" target="_blank">{{ icone('document') }} PDF complet</a>
+    <a class="btn sec petit" href="{{ url_for('synoptique_xlsx') }}">{{ icone('telecharger') }} Excel</a>
+    {% if ecrire %}<a class="btn sec petit" href="{{ url_for('synoptique_import') }}">{{ icone('importer') }} Import / export</a>{% endif %}
   </div>
 </div>
 <nav class="onglets" aria-label="Rubriques du tableau synoptique">

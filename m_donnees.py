@@ -20,9 +20,9 @@ Modèles officiels EducMaster (dossier modeles/, fournis par la plateforme : ils
 cellules de données sont remplies avec openpyxl, en conservant fusions, en-têtes et styles) :
 * educmaster_modele_notes_primaire.xlsx — 4 feuilles (« Évaluation formative 1 », « Évaluation sommative 1 / 2 / 3 »),
   en-têtes sur les lignes 1-2, données dès la ligne 3 : Matricule (EducMaster), Nom, Prénoms, puis par matière
-  « Note obtenue » / « Note perf. ». Correspondance feuille ↔ évaluation SCOLARIS de la classe : formative n ↔
-  évaluation de type « formative » n° n, sommative n ↔ évaluation « sommative » n° n (à défaut, la n-ième du type dans
-  l'ordre de l'année). Correspondance matières ↔ codes SCOLARIS (MATIERES_MODELE_PRIMAIRE) : Dictée = DIC,
+  « Note obtenue » / « Note perf. ». Correspondance feuille  évaluation SCOLARIS de la classe : formative n 
+  évaluation de type « formative » n° n, sommative n  évaluation « sommative » n° n (à défaut, la n-ième du type dans
+  l'ordre de l'année). Correspondance matières  codes SCOLARIS (MATIERES_MODELE_PRIMAIRE) : Dictée = DIC,
   Math = MATH, Expression écrite = EXP.EC, Compréhension de l'écrit = COMP.EC, EST = ED.SCI, ES = ED.SOC,
   EA (Oral) = ART.V, EA (Dessin/Couture) = ART.P, EPS = EPS. « Note perf. » = barème de la note (NOTE_PERF = 20) :
   toutes les notes SCOLARIS sont sur 20.
@@ -238,13 +238,13 @@ def enregistrer(app, H):
         role = g.user["role"]
         # (groupe, [(endpoint, libellé, description, droit ou None, rôles autorisés ou None)])
         groupes = [
-            ("Élèves", "👤", [
+            ("Élèves", "personne", [
                 ("eleves_export_xlsx", "Exporter la liste des élèves (Excel)", "Tous les élèves de l'école, au format .xlsx.", "eleves", None),
                 ("eleves_export", "Exporter la liste des élèves (CSV)", "Même liste au format CSV (séparateur « ; »).", "eleves", None),
                 ("eleves_modele_xlsx", "Modèle Excel d'inscription", "Fichier vierge à remplir pour inscrire les élèves en nombre.", "eleves", None),
                 ("eleves_import", "Importer des élèves (Excel / CSV)", "Inscription ou mise à jour en masse avec aperçu avant validation.", "eleves", None),
             ]),
-            ("Notes et résultats", "✎", [
+            ("Notes et résultats", "modifier", [
                 ("eval_accueil", "Notes par évaluation : modèle, import, export Excel",
                  "Ouvrez une évaluation : boutons « Modèle Excel », « Importer » et « Excel ».", "evaluations", None),
                 ("notes_accueil", "Notes par trimestre", "Saisie et bulletins trimestriels.", "notes", None),
@@ -253,7 +253,7 @@ def enregistrer(app, H):
                 ("synthese_accueil", "Synthèse École / UP / CS (Excel / PDF)", "Synthèse de l'évaluation par classe et par niveau.", "synthese", None),
                 ("affichage_accueil", "Affichage des résultats (modèle Excel, import)", "Liste d'affichage des résultats.", "affichage", None),
             ]),
-            ("Présences", "🗓", [
+            ("Présences", "calendrier", [
                 ("registre_accueil", "Registre d'appel (import des élèves, PDF)", "Registre par demi-journée.", "registre", None),
                 ("releve_mensuel", "Relevés mensuels (PDF)", "Tableau des relevés mensuels de l'année.", "registre", None),
             ]),

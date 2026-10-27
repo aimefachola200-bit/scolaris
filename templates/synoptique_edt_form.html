@@ -20,6 +20,6 @@
   <textarea id="e-rem" name="remarques" rows="3">{{ d.remarques|join('\n') }}</textarea>
   <label for="e-src" style="display:block;font-weight:600;margin-top:8px">Source / référence</label>
   <input id="e-src" name="source" value="{{ d.source or '' }}" maxlength="300">
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button></p>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button></p>
 </form>
 {% endblock %}

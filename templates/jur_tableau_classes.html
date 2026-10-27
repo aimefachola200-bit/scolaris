@@ -7,7 +7,7 @@
   <div class="actions">
     <a class="btn sec" href="{{ url_for('jur_tableau', annee=flt.annee, cs=flt.cs_id if JUR_NIVEAU == 'ddemp' else None) }}">← Tableau de bord</a>
     <a class="btn sec" href="{{ url_for('jur_classes_xlsx', **args) }}">⇩ Excel</a>
-    <a class="btn" href="{{ url_for('jur_classes_pdf', **args) }}" target="_blank">📄 PDF</a>
+    <a class="btn" href="{{ url_for('jur_classes_pdf', **args) }}" target="_blank">{{ icone('document') }} PDF</a>
   </div></div>
 {{ T.filtres(flt, 'jur_classes', zone=True, type_=True, secteur=True, recherche=True) }}
 

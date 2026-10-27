@@ -8,7 +8,7 @@
   <div><h2 style="margin:0">{{ lib }}</h2><p class="sous">{{ lst|length }} membre(s) · année scolaire {{ ANNEE }}</p></div>
   <div class="actions">
     {% if ecrire %}<a class="btn" href="{{ url_for('jur_synoptique_membre', comite=comite, mid=0) }}">+ Ajouter un membre</a>{% endif %}
-    <a class="btn sec" href="{{ url_for('jur_synoptique_comite_pdf', comite=comite) }}" target="_blank">📄 PDF du comité</a>
+    <a class="btn sec" href="{{ url_for('jur_synoptique_comite_pdf', comite=comite) }}" target="_blank">{{ icone('document') }} PDF du comité</a>
   </div>
 </div>
 <div class="tw"><table class="t">

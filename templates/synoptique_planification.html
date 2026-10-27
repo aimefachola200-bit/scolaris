@@ -7,7 +7,7 @@
   <div><h2 style="margin:0">Planification annuelle des activités pédagogiques — {{ lib }}</h2>
     <p class="sous">{% if d.officiel %}Planification de référence (non modifiée){% elif d.maj %}Modifiée le {{ d.maj }}{% else %}À renseigner{% endif %} · année scolaire {{ ANNEE }}</p></div>
   <div class="actions">
-    {% if ecrire %}<a class="btn" href="{{ url_for('synoptique_planification_form', niveau=niveau) }}">✎ Modifier / ajouter des lignes</a>
+    {% if ecrire %}<a class="btn" href="{{ url_for('synoptique_planification_form', niveau=niveau) }}">{{ icone('modifier') }} Modifier / ajouter des lignes</a>
     <form method="post" action="{{ url_for('synoptique_planification_reinit', niveau=niveau) }}" style="display:inline" onsubmit="return confirm('Remplacer cette planification par la planification de référence ?')"><button class="btn sec">Réinitialiser</button></form>{% endif %}
     <a class="btn sec" href="{{ url_for('synoptique_planification_pdf', niveau=niveau) }}" target="_blank">PDF</a>
     <a class="btn sec" href="{{ url_for('synoptique_planification_xlsx', niveau=niveau) }}">Excel</a>

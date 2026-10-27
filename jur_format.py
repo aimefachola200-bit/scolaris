@@ -43,6 +43,9 @@ SECTIONS DE L'ÉCOLE (toutes facultatives) :
   "rapports":    {"rentree-ep" | "fin-ep" | "rentree-em" | "fin-em": {"annee", "valeurs": {...}}}
   "patrimoine":  dict (H.patrimoine_synthese)
   "cantine":     {"existe": bool, "beneficiaires": int, "montant_annee": int}
+  "pilotage":    {"evaluations": [{"type", "numero", "libelle", "niveau", "classes", "composes_g", "composes_f",
+                                   "reussis_g", "reussis_f"}], "abandons": [g, f], "transferts": [g, f],
+                  "sport": {"licences_g", "licences_f", "aptes", "competitions", "matchs", "matchs_joues"}, "sante": {...}}
 
 PERSONNE (clés ; "" si inconnu) :
     nom, prenoms, sexe ("M"/"F"), nip, matricule, date_naissance (ISO ou "AAAA"), telephone, email,
@@ -63,7 +66,8 @@ FORMATS_ACCEPTES = (FORMAT, "gescol-transmission")  # LEGACY-GESCOL : anciens pa
 VERSION = 1
 TYPES_ECOLE = {"EP": "École primaire", "EM": "École maternelle", "EE": "Espace enfance"}
 SECTEURS = {"public": "Public", "prive": "Privé"}
-SECTIONS_ECOLE = ("effectifs", "personnel", "visites", "cep", "recensement", "rapports", "patrimoine", "cantine")
+SECTIONS_ECOLE = ("effectifs", "personnel", "visites", "cep", "recensement", "rapports", "patrimoine", "cantine",
+                  "pilotage")   # v1.25 : évaluations (réussite G / F), abandons, transferts, sport, santé (m_pilotage)
 SECTIONS_CS = ("agents", "visites", "cep", "structure", "frais_releves", "cp_bilans")  # v1.7 : bilans des CP
 CATEGORIES = {"FE": "FE (fonctionnaire de l'État)", "ACDPE": "ACDPE", "ACDPCTD": "ACDPCTD (AME)",
               "PRIVE": "Enseignant du privé", "AUTRE": "Autre"}

@@ -4,7 +4,7 @@
 <p class="sous">{{ ECOLE.nom }} – année scolaire {{ ANNEE }}</p>
 {% set rac = raccourcis() %}
 {% if rac %}<div class="raccourcis" aria-label="Actions principales">
-  {% for r in rac %}<a href="{{ r.url }}" class="{{ 'alerte' if r.alerte }}"><span class="ico" aria-hidden="true">{{ r.ico }}</span><b>{{ r.titre }}</b><span class="d">{{ r.d }}</span></a>{% endfor %}
+  {% for r in rac %}<a href="{{ r.url }}" class="{{ 'alerte' if r.alerte }}"><span class="ico" aria-hidden="true">{{ icone(r.ico, 22) }}</span><b>{{ r.titre }}</b><span class="d">{{ r.d }}</span></a>{% endfor %}
 </div>{% endif %}
 <div class="grille indicateurs">
   <div class="kpi"><div class="l">Élèves inscrits</div><div class="v">{{ s.eleves }}</div><div class="d">dont {{ s.filles }} filles</div></div>

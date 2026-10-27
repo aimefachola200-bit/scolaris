@@ -148,37 +148,37 @@ def enregistrer(app, H):
 
         if config.juridiction() and r not in ("directeur", "enseignant"):
             if any(H.peut(m) for m in ("jur_ecoles", "jur_visites", "jur_cp_bilan", "jur_transmission")):
-                ajout("jur_alertes", "Alertes de pilotage", "Ce qui demande une action", "🚨")
-            ajout("jur_cp_accueil", "Conseillers pédagogiques", "Programmation et bilans", "🧑‍🏫", "jur_cp_bilan")
-            ajout("jur_cp_bilan", "Bilan trimestriel", "Activités pédagogiques", "📑", "jur_cp_bilan")
-            ajout("jur_visites", "Visites", "Écoles et classes", "🔎", "jur_visites")
+                ajout("jur_alertes", "Alertes de pilotage", "Ce qui demande une action", "alerte")
+            ajout("jur_cp_accueil", "Conseillers pédagogiques", "Programmation et bilans", "enseignant", "jur_cp_bilan")
+            ajout("jur_cp_bilan", "Bilan trimestriel", "Activités pédagogiques", "classeur", "jur_cp_bilan")
+            ajout("jur_visites", "Visites", "Écoles et classes", "rechercher", "jur_visites")
             ajout("jur_transmissions", "Transmissions", "Recevoir les écoles", "⇅", "jur_transmission")
-            ajout("jur_stats_ecoles", "Statistiques", "Écoles, effectifs, enseignants", "📊", "jur_ecoles")
+            ajout("jur_stats_ecoles", "Statistiques", "Écoles, effectifs, enseignants", "graphique", "jur_ecoles")
         else:
             mes = H.classes_autorisees() if "ma_classe" in vf and r == "enseignant" else []
             if mes:
                 ajout("ma_classe", "Ma classe" if len(mes) == 1 else "Mes classes",
-                      mes[0]["nom"] if len(mes) == 1 else f"{len(mes)} classes", "🏫")
-            ajout("appel_accueil", "Faire l'appel", "Présents, absents, retards", "✅", "appel")
-            ajout("eval_accueil", "Saisir des notes", "Évaluations et bulletins", "📝", "evaluations")
+                      mes[0]["nom"] if len(mes) == 1 else f"{len(mes)} classes", "ecole")
+            ajout("appel_accueil", "Faire l'appel", "Présents, absents, retards", "valider", "appel")
+            ajout("eval_accueil", "Saisir des notes", "Évaluations et bulletins", "note", "evaluations")
             if r != "enseignant":
-                ajout("eleve_form", "Inscrire un élève", "Nouvelle inscription", "➕", "eleves")
+                ajout("eleve_form", "Inscrire un élève", "Nouvelle inscription", "ajouter", "eleves")
             else:
-                ajout("espace_enseignant", "Mon espace", "Fiches, documents, emploi du temps", "👤")
+                ajout("espace_enseignant", "Mon espace", "Fiches, documents, emploi du temps", "personne")
             if config.publique():
-                ajout("cantine_accueil", "Cantine", "Paiements et effectifs", "🍲", "cantine")
+                ajout("cantine_accueil", "Cantine", "Paiements et effectifs", "cantine", "cantine")
             else:
-                ajout("paiement_nouveau", "Encaisser", "Paiement de scolarité", "💰", "paiements")
-                ajout("impayes", "Impayés", "Relances aux parents", "📣", "paiements")
-            ajout("communication", "Messages aux parents", "SMS / WhatsApp", "💬", "communication")
-            ajout("cep_accueil", "CEP", "Fiches d'inscription", "🎓", "cep")
+                ajout("paiement_nouveau", "Encaisser", "Paiement de scolarité", "argent", "paiements")
+                ajout("impayes", "Impayés", "Relances aux parents", "annonce", "paiements")
+            ajout("communication", "Messages aux parents", "SMS / WhatsApp", "message", "communication")
+            ajout("cep_accueil", "CEP", "Fiches d'inscription", "diplome", "cep")
             if r in ("admin", "fondateur", "directeur") and "en_ligne_page" in vf and H.peut("parametres"):
                 s = etat_sauvegarde()
                 if s["date"] is None:
-                    ajout("en_ligne_page", "Sauvegardes", "Aucune sauvegarde : à faire", "💾", alerte=True)
+                    ajout("en_ligne_page", "Sauvegardes", "Aucune sauvegarde : à faire", "enregistrer", alerte=True)
                 else:
                     quand = "aujourd'hui" if s["jours"] == 0 else ("hier" if s["jours"] == 1 else f"il y a {s['jours']} jours")
-                    ajout("en_ligne_page", "Sauvegardes", f"Dernière : {quand}", "💾", alerte=s["jours"] > 2)
+                    ajout("en_ligne_page", "Sauvegardes", f"Dernière : {quand}", "enregistrer", alerte=s["jours"] > 2)
         return out[:8]
 
     app.jinja_env.globals.update(raccourcis=raccourcis, etat_sauvegarde=etat_sauvegarde)

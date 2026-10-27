@@ -35,8 +35,8 @@ table.rg td.sep-j{border-left:2px solid #98A2B3!important}
   <div><h1>Registre de présence{% if cl %} – {{ cl.nom }}{% endif %}</h1>
     <p class="sous">{{ p.titre }} · présences par demi-journée (matin / après-midi){% if cl and cl.titulaire_nom %} · {{ cl.titulaire_titre or 'Titulaire' }} : {{ cl.titulaire_nom }}{% endif %}</p></div>
   <div class="actions">
-    <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=p.mois) }}">📅 Calendrier</a>
-    <a class="btn sec petit" href="{{ url_for('releve_mensuel', classe=cl.id if cl else None) }}">📊 Relevés mensuels</a>
+    <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=p.mois) }}">{{ icone('calendrier') }} Calendrier</a>
+    <a class="btn sec petit" href="{{ url_for('releve_mensuel', classe=cl.id if cl else None) }}">{{ icone('graphique') }} Relevés mensuels</a>
   </div>
 </div>
 
@@ -48,9 +48,9 @@ table.rg td.sep-j{border-left:2px solid #98A2B3!important}
   </select></label>
   <input type="hidden" name="vue" value="{{ p.vue }}">
   <div class="rg-nav">
-    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None, **p.prec) }}" title="{{ 'Semaine' if p.vue == 'semaine' else 'Mois' }} précédent(e)" aria-label="Période précédente">◀</a>
+    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None, **p.prec) }}" title="{{ 'Semaine' if p.vue == 'semaine' else 'Mois' }} précédent(e)" aria-label="Période précédente">{{ icone('precedent') }}</a>
     <span class="titre-periode">{{ p.titre }}</span>
-    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None, **p.suiv) }}" title="{{ 'Semaine suivante' if p.vue == 'semaine' else 'Mois suivant' }}" aria-label="Période suivante">▶</a>
+    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None, **p.suiv) }}" title="{{ 'Semaine suivante' if p.vue == 'semaine' else 'Mois suivant' }}" aria-label="Période suivante">{{ icone('suivant') }}</a>
     {% if p.vue == 'semaine' %}
     <label class="aide" for="rg-sem">Semaine du</label><input id="rg-sem" type="date" name="semaine" value="{{ p.semaine }}" onchange="this.form.submit()">
     {% else %}
@@ -91,9 +91,9 @@ table.rg td.sep-j{border-left:2px solid #98A2B3!important}
 </div>
 
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
-  <button type="button" class="btn vert petit" id="b-sauver" title="Enregistrer d'un coup toute la grille affichée">💾 Sauvegarder</button>
-  <button type="button" class="btn sec petit" id="b-charger" title="Recharger la grille depuis le serveur">📂 Charger</button>
-  <a class="btn sec petit" href="{{ url_for('registre_pdf', classe=cl.id, mois=p.mois) }}" target="_blank" rel="noopener" title="Registre du mois au format PDF">📄 PDF du mois</a>
+  <button type="button" class="btn vert petit" id="b-sauver" title="Enregistrer d'un coup toute la grille affichée">{{ icone('enregistrer') }} Sauvegarder</button>
+  <button type="button" class="btn sec petit" id="b-charger" title="Recharger la grille depuis le serveur">{{ icone('dossier') }} Charger</button>
+  <a class="btn sec petit" href="{{ url_for('registre_pdf', classe=cl.id, mois=p.mois) }}" target="_blank" rel="noopener" title="Registre du mois au format PDF">{{ icone('document') }} PDF du mois</a>
   <form method="post" action="{{ url_for('registre_reinitialiser') }}" style="display:inline">
     <input type="hidden" name="classe" value="{{ cl.id }}"><input type="hidden" name="du" value="{{ p.du.isoformat() }}">
     <input type="hidden" name="au" value="{{ p.au.isoformat() }}"><input type="hidden" name="retour" value="{{ retour }}">
@@ -101,14 +101,14 @@ table.rg td.sep-j{border-left:2px solid #98A2B3!important}
   </form>
   <span class="sep"></span>
   <a class="btn sec petit" href="#rg-ajout" onclick="document.getElementById('rg-ajout').open=true">＋ Ajouter un élève</a>
-  <a class="btn sec petit" href="#rg-import" onclick="document.getElementById('rg-import').open=true">⬆ Importer (Excel)</a>
+  <a class="btn sec petit" href="#rg-import" onclick="document.getElementById('rg-import').open=true">{{ icone('importer') }} Importer (Excel)</a>
 {% endcall %}
 
 {% if not eleves %}
 <div class="carte"><b>Aucun élève inscrit en {{ cl.nom }}.</b>
   <p class="aide">Ajoutez les élèves un par un ou importez la liste depuis un fichier Excel (colonnes Nom, Prénoms, Sexe) avec les formulaires ci-dessous.</p></div>
 {% else %}
-<p class="aide">Touchez une case pour basculer <b>Présent</b> ↔ <b>Absent</b> : chaque clic est enregistré aussitôt. Le mercredi, seul le matin compte ; les cases hachurées sont des demi-journées sans classe (week-end, congé, jour férié — voir le calendrier).</p>
+<p class="aide">Touchez une case pour basculer <b>Présent</b> {{ icone('echanger') }} <b>Absent</b> : chaque clic est enregistré aussitôt. Le mercredi, seul le matin compte ; les cases hachurées sont des demi-journées sans classe (week-end, congé, jour férié — voir le calendrier).</p>
 <div class="rg-legende" aria-hidden="true">
   <span><span class="c" style="background:#ECFDF3"></span>P = présent(e)</span>
   <span><span class="c" style="background:#FEF3F2"></span>A = absent(e)</span>
@@ -171,7 +171,7 @@ table.rg td.sep-j{border-left:2px solid #98A2B3!important}
     </form>
   </details>
   <details class="carte" id="rg-import" {{ 'open' if not eleves }}>
-    <summary><b>⬆ Importer la liste des élèves (Excel)</b></summary>
+    <summary><b>{{ icone('importer') }} Importer la liste des élèves (Excel)</b></summary>
     <form method="post" action="{{ url_for('registre_importer') }}" enctype="multipart/form-data" style="margin-top:10px">
       <input type="hidden" name="classe" value="{{ cl.id }}"><input type="hidden" name="retour" value="{{ retour }}">
       <p class="aide">Fichier <b>.xlsx</b> ou <b>.csv</b> avec une ligne d'en-tête contenant au moins les colonnes <b>Nom</b>, <b>Prénoms</b> et <b>Sexe</b> (F/M) — ou une seule colonne « Nom et prénoms ». Colonnes facultatives : Date de naissance, Contact des parents. Les élèves déjà présents dans la classe ne sont pas créés en double.</p>

@@ -22,13 +22,13 @@
 <form method="post" action="{{ url_for('eval_analyse_pdf') }}" target="_blank" data-doc="{{ cle }}">
   <input type="hidden" name="classe" value="{{ cl.id }}"><input type="hidden" name="ev" value="{{ ev.id }}">
   {% call M.barre_doc() %}
-    <button class="btn petit">📄 Export PDF</button>
+    <button class="btn petit">{{ icone('document') }} Export PDF</button>
     <a class="btn sec petit" href="{{ url_for('eval_analyse', classe=cl.id, ev=ev.id, auto=1) }}"
        onclick="return confirm('Remplacer le texte affiché par le texte automatique calculé à partir des statistiques actuelles ?')">↻ Texte automatique</a>
-    <a class="btn sec petit" href="{{ url_for('eval_statistiques', classe=cl.id, ev=ev.id) }}">📈 Statistiques</a>
+    <a class="btn sec petit" href="{{ url_for('eval_statistiques', classe=cl.id, ev=ev.id) }}">{{ icone('progression') }} Statistiques</a>
   {% endcall %}
   <p class="aide">
-    {% if enregistre %}Rapport enregistré le {{ enregistre }}{% if repris %} : le texte affiché est votre version retouchée{% endif %}.{% else %}Texte généré automatiquement ; corrigez-le librement puis cliquez sur « 💾 Sauvegarder » pour le garder.{% endif %}
+    {% if enregistre %}Rapport enregistré le {{ enregistre }}{% if repris %} : le texte affiché est votre version retouchée{% endif %}.{% else %}Texte généré automatiquement ; corrigez-le librement puis cliquez sur « {{ icone('enregistrer') }} Sauvegarder » pour le garder.{% endif %}
     Un cadre laissé vide est remplacé par le texte automatique dans le PDF. Les lignes commençant par « - » deviennent des puces.
   </p>
 
@@ -46,7 +46,7 @@
     <label for="t-reco"><h2 class="res-h" style="margin-top:0">3. Recommandations pédagogiques</h2></label>
     <textarea id="t-reco" name="recommandations" class="res-texte" rows="9">{{ textes.recommandations }}</textarea>
   </div>
-  <p><button class="btn">📄 Générer le rapport PDF (signé et cacheté)</button></p>
+  <p><button class="btn">{{ icone('document') }} Générer le rapport PDF (signé et cacheté)</button></p>
 </form>
 
 <div class="grille2">

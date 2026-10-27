@@ -6,8 +6,8 @@
   <div class="actions">
     <form method="get" style="margin:0"><label class="aide" for="an">Année</label>
       <select id="an" name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a == r.annee }}>{{ a }}</option>{% endfor %}<option value="toutes" {{ 'selected' if r.annee == 'toutes' }}>Toutes</option></select></form>
-    <a class="btn petit" href="{{ url_for('visites_recap_pdf', annee=r.annee) }}" target="_blank">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('visites_recap_xlsx', annee=r.annee) }}">⬇ Excel</a>
+    <a class="btn petit" href="{{ url_for('visites_recap_pdf', annee=r.annee) }}" target="_blank">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('visites_recap_xlsx', annee=r.annee) }}">{{ icone('telecharger') }} Excel</a>
     <a class="btn sec petit" href="{{ url_for('visites_accueil') }}">← Visites</a>
   </div>
 </div>

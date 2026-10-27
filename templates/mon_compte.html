@@ -13,7 +13,7 @@
 </div>
 {% set mq = mdp_ma_question() if mdp_ma_question is defined else none %}
 <div class="carte" style="max-width:460px">
-  <h2 style="margin-top:0">🔑 Question de secours</h2>
+  <h2 style="margin-top:0">{{ icone('cle') }} Question de secours</h2>
   <p class="aide">{% if mq %}Question enregistrée : « {{ mq.question }} ». {% endif %}En cas d'oubli du mot de passe, la bonne réponse permet d'en choisir un nouveau depuis la page de connexion (« Mot de passe oublié ? »), sans attendre l'administrateur.</p>
   <form method="post" action="{{ url_for('mdp_secours') }}" class="f">
     <label for="mc-q">Question</label>

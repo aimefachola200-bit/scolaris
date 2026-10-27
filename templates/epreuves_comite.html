@@ -5,9 +5,9 @@
   <p class="sous">Membres (qualité, qualification, fonction dans le comité) — année scolaire {{ annee }}</p></div>
   <div class="actions">
     {% if modifiable %}<a class="btn petit" href="{{ url_for('epreuves_membre', mid=0, annee=annee) }}">＋ Ajouter un membre</a>
-    <a class="btn sec petit" href="{{ url_for('epreuves_comite_import', annee=annee) }}">⬆ Importer (Excel)</a>{% endif %}
-    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuves_comite_pdf', annee=annee) }}">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('epreuves_comite_xlsx', annee=annee) }}">⬇ Excel</a>
+    <a class="btn sec petit" href="{{ url_for('epreuves_comite_import', annee=annee) }}">{{ icone('importer') }} Importer (Excel)</a>{% endif %}
+    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuves_comite_pdf', annee=annee) }}">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('epreuves_comite_xlsx', annee=annee) }}">{{ icone('telecharger') }} Excel</a>
   </div>
 </div>
 {% include "epreuves_onglets.html" %}

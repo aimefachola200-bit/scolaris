@@ -25,6 +25,6 @@
     <div><label for="cso">Organisme de soutien de la cantine</label><input id="cso" name="cantine_soutien" value="{{ v.cantine_soutien or '' }}" maxlength="120" placeholder="Gouvernement, PAM…"></div>
   </div>
   <label for="obs">Observations</label><textarea id="obs" name="observations" maxlength="1000">{{ v.observations or '' }}</textarea>
-  <p class="actions"><button class="btn vert">💾 Enregistrer</button></p>
+  <p class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button></p>
 </form>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block contenu %}
 <div class="entete">
   <div><h1>Absences et retards – {{ ANNEE }}</h1><p class="sous">{{ jours_appel }} jour(s) d'appel enregistré(s) · élèves ayant au moins une absence ou un retard</p></div>
-  <div class="actions"><a class="btn" href="{{ url_for('appel_stats_pdf', classe=cid) if cid else url_for('appel_stats_pdf') }}">📄 PDF (courbe, signatures, QR)</a>
+  <div class="actions"><a class="btn" href="{{ url_for('appel_stats_pdf', classe=cid) if cid else url_for('appel_stats_pdf') }}">{{ icone('document') }} PDF (courbe, signatures, QR)</a>
   <a class="btn sec" href="{{ url_for('appel_accueil') }}">Registre d'appel</a></div>
 </div>
 <form class="filtres"><select name="classe" onchange="this.form.submit()"><option value="">Toutes les classes</option>

@@ -556,6 +556,13 @@ def enregistrer(app, H):
         if cl:
             if vue == "jour":
                 ctx["jour"] = journee(cl, d)
+                C = MP.corpus()
+                fj = {}
+                for c in ctx["jour"]:
+                    f = C["fiche_par_id"].get(c.get("fiche_id") or "")
+                    if f:
+                        fj.setdefault(c["matiere"], []).append(f)
+                ctx["resumes_jour"] = MP.resumes_semaine(cl["niveau"], fj)   # v1.25 : résumés des séances du jour
             elif vue == "semaine":
                 ctx["semaine"] = semaine(cl, d)
                 ctx["resumes_sem"] = MP.resumes_semaine(cl["niveau"], semaine_fiches(cl, lundi_de(d)))
@@ -565,6 +572,7 @@ def enregistrer(app, H):
                                                    ("es_histoire", "ES — histoire"), ("es_geographie", "ES — géographie"), ("est", "EST"), ("eps", "EPS"),
                                                    ("ea_chant", "EA — chant"), ("ea_poesie", "EA — poésie"), ("ea_conte", "EA — conte"), ("ea_dessin", "EA — dessin"), ("ea_couture", "EA — couture")]]
                 ctx["semaine_resume"] = [(s, semaine_fiches(cl, s)) for s in ctx["semaines"]]
+                ctx["resumes_mois"] = MP.resumes_mois(cl["niveau"], MP.MOIS_FR[d.month - 1])   # v1.25 : progression du mois
         return render_template("prep_planif.html", **ctx)
 
     @app.route("/preparation/planification/case", methods=["POST"])

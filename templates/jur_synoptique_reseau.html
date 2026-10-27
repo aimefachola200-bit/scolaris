@@ -9,7 +9,7 @@ table.t.reseau td.ups{font-size:12px;color:#344054}
 <div class="entete">
   <div><h2 style="margin:0">{{ 'Circonscriptions, zones pédagogiques, UP et écoles' if ddemp else 'Zones pédagogiques, UP et écoles' }}</h2>
     <p class="sous">{{ r.zones|length }} zone(s) · {{ r.nb_up }} UP · {{ r.nb_ecoles }} école(s) · {{ r.enseignants }} enseignant(s) transmis</p></div>
-  <div class="actions"><a class="btn sec" href="{{ url_for('jur_synoptique_reseau_pdf') }}" target="_blank">📄 PDF du réseau</a>
+  <div class="actions"><a class="btn sec" href="{{ url_for('jur_synoptique_reseau_pdf') }}" target="_blank">{{ icone('document') }} PDF du réseau</a>
     {% if ep_existe('jur_zones') %}<a class="btn sec" href="{{ url_for('jur_zones') }}">Modifier les zones</a>{% endif %}
     {% if ep_existe('jur_up') %}<a class="btn sec" href="{{ url_for('jur_up') }}">Unités pédagogiques</a>{% endif %}</div>
 </div>

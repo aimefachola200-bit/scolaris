@@ -18,7 +18,7 @@
   <div class="actions cep-nav">
     {% if prec %}<a class="btn sec petit" href="{{ url_for('cep_fiche', eid=prec) }}">← Précédent</a>{% endif %}
     {% if suiv %}<a class="btn sec petit" href="{{ url_for('cep_fiche', eid=suiv) }}">Suivant →</a>{% endif %}
-    <a class="btn sec petit" href="{{ url_for('cep_fiche_pdf', eid=e.id) }}" target="_blank" rel="noopener">📄 PDF</a>
+    <a class="btn sec petit" href="{{ url_for('cep_fiche_pdf', eid=e.id) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF</a>
     <a class="btn sec petit" href="{{ url_for('cep_accueil', classe=cl.id) }}">← Liste</a>
   </div>
 </div>
@@ -95,9 +95,9 @@
 </div>
 
 <div class="actions" style="margin:14px 0">
-  <button class="btn vert" name="suite" value="liste">💾 Enregistrer</button>
-  {% if suiv %}<button class="btn sec" name="suite" value="suivant">💾 Enregistrer et élève suivant →</button>{% endif %}
-  <button class="btn sec" name="suite" value="pdf">💾 Enregistrer et voir le PDF</button>
+  <button class="btn vert" name="suite" value="liste">{{ icone('enregistrer') }} Enregistrer</button>
+  {% if suiv %}<button class="btn sec" name="suite" value="suivant">{{ icone('enregistrer') }} Enregistrer et élève suivant →</button>{% endif %}
+  <button class="btn sec" name="suite" value="pdf">{{ icone('enregistrer') }} Enregistrer et voir le PDF</button>
 </div>
 </form>
 {% endblock %}

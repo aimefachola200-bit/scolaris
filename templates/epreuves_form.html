@@ -13,9 +13,9 @@
   <p class="sous">{% if obj %}{{ obj.titre }} — <span class="badge {{ {'brouillon':'', 'validee':'ok', 'administree':'att'}[obj.statut] }}">{{ STATUTS[obj.statut] }}</span>{% else %}Métadonnées, situation d'amorce, consignes et items (barème = somme des items){% endif %}</p></div>
   <div class="actions">
     {% if obj %}
-    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_pdf', eid=obj.id) }}">📄 Sujet PDF</a>
-    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_pdf', eid=obj.id, corrige=1) }}">📄 Corrigé</a>
-    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_bareme_pdf', eid=obj.id) }}">📄 Barème / grille</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_pdf', eid=obj.id) }}">{{ icone('document') }} Sujet PDF</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_pdf', eid=obj.id, corrige=1) }}">{{ icone('document') }} Corrigé</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('epreuve_bareme_pdf', eid=obj.id) }}">{{ icone('document') }} Barème / grille</a>
     <form method="post" action="{{ url_for('epreuve_dupliquer', eid=obj.id) }}" style="display:inline"><button class="btn sec petit">Dupliquer</button></form>
     {% endif %}
     <a class="btn sec petit" href="{{ url_for('epreuves_accueil', annee=v.annee) }}">← Liste</a>
@@ -70,7 +70,7 @@
   <p class="actions"><button type="button" class="btn sec" id="ajouter">＋ Ajouter un item</button>
     <span class="ep-total">Barème des items : <b id="tot">{{ num(total) }}</b> <span id="ecart"></span></span></p>
 
-  <p class="actions" style="margin-top:14px"><button class="btn vert">💾 Enregistrer l'épreuve</button></p>
+  <p class="actions" style="margin-top:14px"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer l'épreuve</button></p>
 </form>
 
 {% if obj and modifiable %}
@@ -78,7 +78,7 @@
   <div class="carte">
     <h2 style="margin-top:0">Statut de l'épreuve</h2>
     <form method="post" action="{{ url_for('epreuve_statut', eid=obj.id) }}" class="actions">
-      {% if obj.statut != 'validee' %}<button class="btn" name="statut" value="validee">✔ Valider (comité)</button>{% endif %}
+      {% if obj.statut != 'validee' %}<button class="btn" name="statut" value="validee">{{ icone('coche') }} Valider (comité)</button>{% endif %}
       {% if obj.statut != 'administree' %}<button class="btn sec" name="statut" value="administree">Marquer administrée</button>{% endif %}
       {% if obj.statut != 'brouillon' %}<button class="btn sec" name="statut" value="brouillon">Remettre en brouillon</button>{% endif %}
     </form>
@@ -88,7 +88,7 @@
     <h2 style="margin-top:0">Importer les items (Excel)</h2>
     <form method="post" action="{{ url_for('epreuve_items_import', eid=obj.id) }}" enctype="multipart/form-data" class="f">
       <input type="file" name="fichier" accept=".xlsx,.csv" required>
-      <p class="actions" style="margin-top:8px"><button class="btn sec petit" data-confirmer="Les items importés remplacent ceux de l'épreuve. Continuer ?">⬆ Importer</button>
+      <p class="actions" style="margin-top:8px"><button class="btn sec petit" data-confirmer="Les items importés remplacent ceux de l'épreuve. Continuer ?">{{ icone('importer') }} Importer</button>
         <a class="btn sec petit" href="{{ url_for('epreuve_items_modele_xlsx') }}">Modèle Excel</a></p>
     </form>
     <p class="aide">Colonnes : Intitulé, Critère, Indicateur, Barème, Réponse attendue. Les items importés remplacent les items existants.</p>

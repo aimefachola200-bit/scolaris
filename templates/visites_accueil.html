@@ -6,7 +6,7 @@
   <div class="actions">
     {% if saisie %}<a class="btn" href="{{ url_for('visite_nouvelle') }}">＋ Nouvelle visite</a>{% endif %}
     <a class="btn sec" href="{{ url_for('visites_recap') }}">Récapitulatif par enseignant</a>
-    <a class="btn sec" href="{{ url_for('visite_fiche_vierge') }}" target="_blank">📄 Fiche vierge</a>
+    <a class="btn sec" href="{{ url_for('visite_fiche_vierge') }}" target="_blank">{{ icone('document') }} Fiche vierge</a>
   </div>
 </div>
 

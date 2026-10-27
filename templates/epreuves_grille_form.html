@@ -9,7 +9,7 @@
   <div><h1>{{ 'Modifier la grille' if obj else 'Nouvelle grille' }}</h1>
   <p class="sous">{{ obj.titre if obj else 'Critères, indicateurs (un par ligne) et barème' }}</p></div>
   <div class="actions">
-    {% if obj %}<a class="btn sec petit" target="_blank" href="{{ url_for('grille_pdf', gid=obj.id) }}">📄 PDF</a>
+    {% if obj %}<a class="btn sec petit" target="_blank" href="{{ url_for('grille_pdf', gid=obj.id) }}">{{ icone('document') }} PDF</a>
     <form method="post" action="{{ url_for('grille_dupliquer', gid=obj.id) }}" style="display:inline"><button class="btn sec petit">Dupliquer</button></form>{% endif %}
     <a class="btn sec petit" href="{{ url_for('epreuves_grilles', annee=v.annee) }}">← Liste des grilles</a>
   </div>
@@ -53,7 +53,7 @@
   <datalist id="dl-crit">{% for c in CRITERES %}<option value="{{ c }}">{% endfor %}</datalist>
   <p class="actions"><button type="button" class="btn sec" id="ajouter">＋ Ajouter un critère</button>
     <span>Barème total : <b id="tot">{{ num(total) }}</b></span></p>
-  <p class="actions" style="margin-top:14px"><button class="btn vert">💾 Enregistrer la grille</button></p>
+  <p class="actions" style="margin-top:14px"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer la grille</button></p>
   <p class="aide">Grille d'observation (maternelle) : laissez les barèmes vides, le PDF propose les colonnes Acquis / En cours d'acquisition / Non acquis.</p>
 </form>
 {% if obj and modifiable %}

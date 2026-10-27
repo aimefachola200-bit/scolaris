@@ -14,7 +14,7 @@
   <div><h1>Transmission à la circonscription</h1>
   <p class="sous">Données de l'école pour la circonscription scolaire (CS) — année {{ ap.annee }}</p></div>
   <div class="actions">
-    {% if not ap.erreurs %}<a class="btn" href="{{ url_for('transmission_fichier') }}">⬇ Télécharger le fichier de transmission</a>{% endif %}
+    {% if not ap.erreurs %}<a class="btn" href="{{ url_for('transmission_fichier') }}">{{ icone('telecharger') }} Télécharger le fichier de transmission</a>{% endif %}
   </div>
 </div>
 
@@ -97,7 +97,7 @@
     <li>La CS l'importe dans SCOLARIS Circonscription (menu Transmissions → Recevoir).</li>
   </ol>
   <p class="aide">Le fichier est scellé : s'il est modifié ou abîmé en route, la CS le refusera ; il suffit alors de le renvoyer.</p>
-  {% if not ap.erreurs %}<a class="btn" href="{{ url_for('transmission_fichier') }}">⬇ Télécharger le fichier de transmission</a>{% endif %}
+  {% if not ap.erreurs %}<a class="btn" href="{{ url_for('transmission_fichier') }}">{{ icone('telecharger') }} Télécharger le fichier de transmission</a>{% endif %}
 </div>
 
 <div class="carte" id="en-ligne"><h2>{{ 5 if cep else 4 }}. Envoyer en ligne</h2>

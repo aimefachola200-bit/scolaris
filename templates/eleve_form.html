@@ -65,7 +65,7 @@
   <div class="actions">
     <form method="post" action="{{ url_for('eleve_supprimer', eid=e.id) }}" style="display:inline"
           onsubmit="return confirm('Supprimer définitivement {{ (e.nom ~ ' ' ~ e.prenoms)|replace("'", "\\'") }} et toutes ses données ?')">
-      <button class="btn danger">🗑 Supprimer définitivement</button></form>
+      <button class="btn danger">{{ icone('supprimer') }} Supprimer définitivement</button></form>
     <form method="post" action="{{ url_for('eleve_supprimer', eid=e.id) }}" style="display:inline"
           onsubmit="return confirm('Retirer cet élève (statut « sorti ») ?')">
       <input type="hidden" name="mode" value="retirer"><button class="btn sec">Retirer (statut « sorti »)</button></form>

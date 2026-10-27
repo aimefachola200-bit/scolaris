@@ -45,18 +45,18 @@ AUDIENCES_DDEMP = {"directeurs": "Directeurs des écoles", "enseignants": "Ensei
 
 MODELES = {
     "convocation": ("Convocation (réunion, UP, formation)",
-                    "📢 *CONVOCATION — {emetteur}*\n\n{salut}{public} sont convoqués à {objet} le *{date}* à *{heure}* à {lieu}.\n"
+                    "*CONVOCATION — {emetteur}*\n\n{salut}{public} sont convoqués à {objet} le *{date}* à *{heure}* à {lieu}.\n"
                     "{precisions}\nPrésence obligatoire.\n\n{signataire}"),
     "visite": ("Annonce de visite de classe",
-               "🔎 *VISITE PÉDAGOGIQUE — {emetteur}*\n\n{salut}{objet} est prévue le *{date}*{heure_a}.\n{precisions}\n"
+               "*VISITE PÉDAGOGIQUE — {emetteur}*\n\n{salut}{objet} est prévue le *{date}*{heure_a}.\n{precisions}\n"
                "Merci de préparer les documents pédagogiques (cahier journal, fiches, emploi du temps, registre d'appel).\n\n{signataire}"),
     "rappel": ("Rappel de document à rendre",
-               "⏰ *RAPPEL — {emetteur}*\n\n{salut}{objet} est attendu au plus tard le *{date}*.\n{precisions}\n\n{signataire}"),
+               "*RAPPEL — {emetteur}*\n\n{salut}{objet} est attendu au plus tard le *{date}*.\n{precisions}\n\n{signataire}"),
     "transmission": ("Demande de transmission des données",
-                     "🔄 *{emetteur} — Transmission des données*\n\n{salut}Merci de transmettre les données de votre école avant le *{date}* "
+                     "*{emetteur} — Transmission des données*\n\n{salut}Merci de transmettre les données de votre école avant le *{date}* "
                      "(application → Données → Transmission à la circonscription).\n{precisions}\n\n{signataire}"),
-    "resultats": ("Résultats / statistiques", "📊 *RÉSULTATS — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}"),
-    "information": ("Information générale", "ℹ️ *INFORMATION — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}"),
+    "resultats": ("Résultats / statistiques", "*RÉSULTATS — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}"),
+    "information": ("Information générale", "*INFORMATION — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}"),
     "libre": ("Message libre", "{salut}{precisions}"),
 }
 PUBLIC = {"directeurs": "Les directeurs et directrices", "enseignants": "Les enseignants et enseignantes",

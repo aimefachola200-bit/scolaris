@@ -42,7 +42,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
         {% for x in evs %}<option value="{{ url_for('eval_saisie', ev_id=x.id) }}" {{ 'selected' if x.id == ev.id }}>{{ x.titre }}</option>{% endfor %}
         <option value="{{ url_for('eval_form', classe=cl.id) }}">＋ Nouvelle évaluation…</option>
       </select></div>
-    <a class="btn sec petit" href="{{ url_for('eval_form', ev_id=ev.id) }}">⚙ Matières et seuil</a>
+    <a class="btn sec petit" href="{{ url_for('eval_form', ev_id=ev.id) }}">{{ icone('reglages') }} Matières et seuil</a>
     <a class="btn sec petit" href="{{ url_for('eval_accueil', classe=cl.id) }}">← Évaluations</a>
   </div>
 </div>
@@ -57,27 +57,27 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
 <form method="post" id="f-saisie" data-doc="evaluations:ev{{ ev.id }}" data-hors-ligne="Notes – {{ ev.titre }}" autocomplete="off">
 <input type="hidden" name="notes_json" id="notes-json" data-nosave>
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
-  <button type="submit" class="btn vert petit" title="Enregistrer les notes et l'en-tête en base">💾 Sauvegarder</button>
-  <button type="button" class="btn sec petit" id="b-charger" title="Recharger les notes et l'en-tête enregistrés">📂 Charger</button>
+  <button type="submit" class="btn vert petit" title="Enregistrer les notes et l'en-tête en base">{{ icone('enregistrer') }} Sauvegarder</button>
+  <button type="button" class="btn sec petit" id="b-charger" title="Recharger les notes et l'en-tête enregistrés">{{ icone('dossier') }} Charger</button>
   <button type="button" class="btn sec petit" id="b-reinit" title="Vider la grille à l'écran (rien n'est supprimé en base)">↺ Réinitialiser</button>
   <span class="sep"></span>
-  <button type="button" class="btn petit" id="b-tableau" title="Tableau des inscrits, ayant composé, ayant réussi + ordre de mérite">🧮 Générer le tableau</button>
+  <button type="button" class="btn petit" id="b-tableau" title="Tableau des inscrits, ayant composé, ayant réussi + ordre de mérite">{{ icone('calcul') }} Générer le tableau</button>
   <span class="sep"></span>
-  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_rapport_pdf', ev_id=ev.id) }}" target="_blank" rel="noopener">📄 Rapport PDF</a>
-  {% if ep_existe('eval_remediation') %}<a class="btn sec petit" href="{{ url_for('eval_remediation', ev_id=ev.id) }}" title="Groupes de besoin par matière après cette évaluation">🧩 Groupes de remédiation</a>{% endif %}
-  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_bulletins_classe', ev_id=ev.id) }}" target="_blank" rel="noopener">📄 Bulletin classe</a>
-  <button form="f-publier" class="btn {{ 'sec' if publie else 'vert' }} petit" title="Rendre visibles dans les espaces élèves et parents">{{ '🔒 Masquer aux élèves/parents' if publie else '📢 Publier aux élèves et parents' }}</button>
+  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_rapport_pdf', ev_id=ev.id) }}" target="_blank" rel="noopener">{{ icone('document') }} Rapport PDF</a>
+  {% if ep_existe('eval_remediation') %}<a class="btn sec petit" href="{{ url_for('eval_remediation', ev_id=ev.id) }}" title="Groupes de besoin par matière après cette évaluation">{{ icone('module') }} Groupes de remédiation</a>{% endif %}
+  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_bulletins_classe', ev_id=ev.id) }}" target="_blank" rel="noopener">{{ icone('document') }} Bulletin classe</a>
+  <button form="f-publier" class="btn {{ 'sec' if publie else 'vert' }} petit" title="Rendre visibles dans les espaces élèves et parents">{{ (icone('verrou') ~ ' Masquer aux élèves/parents') if publie else (icone('annonce') ~ ' Publier aux élèves et parents') }}</button>
   <span class="ev-bul"><select name="eleve" form="f-bulletin" aria-label="Élève pour le bulletin" data-nosave required>
       <option value="">Bulletin élève…</option>
       {% for l in lignes %}<option value="{{ l.eleve.id }}">{{ l.eleve.nom }} {{ l.eleve.prenoms }}</option>{% endfor %}
-    </select><button class="btn sec petit ev-pdf" form="f-bulletin" title="Bulletin de l'élève choisi">📄 Bulletin élève</button></span>
+    </select><button class="btn sec petit ev-pdf" form="f-bulletin" title="Bulletin de l'élève choisi">{{ icone('document') }} Bulletin élève</button></span>
   <span class="sep"></span>
-  <a class="btn sec petit" href="{{ url_for('eval_modele_excel', ev_id=ev.id) }}">📊 Modèle Excel</a>
-  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_export_excel', ev_id=ev.id) }}">📊 Exporter Excel</a>
-  <label class="btn sec petit ev-import" title="Importer un fichier Excel rempli à partir du modèle">📥 Importer Excel
+  <a class="btn sec petit" href="{{ url_for('eval_modele_excel', ev_id=ev.id) }}">{{ icone('graphique') }} Modèle Excel</a>
+  <a class="btn sec petit ev-pdf" href="{{ url_for('eval_export_excel', ev_id=ev.id) }}">{{ icone('graphique') }} Exporter Excel</a>
+  <label class="btn sec petit ev-import" title="Importer un fichier Excel rempli à partir du modèle">{{ icone('recevoir') }} Importer Excel
     <input type="file" name="fichier" form="f-import" accept=".xlsx,.xlsm,.csv" id="f-fichier" data-nosave></label>
   <span class="sep"></span>
-  <button class="btn danger petit" form="f-effacer" data-confirmer="Effacer DÉFINITIVEMENT en base toutes les notes de « {{ ev.titre }} » pour {{ cl.nom }}{{ ' (vos matières uniquement)' if restreint else '' }} ?">🗑 Effacer les notes</button>
+  <button class="btn danger petit" form="f-effacer" data-confirmer="Effacer DÉFINITIVEMENT en base toutes les notes de « {{ ev.titre }} » pour {{ cl.nom }}{{ ' (vos matières uniquement)' if restreint else '' }} ?">{{ icone('supprimer') }} Effacer les notes</button>
 {% endcall %}
 
 <details class="carte" open>
@@ -281,7 +281,7 @@ table.ev-grille tr.ok td.nom{box-shadow:inset 3px 0 0 #1B7F3B}
             '</td><td class="c"><b>' + fr(r.moy) + '</b></td><td class="c">' + r.reussies + '/' + r.nbEval + '</td><td><span class="badge ' + (r.ok ? 'ok' : 'ko') + '">' + r.dec + '</span></td></tr>';
         }).join('') : '<tr><td colspan="6" class="gris">Aucune note saisie.</td></tr>') + '</tbody></table></div>';
     }
-    h += '<p class="aide ev-noprint">Tableau calculé à partir de la grille affichée' + (modifie ? ' (<b>non sauvegardée</b>)' : '') + '. <button type="button" class="btn sec petit" onclick="window.print()">🖨 Imprimer</button></p>';
+    h += '<p class="aide ev-noprint">Tableau calculé à partir de la grille affichée' + (modifie ? ' (<b>non sauvegardée</b>)' : '') + '. <button type="button" class="btn sec petit" onclick="window.print()">Imprimer</button></p>';
     box.innerHTML = h; box.hidden = false;
     if (defiler) box.scrollIntoView({behavior: 'smooth', block: 'start'});
   }

@@ -27,8 +27,8 @@ table.rl tr.avertir td.mois{box-shadow:inset 3px 0 0 #B42318}
   <div><h1>Relevés mensuels de présence{% if cl %} – {{ cl.nom }}{% endif %}</h1>
     <p class="sous">Tableau de relevés mensuels pour l'année scolaire {{ annee }} (modèle officiel « bilan de présence annuelle »)</p></div>
   <div class="actions">
-    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None) }}">📋 Registre de présence</a>
-    <a class="btn sec petit" href="{{ url_for('calendrier_scolaire') }}">📅 Calendrier</a>
+    <a class="btn sec petit" href="{{ url_for('registre_accueil', classe=cl.id if cl else None) }}">{{ icone('presse_papiers') }} Registre de présence</a>
+    <a class="btn sec petit" href="{{ url_for('calendrier_scolaire') }}">{{ icone('calendrier') }} Calendrier</a>
   </div>
 </div>
 
@@ -58,8 +58,8 @@ table.rl tr.avertir td.mois{box-shadow:inset 3px 0 0 #B42318}
 
 <form method="post" id="f-releve" data-doc="releve:{{ cl.id }}:{{ annee }}" action="{{ url_for('releve_pdf', classe=cl.id, annee=annee) }}" target="_blank" autocomplete="off">
 {% call M.barre_doc() %}
-  <button type="submit" class="btn petit" title="PDF A4 paysage conforme au modèle officiel">📄 Télécharger PDF</button>
-  <button type="button" class="btn sec petit" id="b-auto" title="Effacer les corrections manuelles du tableau et revenir aux valeurs calculées">🧮 Valeurs automatiques</button>
+  <button type="submit" class="btn petit" title="PDF A4 paysage conforme au modèle officiel">{{ icone('document') }} Télécharger PDF</button>
+  <button type="button" class="btn sec petit" id="b-auto" title="Effacer les corrections manuelles du tableau et revenir aux valeurs calculées">{{ icone('calcul') }} Valeurs automatiques</button>
 {% endcall %}
 
 <div class="carte">
@@ -69,7 +69,7 @@ table.rl tr.avertir td.mois{box-shadow:inset 3px 0 0 #B42318}
 
 <div class="carte">
   <h3 style="margin-top:0">Tableau de relevés mensuels</h3>
-  <p class="aide" style="margin-top:0">Les chiffres en gris sont <b>calculés automatiquement</b> (calendrier + registre ; mois en cours : jusqu'à aujourd'hui). Tapez un nombre dans une case pour le <b>corriger à la main</b> (case jaune) ; videz-la pour revenir au calcul. Les colonnes 3, 5 et 6 se calculent toutes seules. Pensez à « 💾 Sauvegarder » pour garder vos corrections.</p>
+  <p class="aide" style="margin-top:0">Les chiffres en gris sont <b>calculés automatiquement</b> (calendrier + registre ; mois en cours : jusqu'à aujourd'hui). Tapez un nombre dans une case pour le <b>corriger à la main</b> (case jaune) ; videz-la pour revenir au calcul. Les colonnes 3, 5 et 6 se calculent toutes seules. Pensez à « {{ icone('enregistrer') }} Sauvegarder » pour garder vos corrections.</p>
   <div class="rl-legende" aria-hidden="true"><span><i style="background:#fff"></i>valeur calculée</span><span><i style="background:#FFFAEB;border-color:#E9A23B"></i>valeur corrigée à la main</span><span><i style="background:#F9FAFB"></i>formule</span></div>
   <div class="tw"><table class="t rl" id="rl-table">
     <thead><tr><th>Mois</th>
@@ -161,7 +161,7 @@ table.rl tr.avertir td.mois{box-shadow:inset 3px 0 0 #B42318}
     document.getElementById('k-abs').textContent = tot.abs;
     document.getElementById('k-pct').textContent = fr(tot.pct, true);
     var ul = document.getElementById('rl-alertes'); ul.innerHTML = '';
-    alertes.forEach(function (t) { var li = document.createElement('li'); li.textContent = '⚠ ' + t; ul.appendChild(li); });
+    alertes.forEach(function (t) { var li = document.createElement('li'); li.textContent = '' + t; ul.appendChild(li); });
   }
   T.addEventListener('input', calculer);
   F.addEventListener('change', calculer);   // après « Charger »

@@ -13,7 +13,7 @@
   <div class="actions">
     <form method="get" class="filtres" style="margin:0"><label for="an">Année</label>
       <select id="an" name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a==annee }}>{{ a }}</option>{% endfor %}</select></form>
-    <a class="btn sec petit" href="{{ url_for('maitre_semaine_planning_pdf', annee=annee) }}" target="_blank">📄 Planning PDF</a>
+    <a class="btn sec petit" href="{{ url_for('maitre_semaine_planning_pdf', annee=annee) }}" target="_blank">{{ icone('document') }} Planning PDF</a>
     <a class="btn sec petit" href="{{ url_for('maitre_semaine_accueil') }}">← Semaine en cours</a>
   </div>
 </div>
@@ -61,7 +61,7 @@
     </tr>
     {% endfor %}
     </tbody></table></div>
-  {% if modifiable %}<p class="actions"><button class="btn vert">💾 Enregistrer le planning</button></p>{% endif %}
+  {% if modifiable %}<p class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer le planning</button></p>{% endif %}
 </form>
 {% endif %}
 {% endblock %}

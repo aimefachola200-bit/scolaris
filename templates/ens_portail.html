@@ -10,7 +10,7 @@
     <label for="mdp">Mot de passe</label><input id="mdp" name="mdp" type="password" required autocomplete="current-password">
     <p><button class="btn" style="width:100%">Se connecter</button></p>
   </form>
-  <p style="text-align:right;margin:-4px 0 8px">{% if ep_existe('mdp_oublie') %}<a href="{{ url_for('mdp_oublie') }}">🔑 Mot de passe oublié ?</a>{% endif %}</p>
+  <p style="text-align:right;margin:-4px 0 8px">{% if ep_existe('mdp_oublie') %}<a href="{{ url_for('mdp_oublie') }}">{{ icone('cle') }} Mot de passe oublié ?</a>{% endif %}</p>
   <p class="aide"><a href="{{ url_for('verifier') }}">Vérifier l'authenticité d'un document</a>
     {% if EDITION != 'enseignant' %}<br><a href="{{ url_for('login') }}">Direction, secrétariat : application de l'école</a>{% endif %}</p>
 </div>

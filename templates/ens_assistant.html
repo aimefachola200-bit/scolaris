@@ -1,14 +1,14 @@
 {% extends "base.html" %}{% block titre %}Premier lancement{% endblock %}
 {% block contenu %}
 <div style="max-width:960px;margin:0 auto">
-<h1>👩🏾‍🏫 Bienvenue dans {{ NOM_APPLI }}</h1>
+<h1>{{ icone('personne') }}🏾‍{{ icone('ecole') }} Bienvenue dans {{ NOM_APPLI }}</h1>
 <p class="sous">Votre application personnelle d'enseignant : votre classe, vos emplois du temps et planifications, vos
   documents officiels et certificats — sans passer par l'application de l'école. Renseignez une seule fois votre profil,
   votre école et votre ou vos classes. Tout reste enregistré sur cet appareil.</p>
 <form method="post" class="f">
   {% include "_ens_champs.html" %}
   <div class="carte">
-    <h2 style="margin-top:0">📚 Ma ou mes classes *</h2>
+    <h2 style="margin-top:0">{{ icone('livre') }} Ma ou mes classes *</h2>
     <p class="aide">Une ligne par classe tenue (vous pourrez en ajouter plus tard).</p>
     {% for i in range(1, NB_CLASSES + 1) %}{% set c = classes[i-1] if classes|length >= i else none %}
     <div class="grille-id">
@@ -18,7 +18,7 @@
     </div>{% endfor %}
   </div>
   <div class="carte">
-    <h2 style="margin-top:0">🔑 Mon compte</h2>
+    <h2 style="margin-top:0">{{ icone('cle') }} Mon compte</h2>
     <div class="grille-id">
       <div><label for="identifiant">Identifiant de connexion *</label><input id="identifiant" name="identifiant" value="{{ f.identifiant }}" required autocomplete="username" autocapitalize="none"></div>
       <div><label for="mdp">Mot de passe (8 caractères minimum) *</label><input id="mdp" type="password" name="mdp" required autocomplete="new-password" minlength="8"></div>

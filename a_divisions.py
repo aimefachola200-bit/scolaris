@@ -236,7 +236,7 @@ _peut = None    # H.peut, fixé par enregistrer()
 
 # ------------------------------------------------------------------------------------------ rubriques et lignes d'action
 _RE_ARTICLE = re.compile(r"article\s*(\d+)", re.I)
-_RE_PUCE = re.compile(r"^\s*(?:[-–—•*·▪]|\d{1,2}[.)])\s*(.+?)\s*$")
+_RE_PUCE = re.compile(r"^\s*(?:[-–—•*·]|\d{1,2}[.)])\s*(.+?)\s*$")
 
 
 def numero_article(texte):

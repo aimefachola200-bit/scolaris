@@ -14,7 +14,7 @@ table.cv td,table.cv th{padding:3px 6px;font-size:12.5px;border:1px solid #EAECF
     <label class="zone-depot" id="zone-depot" for="cv-fichier">
       <b>Déposer ici le fichier PDF</b><br>
       <span class="aide">PDF « texte » (produit par un logiciel). Un PDF scanné (image) ne peut pas être converti.</span><br><br>
-      <span class="btn sec petit">📂 Choisir un fichier</span>
+      <span class="btn sec petit">{{ icone('dossier') }} Choisir un fichier</span>
       <input type="file" id="cv-fichier" name="fichier" accept=".pdf,application/pdf">
     </label>
     <noscript><button class="btn" style="margin-top:8px">Convertir</button></noscript>
@@ -28,14 +28,14 @@ table.cv td,table.cv th{padding:3px 6px;font-size:12.5px;border:1px solid #EAECF
   <div class="kpi"><div class="l">Tableaux</div><div class="v">{{ res.tableaux|length }}</div><div class="d">extraits</div></div>
 </div>
 <div class="actions" style="margin-bottom:14px">
-  <a class="btn" href="{{ url_for('conversion_xlsx', jeton=jeton) }}">⬇ Excel (.xlsx) – une feuille par tableau</a>
-  <a class="btn sec" href="{{ url_for('conversion_csv', jeton=jeton) }}">⬇ CSV (tous les tableaux)</a>
+  <a class="btn" href="{{ url_for('conversion_xlsx', jeton=jeton) }}">{{ icone('telecharger') }} Excel (.xlsx) – une feuille par tableau</a>
+  <a class="btn sec" href="{{ url_for('conversion_csv', jeton=jeton) }}">{{ icone('telecharger') }} CSV (tous les tableaux)</a>
 </div>
 {% for t in res.tableaux %}
 <div class="carte">
   <div class="entete" style="margin-bottom:6px"><h2 style="margin:0;font-size:16px">Page {{ t.page }} – tableau {{ t.n }}
     <span class="aide">({{ t.lignes|length }} ligne(s), détecté par {{ t.methode }})</span></h2>
-    <a class="btn sec petit" href="{{ url_for('conversion_csv', jeton=jeton, t=loop.index) }}">⬇ CSV de ce tableau</a></div>
+    <a class="btn sec petit" href="{{ url_for('conversion_csv', jeton=jeton, t=loop.index) }}">{{ icone('telecharger') }} CSV de ce tableau</a></div>
   <div class="tw"><table class="cv">
     {% for l in t.lignes[:15] %}{% set cel = 'th' if loop.first else 'td' %}<tr>{% for c in l %}<{{ cel }}>{{ c }}</{{ cel }}>{% endfor %}</tr>{% endfor %}
   </table></div>

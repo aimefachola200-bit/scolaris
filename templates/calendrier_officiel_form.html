@@ -23,6 +23,6 @@
     <div><label for="c-duree">Durée (texte officiel)</label><input id="c-duree" name="duree" value="{{ v.get('duree') or '' }}" maxlength="80" placeholder="ex. 2 semaines, 1 jour"></div>
   </div>
   <label for="c-obs">Observations</label><textarea id="c-obs" name="observations" rows="3" maxlength="500">{{ v.get('observations') or '' }}</textarea>
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button> <a class="btn sec" href="{{ url_for('calendrier_officiel', **params) }}">Annuler</a></p>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button> <a class="btn sec" href="{{ url_for('calendrier_officiel', **params) }}">Annuler</a></p>
 </form>
 {% endblock %}

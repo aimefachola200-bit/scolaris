@@ -13,6 +13,6 @@
   </div>
   <label for="r-titre">Intitulé (pour un titre)</label><input id="r-titre" name="titre" value="{{ v.get('titre') or '' }}" maxlength="200">
   <label for="r-texte">Texte</label><textarea id="r-texte" name="texte" rows="8" maxlength="6000">{{ v.get('texte') or '' }}</textarea>
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button></p>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button></p>
 </form>
 {% endblock %}

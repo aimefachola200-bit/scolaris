@@ -87,7 +87,7 @@
       <td>{{ date_fr(v.date_naissance) if v.date_naissance else (r.brut.date_naissance or '') }}</td>
       <td>{{ r.classe.nom if r.classe else (r.brut.classe or '') }}</td>
       <td>{{ r.eleve.matricule if r.eleve else (v.matricule or 'automatique') }}</td>
-      <td>{% for m in r.erreurs %}<div class="rouge">✗ {{ m }}</div>{% endfor %}{% for m in r.avert %}<div class="aide">⚠ {{ m }}</div>{% endfor %}</td></tr>
+      <td>{% for m in r.erreurs %}<div class="rouge">✗ {{ m }}</div>{% endfor %}{% for m in r.avert %}<div class="aide">{{ icone('attention') }} {{ m }}</div>{% endfor %}</td></tr>
     {% endfor %}
   </table></div>
 </form>

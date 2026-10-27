@@ -123,23 +123,23 @@ t = txt(ok(c.get(f"/uascep/bureau/{bid}/saison")))
 assert "Saison sportive " + S in t and "Journal de caisse" in t and "Inventaire du matériel" in t and "Réunions et comptes rendus" in t
 base = f"/uascep/bureau/{bid}/saison"
 ok(c.post(f"{base}/activites/0?saison={S}", data={"date": "2027-03-12", "intitule": "Tournoi de football inter-écoles", "discipline": "Football",
-          "categorie": "Minimes", "lieu": "Stade de Pobè", "statut": "Réalisée", "participants_g": "64", "participants_f": "12", "equipes": "8",
+          "categorie": "Minimes", "lieu": "Stade de Pobè", "statut": "Réalisée", "pg": "64", "pf": "12", "equipes": "8",
           "resultats": "Vainqueur : EPP Towé", "distinctions": "Coupe et médailles"}), 302)
 ok(c.post(f"{base}/activites/0?saison={S}", data={"date": "2027-04-20", "intitule": "Cross scolaire", "discipline": "Athlétisme", "categorie": "Cadets",
-          "lieu": "Pobè", "statut": "Réalisée", "participants_g": "30", "participants_f": "28", "resultats": "1re : AGBO Rita"}), 302)
+          "lieu": "Pobè", "statut": "Réalisée", "pg": "30", "pf": "28", "resultats": "1re : AGBO Rita"}), 302)
 ok(c.post(f"{base}/activites/0?saison={S}", data={"date": "2027-05-10", "intitule": "Finale de handball", "discipline": "Handball", "statut": "Prévue"}), 302)
 ok(c.post(f"{base}/activites/0?saison={S}", data={"intitule": ""}), 302)  # refusé (intitulé obligatoire)
 ok(c.post(f"{base}/engagements/0?saison={S}", data={"ecole": "EPP Towé", "discipline": "Football", "categorie": "Minimes", "equipe": "Les Aiglons",
-          "responsable": "SOSSA Marc", "effectif_g": "14", "effectif_f": "0", "droit": "5000", "date": "2027-02-01"}), 302)
+          "encadreur": "SOSSA Marc", "jg": "14", "jf": "0", "droit": "5000", "date": "2027-02-01"}), 302)
 ok(c.post(f"{base}/reunions/0?saison={S}", data={"date": "2027-01-15", "heure": "15 h", "lieu": "EPP Towé", "type": "Réunion ordinaire",
-          "ordre_du_jour": "1. Programme de la saison\n2. Cotisations", "presents": "AKPO, BIO, DOSSOU", "absents": "OLA (excusé)",
+          "ordre": "1. Programme de la saison\n2. Cotisations", "presents": "AKPO, BIO, DOSSOU", "absents": "OLA (excusé)",
           "decisions": "Tournoi fixé au 12 mars ; cotisation de 10 000 F par école"}), 302)
-for d_ in ({"date": "2027-01-20", "sens": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisation", "ecole": "EPP Towé", "montant": "10 000", "piece": "R1"},
-           {"date": "2027-01-22", "sens": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisation", "ecole": "EPP Itassoumba", "montant": "10000", "piece": "R2"},
-           {"date": "2027-03-10", "sens": "Dépense", "categorie": "Récompenses (coupes, médailles, prix)", "libelle": "Coupe et médailles", "montant": "12500", "piece": "D1"}):
+for d_ in ({"date": "2027-01-20", "nature": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisation", "ecole": "EPP Towé", "montant": "10 000", "piece": "R1"},
+           {"date": "2027-01-22", "nature": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisation", "ecole": "EPP Itassoumba", "montant": "10000", "piece": "R2"},
+           {"date": "2027-03-10", "nature": "Dépense", "categorie": "Récompenses (coupes, médailles, prix)", "libelle": "Coupe et médailles", "montant": "12500", "piece": "D1"}):
     ok(c.post(f"{base}/caisse/0?saison={S}", data=d_), 302)
-ok(c.post(f"{base}/budget/0?saison={S}", data={"sens": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisations", "prevu": "30000"}), 302)
-ok(c.post(f"{base}/budget/0?saison={S}", data={"sens": "Dépense", "categorie": "Récompenses (coupes, médailles, prix)", "libelle": "Récompenses", "prevu": "15000"}), 302)
+ok(c.post(f"{base}/budget/0?saison={S}", data={"nature": "Recette", "categorie": "Cotisations des écoles", "libelle": "Cotisations", "prevu": "30000"}), 302)
+ok(c.post(f"{base}/budget/0?saison={S}", data={"nature": "Dépense", "categorie": "Récompenses (coupes, médailles, prix)", "libelle": "Récompenses", "prevu": "15000"}), 302)
 ok(c.post(f"{base}/materiel/0?saison={S}", data={"designation": "Ballon de football", "discipline": "Football", "quantite": "6", "etat": "Bon", "valeur": "30000"}), 302)
 with app.app_context():
     assert q("SELECT COUNT(*) n FROM uascep_activites WHERE bureau_id=?", (bid,), un=True)["n"] == 3
@@ -192,7 +192,7 @@ codes.append(re.search(r"code ([0-9A-F]{10})", s).group(1))
 r = ok(c.get(f"/uascep/bureau/{bid}/saison.xlsx?saison={S}"))
 import openpyxl
 wb = openpyxl.load_workbook(io.BytesIO(r.data))
-assert {"Activités et résultats", "Engagements", "Réunions", "Journal de caisse", "Budget prévisionnel", "Inventaire du matériel", "État financier", "Rapport"} <= set(wb.sheetnames)
+assert {"Activités", "Engagements", "Réunions", "Caisse", "Budget", "Matériel", "État financier", "Rapport"} <= set(wb.sheetnames), wb.sheetnames
 ok(c.get(f"/uascep/bureau/{bid}/saison.xlsx?saison={S}&rapport=1"))
 for code in codes:
     assert "UASCEP" in txt(ok(c.get(f"/verifier/{code}"))), code

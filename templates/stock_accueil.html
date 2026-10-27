@@ -10,15 +10,15 @@ tr.alerte td{background:#FFF4F3!important}
   <div class="actions">
     {% if modifiable %}
     <a class="btn petit" href="{{ url_for('stock_vivre', vid=0) }}">＋ Ajouter un vivre</a>
-    <a class="btn vert petit" href="{{ url_for('stock_mouvement', mid=0, type='entree') }}">⬆ Entrée</a>
-    <a class="btn orange petit" href="{{ url_for('stock_mouvement', mid=0, type='sortie') }}">⬇ Sortie</a>
+    <a class="btn vert petit" href="{{ url_for('stock_mouvement', mid=0, type='entree') }}">{{ icone('importer') }} Entrée</a>
+    <a class="btn orange petit" href="{{ url_for('stock_mouvement', mid=0, type='sortie') }}">{{ icone('telecharger') }} Sortie</a>
     <a class="btn danger petit" href="{{ url_for('stock_mouvement', mid=0, type='perte') }}">Perte</a>
     <a class="btn sec petit" href="{{ url_for('stock_mouvement', mid=0, type='inventaire') }}">Inventaire</a>
     <a class="btn sec petit" href="{{ url_for('stock_sortie_jour') }}">Sortie du jour</a>
     {% endif %}
-    <a class="btn sec petit" href="{{ url_for('stock_pdf', annee=annee) }}" target="_blank">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('stock_xlsx', annee=annee) }}">⬇ Excel</a>
-    {% if modifiable %}<a class="btn sec petit" href="{{ url_for('stock_import') }}">⬆ Charger</a>{% endif %}
+    <a class="btn sec petit" href="{{ url_for('stock_pdf', annee=annee) }}" target="_blank">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('stock_xlsx', annee=annee) }}">{{ icone('telecharger') }} Excel</a>
+    {% if modifiable %}<a class="btn sec petit" href="{{ url_for('stock_import') }}">{{ icone('importer') }} Charger</a>{% endif %}
   </div>
 </div>
 {% include "stock_onglets.html" %}
@@ -51,7 +51,7 @@ tr.alerte td{background:#FFF4F3!important}
   <td>{{ e.peremption.strftime('%d/%m/%Y') if e.peremption else '' }}</td>
   <td class="c">{{ milliers(e.valeur) if e.valeur else '' }}</td>
   <td>{% if e.dernier %}{{ date_fr(e.dernier.date) }} <span class="aide">({{ TYPES[e.dernier.type] }} {{ qte(e.dernier.quantite) }})</span>{% endif %}</td>
-  <td>{% for a in e.alertes %}<span class="stk-al">⚠ {{ a }}</span>{% endfor %}</td>
+  <td>{% for a in e.alertes %}<span class="stk-al">{{ icone('attention') }} {{ a }}</span>{% endfor %}</td>
   {% if modifiable %}<td style="white-space:nowrap">
     <a class="btn sec petit" href="{{ url_for('stock_mouvement', mid=0, type='entree', vivre=v.id) }}" title="Entrée">+</a>
     <a class="btn sec petit" href="{{ url_for('stock_mouvement', mid=0, type='sortie', vivre=v.id) }}" title="Sortie">−</a>

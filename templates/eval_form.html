@@ -30,8 +30,8 @@
   <h2>Configuration des matières</h2>
   <div data-coches>
     <div class="actions">
-      <button type="button" class="btn sec petit" data-cocher="1">☑ Tout cocher</button>
-      <button type="button" class="btn sec petit" data-cocher="0">☐ Tout décocher</button>
+      <button type="button" class="btn sec petit" data-cocher="1">{{ icone('case_cochee') }} Tout cocher</button>
+      <button type="button" class="btn sec petit" data-cocher="0">{{ icone('case') }} Tout décocher</button>
       <span><span class="nb-coches ev-compteur">0</span> matière(s) cochée(s) sur {{ toutes|length }}</span>
     </div>
     <div class="ev-mats">

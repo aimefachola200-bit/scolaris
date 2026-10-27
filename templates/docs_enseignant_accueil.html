@@ -11,7 +11,7 @@
   <div><h1>Documents de l'enseignant</h1>
   <p class="sous">Fiches d'évaluation, certificats et attestations remplis automatiquement avec les données de SCOLARIS
   (école, personnel{% if carriere %}, carrière{% endif %}, élèves, classes, registre d'appel, notes) — année {{ ANNEE }}.</p></div>
-  <div class="actions"><a class="btn sec petit" href="{{ url_for('docs_enseignant_historique') }}">🗂 Historique des documents</a></div>
+  <div class="actions"><a class="btn sec petit" href="{{ url_for('docs_enseignant_historique') }}">{{ icone('classeur') }} Historique des documents</a></div>
 </div>
 
 <div class="grille indicateurs">
@@ -36,8 +36,8 @@ Ils sont imprimés sans cachet ni signature : faites-les signer par le directeur
       <h3>{{ d.titre }}</h3>
       <p>{{ d.desc }}{% if par_type.get(k) %} <span class="badge ok">{{ par_type[k] }} produit{{ 's' if par_type[k] > 1 }}</span>{% endif %}</p>
       <div class="actions">
-        <a class="btn petit" href="{{ url_for('docs_enseignant_form', doc=k) }}">✎ Remplir</a>
-        <a class="btn sec petit" href="{{ url_for('docs_enseignant_vierge', doc=k) }}" target="_blank" rel="noopener">📄 PDF vierge</a>
+        <a class="btn petit" href="{{ url_for('docs_enseignant_form', doc=k) }}">{{ icone('modifier') }} Remplir</a>
+        <a class="btn sec petit" href="{{ url_for('docs_enseignant_vierge', doc=k) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF vierge</a>
       </div>
     </div>
   {% endfor %}

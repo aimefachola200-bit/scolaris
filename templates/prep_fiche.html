@@ -6,15 +6,15 @@
     <p class="sous">{{ prep_nom_matiere(f.matiere) }} · {{ PREP_COURS_LIB.get(f.cours, f.cours) }}{% if f.sous_matiere %} · {{ f.sous_matiere }}{% endif %}{% if f.unite %} · {{ f.unite }}{% endif %}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · séance {{ f.seance }}{% endif %}{% if f.duree %} · {{ f.duree }}{% endif %}{% if propre and f.date_seance %} · séance du {{ f.date_seance }}{% endif %}</p></div>
     <div class="actions">
       {% if propre %}
-      <a class="btn petit" href="{{ url_for('prep_ma_fiche_pdf', mid=f.id) }}">📄 PDF</a>
+      <a class="btn petit" href="{{ url_for('prep_ma_fiche_pdf', mid=f.id) }}">{{ icone('document') }} PDF</a>
       <a class="btn sec petit" href="{{ url_for('prep_ma_fiche_doc', mid=f.id) }}">Word</a>
-      {% if auteur %}<a class="btn sec petit" href="{{ url_for('prep_ma_fiche', mid=f.id, modifier=1) }}">✎ Modifier</a>
+      {% if auteur %}<a class="btn sec petit" href="{{ url_for('prep_ma_fiche', mid=f.id, modifier=1) }}">{{ icone('modifier') }} Modifier</a>
       <form method="post" action="{{ url_for('prep_ma_fiche_dupliquer', mid=f.id) }}" style="display:inline"><button class="btn sec petit">⧉ Dupliquer</button></form>
       <form method="post" action="{{ url_for('prep_ma_fiche_supprimer', mid=f.id) }}" style="display:inline" onsubmit="return confirm('Supprimer cette fiche ?')"><button class="btn danger petit">Supprimer</button></form>{% endif %}
       {% else %}
-      <a class="btn petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid) }}">📄 PDF</a>
+      <a class="btn petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid) }}">{{ icone('document') }} PDF</a>
       <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}">Word</a>
-      {% if classes %}<a class="btn sec petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">✎ Adapter pour ma classe</a>{% endif %}
+      {% if classes %}<a class="btn sec petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">{{ icone('modifier') }} Adapter pour ma classe</a>{% endif %}
       {% endif %}
       <button class="btn sec petit" type="button" onclick="window.print()">Imprimer</button>
     </div></div>

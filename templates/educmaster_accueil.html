@@ -23,7 +23,7 @@ table.em select{max-width:260px}
     <label class="zone-depot" id="zone-depot" for="em-fichier">
       <b>Déposer ici le fichier Excel EducMaster</b><br>
       <span class="aide">Modèle .xlsx téléchargé depuis la plateforme EducMaster (liste des élèves / fiche de notes)</span><br><br>
-      <span class="btn sec petit">📂 Choisir un fichier</span>
+      <span class="btn sec petit">{{ icone('dossier') }} Choisir un fichier</span>
       <input type="file" id="em-fichier" name="fichier" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
     </label>
     <noscript><button class="btn" style="margin-top:8px">Envoyer</button></noscript>
@@ -52,7 +52,7 @@ table.em select{max-width:260px}
   <form method="post" action="{{ url_for('educmaster_mapping') }}" data-doc="educmaster:{{ cycle }}:mapping">
     <input type="hidden" name="cycle" value="{{ cycle }}">
     {% call M.barre_doc() %}
-      <button class="btn petit" title="Utiliser cette correspondance pour le fichier déposé">✔ Appliquer</button>
+      <button class="btn petit" title="Utiliser cette correspondance pour le fichier déposé">{{ icone('coche') }} Appliquer</button>
       <label style="font-size:13px"><input type="checkbox" name="memoriser" value="1" data-nosave> mémoriser pour les prochains fichiers</label>
     {% endcall %}
     {% if an.feuilles|length > 1 %}<p><label for="em-feuille">Feuille du classeur</label>
@@ -103,7 +103,7 @@ table.em select{max-width:260px}
       <input type="hidden" name="cycle" value="{{ cycle }}">
       <p><label for="em-ev">Évaluation</label><br><select id="em-ev" name="evaluation" required>
         <option value="">— choisir —</option>{% for ev in evaluations %}<option value="{{ ev.id }}">{{ ev.libelle }}</option>{% endfor %}</select></p>
-      <button class="btn">⬇ Remplir et télécharger le fichier</button>
+      <button class="btn">{{ icone('telecharger') }} Remplir et télécharger le fichier</button>
     </form>
     {% else %}<p class="gris">Aucune évaluation n'existe pour les classes du {{ CYCLES[cycle]|lower }} : créez-la dans « Saisie des notes – évaluations ».</p>{% endif %}
   </div>
@@ -126,13 +126,13 @@ table.em select{max-width:260px}
       <p class="aide">4 feuilles : Évaluation formative 1, sommatives 1 à 3. Matricule = matricule EducMaster de l'élève ;
         « Note obtenue » = note SCOLARIS, « Note perf. » = barème (20). Correspondance : Dictée, Math, Expression écrite,
         Compréhension de l'écrit, EST, ES, EA (Oral) = éducation artistique (vivant), EA (Dessin/Couture) = éducation artistique (plastique), EPS.</p>
-      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='notes-primaire') }}">⬇ Télécharger le modèle vierge</a></p>
+      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='notes-primaire') }}">{{ icone('telecharger') }} Télécharger le modèle vierge</a></p>
       {% if classes_primaire %}
       <form method="get" id="f-modele-notes" action="#">
         <label for="mn-classe">Classe</label><br>
         <select id="mn-classe" name="classe" required>
           {% for c in classes_primaire %}<option value="{{ url_for('educmaster_modele_notes_rempli', cid=c.id) }}">{{ c.nom }}</option>{% endfor %}</select>
-        <button class="btn petit" type="button" onclick="var s=document.getElementById('mn-classe');if(s.value)location.href=s.value">⬇ Télécharger rempli</button>
+        <button class="btn petit" type="button" onclick="var s=document.getElementById('mn-classe');if(s.value)location.href=s.value">{{ icone('telecharger') }} Télécharger rempli</button>
       </form>
       {% else %}<p class="gris">Aucune classe du primaire accessible.</p>{% endif %}
       {% if classes_primaire %}
@@ -143,7 +143,7 @@ table.em select{max-width:260px}
         <p><input type="file" name="fichier" accept=".xlsx,.xlsm" required aria-label="Modèle de notes rempli"></p>
         <p><label style="font-weight:normal"><input type="checkbox" name="creer" value="1" checked> créer les évaluations manquantes (formative 1, sommatives 1 à 3)</label></p>
         <div class="actions"><button class="btn sec petit" name="simuler" value="1">Simuler</button>
-          <button class="btn petit" data-confirmer="Importer les notes de ce fichier dans SCOLARIS (les notes existantes de ces évaluations seront remplacées) ?">⬆ Importer les notes</button></div>
+          <button class="btn petit" data-confirmer="Importer les notes de ce fichier dans SCOLARIS (les notes existantes de ces évaluations seront remplacées) ?">{{ icone('importer') }} Importer les notes</button></div>
       </form>
       <p class="aide">Chaque feuille va dans l'évaluation correspondante de la classe ; élève retrouvé par matricule EducMaster puis
         par nom + prénoms ; « Note obtenue » importée (0 à 20), « Note perf. » (barème) ignorée.</p>
@@ -154,8 +154,8 @@ table.em select{max-width:260px}
       <h3 style="margin-top:0">b. Modèle des élèves par classe</h3>
       <p class="aide">Une feuille par niveau (CM2 … CI, Maternelle 2, Maternelle 1) : Nom, Prénom(s), Sexe, Date de naissance,
         Lieu de naissance, Téléphone de parents, Nationalité, Npi (= NIP).</p>
-      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='classe') }}">⬇ Télécharger le modèle vierge</a>
-         <a class="btn petit" href="{{ url_for('educmaster_modele_classe_rempli') }}">⬇ Télécharger rempli (toute l'école)</a></p>
+      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='classe') }}">{{ icone('telecharger') }} Télécharger le modèle vierge</a>
+         <a class="btn petit" href="{{ url_for('educmaster_modele_classe_rempli') }}">{{ icone('telecharger') }} Télécharger rempli (toute l'école)</a></p>
       <form method="post" action="{{ url_for('educmaster_modele_classe_importer') }}" enctype="multipart/form-data">
         <p><label for="mc-fichier">Importer un modèle rempli</label><br>
           <input type="file" id="mc-fichier" name="fichier" accept=".xlsx,.xlsm" required></p>
@@ -170,7 +170,7 @@ table.em select{max-width:260px}
         </details>
         {% else %}<p class="gris">Aucune classe créée : les élèves ne pourront pas être importés.</p>{% endif %}
         <div class="actions"><button class="btn sec petit" name="simuler" value="1">Simuler</button>
-          <button class="btn petit" data-confirmer="Importer les élèves de ce fichier dans SCOLARIS (mise à jour / création) ?">⬆ Importer</button></div>
+          <button class="btn petit" data-confirmer="Importer les élèves de ce fichier dans SCOLARIS (mise à jour / création) ?">{{ icone('importer') }} Importer</button></div>
       </form>
       <p class="aide">Élève retrouvé par NIP puis par nom + prénoms : sa fiche est mise à jour ; sinon il est créé dans la classe choisie pour le niveau de la feuille.</p>
     </div>
@@ -179,13 +179,13 @@ table.em select{max-width:260px}
       <h3 style="margin-top:0">c. Modèle des agents</h3>
       <p class="aide">Feuille « Mes agents » : Matricule, Id ANPE (AME), Nom, Prénoms, Sexe, Date et lieu de naissance, Nationalité,
         Téléphone, Email, IFU, Date de première prise de service. {{ nb_personnel }} agent(s) actif(s) dans l'école.</p>
-      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='agents') }}">⬇ Télécharger le modèle vierge</a>
-         <a class="btn petit" href="{{ url_for('educmaster_modele_agents_rempli') }}">⬇ Télécharger rempli</a></p>
+      <p><a class="btn sec petit" href="{{ url_for('educmaster_modele_vierge', cle='agents') }}">{{ icone('telecharger') }} Télécharger le modèle vierge</a>
+         <a class="btn petit" href="{{ url_for('educmaster_modele_agents_rempli') }}">{{ icone('telecharger') }} Télécharger rempli</a></p>
       <form method="post" action="{{ url_for('educmaster_modele_agents_importer') }}" enctype="multipart/form-data">
         <p><label for="ma-fichier">Importer un modèle rempli</label><br>
           <input type="file" id="ma-fichier" name="fichier" accept=".xlsx,.xlsm" required></p>
         <div class="actions"><button class="btn sec petit" name="simuler" value="1">Simuler</button>
-          <button class="btn petit" data-confirmer="Importer les agents de ce fichier dans le personnel de l'école ?">⬆ Importer</button></div>
+          <button class="btn petit" data-confirmer="Importer les agents de ce fichier dans le personnel de l'école ?">{{ icone('importer') }} Importer</button></div>
       </form>
       <p class="aide">Agent retrouvé par matricule puis par nom + prénoms : fiche mise à jour ; sinon créé (fonction « Enseignant(e) », à préciser dans sa fiche).</p>
     </div>

@@ -28,8 +28,8 @@ tr.mois-actif td{background:#EEF4FA;font-weight:600}
 <div class="entete">
   <div><h1>Calendrier scolaire – jours de classe</h1>
     <p class="sous">Année scolaire {{ annee }} · rentrée le {{ date_longue(params.rentree) }}, fin des cours le {{ date_longue(params.fin) }}</p></div>
-  <div class="actions"><a class="btn sec petit" href="{{ url_for('registre_accueil', mois=mois) }}">📋 Registre de présence</a>
-    <a class="btn sec petit" href="{{ url_for('releve_mensuel', annee=annee) }}">📊 Relevés mensuels</a></div>
+  <div class="actions"><a class="btn sec petit" href="{{ url_for('registre_accueil', mois=mois) }}">{{ icone('presse_papiers') }} Registre de présence</a>
+    <a class="btn sec petit" href="{{ url_for('releve_mensuel', annee=annee) }}">{{ icone('graphique') }} Relevés mensuels</a></div>
 </div>
 
 {% set total_annee = recap|sum(attribute='dj') %}
@@ -50,9 +50,9 @@ tr.mois-actif td{background:#EEF4FA;font-weight:600}
 
   <form method="get" class="filtres">
     <div class="cal-nav">
-      <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=prec) }}" aria-label="Mois précédent" title="Mois précédent">◀</a>
+      <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=prec) }}" aria-label="Mois précédent" title="Mois précédent">{{ icone('precedent') }}</a>
       <span class="titre-periode">{{ titre }}</span>
-      <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=suiv) }}" aria-label="Mois suivant" title="Mois suivant">▶</a>
+      <a class="btn sec petit" href="{{ url_for('calendrier_scolaire', mois=suiv) }}" aria-label="Mois suivant" title="Mois suivant">{{ icone('suivant') }}</a>
       <label class="aide" for="cal-mois">Aller au mois</label><input id="cal-mois" type="month" name="mois" value="{{ mois }}" onchange="this.form.submit()">
     </div>
   </form>
@@ -79,7 +79,7 @@ tr.mois-actif td{background:#EEF4FA;font-weight:600}
       {% endfor %}{% endfor %}
     </div></div>
     <datalist id="dl-motifs">{% for m in motifs %}<option value="{{ m }}">{% endfor %}</datalist>
-    {% if modifiable %}<p class="actions" style="margin-top:12px"><button class="btn vert">💾 Enregistrer le mois de {{ titre }}</button>
+    {% if modifiable %}<p class="actions" style="margin-top:12px"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer le mois de {{ titre }}</button>
       <span class="aide">« Auto » = règle générale (supprime l'exception du jour).</span></p>{% endif %}
   </form>
 </div>

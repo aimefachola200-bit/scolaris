@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS ix_trans_envois ON trans_envois(ecole_id, annee);
 NOMS_RUBRIQUES = {"effectifs": "Effectifs des élèves", "personnel": "Personnel", "visites": "Visites de classe (CP / CCS)",
                   "cep": "CEP (candidats et résultats)", "recensement": "Fiches de recensement",
                   "rapports": "Rapports de rentrée / fin d'année", "patrimoine": "Patrimoine et infrastructures",
-                  "cantine": "Cantine scolaire"}
+                  "cantine": "Cantine scolaire", "pilotage": "Pilotage (évaluations, abandons, sport, santé)"}
 RE_CODE = re.compile(r"^[A-Z0-9][A-Z0-9-]{3,30}$")
 TIMEOUT = 20
 LIMITE_DECOMPRESSION = 60 * 1024 * 1024
@@ -547,6 +547,15 @@ def enregistrer(app, H):
         for nom, (val, note) in (("visites", section_visites(annee)), ("cep", section_cep(utiles, eleves, annee)),
                                  ("recensement", section_recensement(utiles, annee)),
                                  ("rapports", section_rapports(utiles, annee)), ("cantine", section_cantine(utiles))):
+            if val:
+                secs[nom] = val
+            if note:
+                notes[nom] = note
+        for nom, f in (getattr(H, "sections_extra", None) or {}).items():   # v1.25 : sections ajoutées par d'autres modules (pilotage…)
+            try:
+                val, note = f(annee)
+            except Exception as err:  # noqa: BLE001
+                val, note = None, f"Section « {nom} » indisponible : {err}"
             if val:
                 secs[nom] = val
             if note:

@@ -11,7 +11,7 @@
     {% if saisie %}<a class="btn" href="{{ url_for('jur_visite_form') }}">＋ Nouvelle visite</a>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_bilan_activites', annee=f.annee) }}">Bilan des activités</a>
     <a class="btn sec" href="{{ url_for('jur_visites', export='xlsx', **args) }}">⇩ Excel</a>
-    <a class="btn sec" href="{{ url_for('jur_visites', export='pdf', **args) }}" target="_blank">📄 PDF</a>
+    <a class="btn sec" href="{{ url_for('jur_visites', export='pdf', **args) }}" target="_blank">{{ icone('document') }} PDF</a>
     <a class="btn sec" href="{{ url_for('jur_visite_vierge') }}" target="_blank">Fiche vierge</a>
   </div>
 </div>

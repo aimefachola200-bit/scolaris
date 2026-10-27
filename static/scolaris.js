@@ -80,7 +80,7 @@
   /* ---------------------------------------------------------------- photo : fichier ou caméra
      <div class="photo-capture" data-champ="photo_data" data-src="/url/photo.jpg"></div>
      Le formulaire reçoit une image JPEG en data URL dans le champ caché.
-     Caméra : bouton « Basculer » (avant ↔ arrière, facingMode user / environment), liste des caméras disponibles
+     Caméra : bouton « Basculer » (avant / arrière, facingMode user / environment), liste des caméras disponibles
      (enumerateDevices) quand il y en a plusieurs, dernier choix mémorisé (localStorage scolaris-camera-face / -id),
      repli automatique sur la caméra existante quand la face demandée manque (PC sans caméra arrière). */
   /* v1.10.10 — caméra avant / arrière : appareil de la face voulue d'après son nom (front / back, avant / arrière…),

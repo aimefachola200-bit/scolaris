@@ -12,7 +12,7 @@
   <div class="actions">
     <a class="btn sec" href="{{ url_for('jur_visites', annee=annee, cs=cs_id or '') }}">Liste des visites</a>
     <a class="btn sec" href="{{ url_for('jur_bilan_activites', annee=annee, cs=cs_id or '', export='xlsx') }}">⇩ Excel</a>
-    <a class="btn" href="{{ url_for('jur_bilan_activites', annee=annee, cs=cs_id or '', export='pdf') }}" target="_blank">📄 PDF signé</a>
+    <a class="btn" href="{{ url_for('jur_bilan_activites', annee=annee, cs=cs_id or '', export='pdf') }}" target="_blank">{{ icone('document') }} PDF signé</a>
   </div>
 </div>
 

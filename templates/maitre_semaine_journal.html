@@ -82,7 +82,7 @@
     <label for="ob">Observations du maître de semaine</label><textarea id="ob" name="observations" maxlength="2000">{{ v.observations or '' }}</textarea>
   </fieldset>
 
-  {% if not verrou and not futur %}<p class="actions"><button class="btn vert">💾 Enregistrer le journal</button></p>{% endif %}
+  {% if not verrou and not futur %}<p class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer le journal</button></p>{% endif %}
 </form>
 
 {% if j %}
@@ -91,7 +91,7 @@
   {% if direction %}
     <form method="post" action="{{ url_for('maitre_semaine_viser', jid=j.id) }}" class="actions" style="display:inline-flex">
       {% if j.visa_le %}<button class="btn sec" name="action" value="annuler" data-confirmer="Retirer le visa de cette journée ?">Retirer le visa</button>
-      {% else %}<button class="btn vert" name="action" value="viser">✔ Viser la journée</button>{% endif %}
+      {% else %}<button class="btn vert" name="action" value="viser">{{ icone('coche') }} Viser la journée</button>{% endif %}
     </form>
     <form method="post" action="{{ url_for('maitre_semaine_supprimer', jid=j.id) }}" style="display:inline">
       <button class="btn danger" data-confirmer="Supprimer définitivement le journal de ce jour ?">Supprimer</button></form>

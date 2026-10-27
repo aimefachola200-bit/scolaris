@@ -79,37 +79,63 @@ CAT_FIN = {"Recette": ["Cotisations des écoles", "Subventions", "Dons et parrai
            "Dépense": ["Transport", "Restauration", "Équipements et matériel", "Arbitrage", "Récompenses (coupes, médailles, prix)", "Soins et secours",
                        "Communication", "Fournitures", "Organisation (sites, sonorisation)", "Divers"]}
 LISTES = {"discipline": DISCIPLINES, "categorie": CATEGORIES, "categorie_fin": CAT_FIN["Recette"] + CAT_FIN["Dépense"],
-          "statut": ["Prévue", "Réalisée", "Reportée", "Annulée"], "sens": ["Recette", "Dépense"],
-          "type": ["Réunion ordinaire", "Réunion extraordinaire", "Assemblée générale", "Réunion technique"],
-          "etat": ["Neuf", "Bon", "Usagé", "Hors d'usage"]}
+          "statut": ["Réalisée", "Prévue", "Reportée", "Annulée"], "nature": ["Recette", "Dépense"], "genre": ["Garçons", "Filles", "Mixte"],
+          "phase": ["Éliminatoires", "Poules", "Quarts de finale", "Demi-finales", "Finale", "Rencontre amicale", "Festival / démonstration",
+                    "Compétition culturelle"],
+          "type": ["Réunion ordinaire du bureau", "Réunion extraordinaire", "Assemblée générale", "Réunion technique (commission)",
+                   "Réunion avec les directeurs", "Réunion de bilan"],
+          "etat": ["Bon", "Usagé", "À réparer", "Hors d’usage"], "origine": ["Achat", "Don", "Dotation", "Prêt"], "oui_non": ["Oui", "Non"]}
 # (clé, libellé, type) ; types : texte, long, date, entier, montant, choix:<liste>, liste:<liste> (saisie libre proposée)
+# v1.25 : clés, libellés et ordre des colonnes identiques au module commun (outils/uascep/uascep.js, SPEC) ; colonnes calculées
+# (CALC) insérées dans l'Excel à la même place ; rubriques propres à SCOLARIS en fin de feuille (EXTRA).
 COLL = {
-    "activites": {"titre": "Calendrier, activités et résultats", "feuille": "Activités et résultats", "unite": "activité", "oblig": "intitule", "champs": [
-        ("date", "Date", "date"), ("date_fin", "Fin (plusieurs jours)", "date"), ("intitule", "Activité / compétition", "texte"),
-        ("discipline", "Discipline", "liste:discipline"), ("categorie", "Catégorie", "liste:categorie"), ("lieu", "Lieu", "texte"),
-        ("statut", "Statut", "choix:statut"), ("participants_g", "Participants garçons", "entier"), ("participants_f", "Participants filles", "entier"),
-        ("equipes", "Équipes / écoles engagées", "entier"), ("resultats", "Résultats", "long"), ("distinctions", "Distinctions et récompenses", "long"),
-        ("observations", "Observations", "long")]},
-    "engagements": {"titre": "Fiches d'engagement des équipes", "feuille": "Engagements", "unite": "engagement", "oblig": "ecole", "champs": [
+    "activites": {"titre": "Calendrier, compétitions et résultats", "feuille": "Activités", "unite": "activité", "oblig": "discipline", "champs": [
+        ("date", "Date", "date"), ("discipline", "Discipline", "liste:discipline"), ("categorie", "Catégorie", "liste:categorie"),
+        ("genre", "Genre", "choix:genre"), ("phase", "Phase", "liste:phase"), ("lieu", "Lieu / site", "texte"), ("ecoles", "Écoles", "entier"),
+        ("equipes", "Équipes", "entier"), ("pg", "Participants G", "entier"), ("pf", "Participants F", "entier"),
+        ("encadreurs", "Encadreurs", "entier"), ("resultats", "Résultats / classement", "long"), ("qualifies", "Qualifiés au niveau supérieur", "long"),
+        ("observations", "Observations", "long"),
+        ("intitule", "Activité / compétition", "texte"), ("statut", "Statut", "choix:statut"), ("date_fin", "Fin (plusieurs jours)", "date"),
+        ("distinctions", "Distinctions et récompenses", "long")]},
+    "engagements": {"titre": "Fiches d’engagement des équipes", "feuille": "Engagements", "unite": "engagement", "oblig": "ecole", "champs": [
         ("ecole", "École", "texte"), ("discipline", "Discipline", "liste:discipline"), ("categorie", "Catégorie", "liste:categorie"),
-        ("equipe", "Nom de l'équipe", "texte"), ("responsable", "Responsable / encadreur", "texte"), ("contact", "Contact", "texte"),
-        ("effectif_g", "Effectif garçons", "entier"), ("effectif_f", "Effectif filles", "entier"), ("droit", "Droit d'engagement (FCFA)", "montant"),
-        ("date", "Date d'engagement", "date"), ("observations", "Observations", "long")]},
+        ("genre", "Genre", "choix:genre"), ("equipe", "Nom de l’équipe", "texte"), ("jg", "Joueurs G", "entier"), ("jf", "Joueuses F", "entier"),
+        ("encadreur", "Encadreur", "texte"), ("contact", "Contact", "texte"), ("droit", "Droit d’engagement (F)", "montant"),
+        ("paye", "Payé", "choix:oui_non"), ("date", "Date d’engagement", "date"), ("observations", "Observations", "long")]},
     "reunions": {"titre": "Réunions et comptes rendus (rapporteur)", "feuille": "Réunions", "unite": "réunion", "oblig": "date", "champs": [
-        ("date", "Date", "date"), ("heure", "Heure", "texte"), ("lieu", "Lieu", "texte"), ("type", "Type de réunion", "choix:type"),
-        ("ordre_du_jour", "Ordre du jour", "long"), ("presents", "Présents", "long"), ("absents", "Absents (excusés / non excusés)", "long"),
-        ("deroulement", "Déroulement et échanges", "long"), ("decisions", "Décisions et recommandations", "long"), ("prochaine", "Prochaine réunion", "date")]},
-    "caisse": {"titre": "Journal de caisse (trésorier)", "feuille": "Journal de caisse", "unite": "opération", "oblig": "montant", "champs": [
-        ("date", "Date", "date"), ("sens", "Recette / dépense", "choix:sens"), ("categorie", "Catégorie", "liste:categorie_fin"), ("libelle", "Libellé", "texte"),
-        ("ecole", "École (cotisation)", "texte"), ("montant", "Montant (FCFA)", "montant"), ("piece", "Pièce n°", "texte"), ("observations", "Observations", "long")]},
-    "budget": {"titre": "Budget prévisionnel (trésorier)", "feuille": "Budget prévisionnel", "unite": "ligne de budget", "oblig": "categorie", "champs": [
-        ("sens", "Recette / dépense", "choix:sens"), ("categorie", "Catégorie", "liste:categorie_fin"), ("libelle", "Libellé", "texte"),
-        ("prevu", "Montant prévu (FCFA)", "montant")]},
-    "materiel": {"titre": "Inventaire du matériel sportif", "feuille": "Inventaire du matériel", "unite": "article", "oblig": "designation", "champs": [
+        ("date", "Date", "date"), ("heure", "Heure", "texte"), ("type", "Nature", "liste:type"), ("lieu", "Lieu", "texte"),
+        ("ordre", "Ordre du jour", "long"), ("presents", "Membres présents", "long"), ("invites", "Invités / autres participants", "long"),
+        ("deroulement", "Déroulement / échanges", "long"), ("decisions", "Décisions", "long"), ("recommandations", "Recommandations", "long"),
+        ("prochaine", "Prochaine réunion", "date"), ("redacteur", "Rapporteur (rédacteur)", "texte"),
+        ("absents", "Absents (excusés / non excusés)", "long")]},
+    "caisse": {"titre": "Journal de caisse (trésorier)", "feuille": "Caisse", "unite": "opération", "oblig": "montant", "champs": [
+        ("date", "Date", "date"), ("nature", "Nature", "choix:nature"), ("categorie", "Catégorie", "liste:categorie_fin"), ("libelle", "Libellé", "texte"),
+        ("ecole", "École (cotisation)", "texte"), ("piece", "Pièce justificative n°", "texte"), ("montant", "Montant (F)", "montant"),
+        ("observations", "Observations", "long")]},
+    "budget": {"titre": "Budget prévisionnel et réalisé", "feuille": "Budget", "unite": "ligne de budget", "oblig": "categorie", "champs": [
+        ("nature", "Nature", "choix:nature"), ("categorie", "Catégorie", "liste:categorie_fin"), ("libelle", "Précision", "texte"),
+        ("prevu", "Prévu (F)", "montant")]},
+    "materiel": {"titre": "Inventaire du matériel sportif", "feuille": "Matériel", "unite": "article", "oblig": "designation", "champs": [
         ("designation", "Désignation", "texte"), ("discipline", "Discipline", "liste:discipline"), ("quantite", "Quantité", "entier"),
-        ("etat", "État", "choix:etat"), ("provenance", "Provenance (achat, don…)", "texte"), ("date", "Date d'acquisition", "date"),
-        ("valeur", "Valeur (FCFA)", "montant"), ("detenteur", "Détenteur / lieu de stockage", "texte"), ("observations", "Observations", "long")]},
+        ("etat", "État", "choix:etat"), ("origine", "Origine", "liste:origine"), ("date", "Date d’acquisition", "date"),
+        ("valeur", "Valeur (F)", "montant"), ("detenteur", "Détenteur / lieu de garde", "texte"), ("observations", "Observations", "long")]},
 }
+# colonnes du fichier Excel commun (ordre du module JS) : (clé ou calcul, libellé) ; « = » : colonne calculée
+EXCEL = {
+    "activites": ["date", "discipline", "categorie", "genre", "phase", "lieu", "ecoles", "equipes", "pg", "pf", ("=pt", "Total"), "encadreurs",
+                  "resultats", "qualifies", "observations", "intitule", "statut", "date_fin", "distinctions"],
+    "engagements": ["ecole", "discipline", "categorie", "genre", "equipe", "jg", "jf", ("=jt", "Total"), "encadreur", "contact", "droit", "paye", "date",
+                    "observations"],
+    "reunions": [k for k, _l, _t in COLL["reunions"]["champs"]],
+    "caisse": ["date", "nature", "categorie", "libelle", "ecole", "piece", ("=recette", "Recette (F)"), ("=depense", "Dépense (F)"), ("=solde", "Solde (F)"),
+               "observations"],
+    "budget": ["nature", "categorie", "libelle", "prevu", ("=realise", "Réalisé (F)"), ("=ecart", "Écart (F)"), ("=taux", "Taux")],
+    "materiel": [k for k, _l, _t in COLL["materiel"]["champs"]],
+}
+# v1.25 : anciennes colonnes (1.24) renommées
+RENOMMER = {"activites": {"participants_g": "pg", "participants_f": "pf"},
+            "engagements": {"effectif_g": "jg", "effectif_f": "jf", "responsable": "encadreur"},
+            "reunions": {"ordre_du_jour": "ordre"}, "caisse": {"sens": "nature"}, "budget": {"sens": "nature"}, "materiel": {"provenance": "origine"}}
 RAPPORT_TEXTES = [("titre", "Titre du rapport"), ("contexte", "Contexte"), ("organisation", "Organisation"),
                   ("resultats", "Résultats et distinctions"), ("difficultes", "Difficultés rencontrées"), ("recommandations", "Recommandations"),
                   ("conclusion", "Conclusion")]
@@ -247,6 +273,7 @@ def enregistrer(app, H):
         r = q("SELECT * FROM uascep_bureaux WHERE id=?", (bid,), un=True)
         if not r or r["niveau"] not in niveaux_visibles() or (r["ecole_id"] or None) != cle_ecole():
             abort(404)
+        g.uascep_logo_bureau = dict(r)      # v1.25 : bandeau « logo UASCEP » des documents du bureau
         return r
 
     def exiger_ecriture(niveau):
@@ -656,7 +683,7 @@ def enregistrer(app, H):
             f = request.form
             d = {"cachet_mode": f.get("cachet_mode") if f.get("cachet_mode") in ("genere", "image", "aucun") else "genere",
                  "cachet_forme": "rect" if f.get("cachet_forme") == "rect" else "rond",
-                 "cachet_couleur": "rouge" if f.get("cachet_couleur") == "rouge" else "bleu",
+                 "cachet_couleur": f.get("cachet_couleur") if f.get("cachet_couleur") in ("bleu", "rouge", "vert", "noir") else "bleu",
                  "cachet_sup": (f.get("cachet_sup") or "").strip()[:60], "cachet_inf": (f.get("cachet_inf") or "").strip()[:60],
                  "cachet_centre": (f.get("cachet_centre") or "").strip()[:40],
                  "cachet_image": m.get("cachet_image"), "signature": m.get("signature")}
@@ -760,6 +787,9 @@ def enregistrer(app, H):
 
         def deco(cv, doc):
             pdfs._entete_primaire(cv, W, Hh, marge, None, None)
+        b = g.get("uascep_logo_bureau")
+        if b and not g.get("uascep_sans_bandeau"):
+            h = [bandeau_logo(b["niveau"], b["entite"], b.get("entite_lib"), W - 2 * marge)] + list(h)
         buf = io.BytesIO()
         SimpleDocTemplate(buf, pagesize=(W, Hh), leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=12 * mm,
                           title=titre, author="SCOLARIS").build(h, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
@@ -908,10 +938,21 @@ def enregistrer(app, H):
              Spacer(1, 10), _pied(sigs, L, code)]
         return H.pdf_reponse(_pdf(h, "Attestation de fonction UASCEP"), f"uascep_attestation_{mid}.pdf")
 
+    def logo_autorite():
+        """Bandeau des documents de synthèse : logo de l'entité du compte (école, CS ou DDEMP)."""
+        if not juridiction():
+            g.uascep_logo_bureau = {"niveau": "ECOLE", "entite": str(H.eco()), "entite_lib": None}
+            return
+        niv = "DDEMP" if config.EDITION == "ddemp" else "CS"
+        e = entites(niv)
+        if e:
+            g.uascep_logo_bureau = {"niveau": niv, "entite": e[0][0], "entite_lib": e[0][1]}
+
     @app.route("/uascep/liste.pdf")
     @H.connexion_requise("uascep")
     def uascep_liste_pdf():
         from reportlab.platypus import Paragraph, Spacer
+        logo_autorite()
         vis = niveaux_visibles()
         niv = [request.args["niveau"]] if request.args.get("niveau") in vis else vis
         S = _styles()
@@ -963,6 +1004,9 @@ def enregistrer(app, H):
         H.schema(f"CREATE TABLE IF NOT EXISTS uascep_{coll} (id INTEGER PRIMARY KEY, bureau_id INTEGER NOT NULL REFERENCES uascep_bureaux(id) "
                  f"ON DELETE CASCADE, saison TEXT NOT NULL, {cols}, maj TEXT);\n"
                  f"CREATE INDEX IF NOT EXISTS ix_uascep_{coll} ON uascep_{coll}(bureau_id, saison);")
+        H.renommer_colonnes(f"uascep_{coll}", RENOMMER.get(coll, {}))
+        for k, _l, t in d["champs"]:
+            H.ajouter_colonne(f"uascep_{coll}", k, "INTEGER" if t in ("entier", "montant") else "TEXT")
     H.schema("CREATE TABLE IF NOT EXISTS uascep_rapports (id INTEGER PRIMARY KEY, bureau_id INTEGER NOT NULL REFERENCES uascep_bureaux(id) "
              "ON DELETE CASCADE, saison TEXT NOT NULL, " + ", ".join(f"{k} TEXT" for k, _l in RAPPORT_TEXTES) + ", maj TEXT, UNIQUE(bureau_id, saison));")
 
@@ -972,7 +1016,7 @@ def enregistrer(app, H):
 
     def lignes_coll(coll, bid, saison):
         ordre = {"activites": "date, id", "reunions": "date, id", "caisse": "date, id", "engagements": "ecole, discipline, id",
-                 "budget": "sens DESC, categorie, id", "materiel": "designation, id"}[coll]
+                 "budget": "nature DESC, categorie, id", "materiel": "designation, id"}[coll]
         return [dict(r) for r in q(f"SELECT * FROM uascep_{coll} WHERE bureau_id=? AND saison=? ORDER BY {ordre}", (bid, saison))]
 
     def lire_ligne(coll, f):
@@ -993,37 +1037,37 @@ def enregistrer(app, H):
         caisse = lignes_coll("caisse", bid, saison)
         solde, journal = 0, []
         for r in caisse:
-            solde += (r["montant"] or 0) * (1 if r["sens"] == "Recette" else -1)
+            solde += (r["montant"] or 0) * (1 if r["nature"] == "Recette" else -1)
             journal.append(dict(r, solde=solde))
-        rec = sum(r["montant"] or 0 for r in caisse if r["sens"] == "Recette")
-        dep = sum(r["montant"] or 0 for r in caisse if r["sens"] != "Recette")
+        rec = sum(r["montant"] or 0 for r in caisse if r["nature"] == "Recette")
+        dep = sum(r["montant"] or 0 for r in caisse if r["nature"] != "Recette")
         par_cat = {}
         for r in caisse:
-            k = (r["sens"] or "Dépense", r["categorie"] or "Divers")
+            k = (r["nature"] or "Dépense", r["categorie"] or "Divers")
             par_cat[k] = par_cat.get(k, 0) + (r["montant"] or 0)
         cotis = {}
         for r in caisse:
-            if r["sens"] == "Recette" and "cotisation" in (r["categorie"] or "").lower():
+            if r["nature"] == "Recette" and "cotisation" in (r["categorie"] or "").lower():
                 e = r["ecole"] or r["libelle"] or "—"
                 cotis[e] = cotis.get(e, 0) + (r["montant"] or 0)
         budget = []
         for b in lignes_coll("budget", bid, saison):
-            real = par_cat.get((b["sens"] or "Dépense", b["categorie"] or "Divers"), 0)
+            real = par_cat.get((b["nature"] or "Dépense", b["categorie"] or "Divers"), 0)
             budget.append(dict(b, realise=real, ecart=real - (b["prevu"] or 0), taux=round(100 * real / b["prevu"]) if b["prevu"] else None))
         return {"journal": journal, "recettes": rec, "depenses": dep, "solde": rec - dep, "par_cat": sorted(par_cat.items()),
                 "cotisations": sorted(cotis.items()), "budget": budget}
 
     def participation(bid, saison):
         acts = [a for a in lignes_coll("activites", bid, saison) if a["statut"] != "Annulée"]
-        real = [a for a in acts if a["statut"] == "Réalisée"]
-        g = sum(a["participants_g"] or 0 for a in real)
-        f = sum(a["participants_f"] or 0 for a in real)
+        real = [a for a in acts if (a["statut"] or "Réalisée") == "Réalisée"]
+        g = sum(a["pg"] or 0 for a in real)
+        f = sum(a["pf"] or 0 for a in real)
         par_disc = {}
         for a in real:
             x = par_disc.setdefault(a["discipline"] or "—", [0, 0, 0])
             x[0] += 1
-            x[1] += a["participants_g"] or 0
-            x[2] += a["participants_f"] or 0
+            x[1] += a["pg"] or 0
+            x[2] += a["pf"] or 0
         return {"activites": acts, "realisees": real, "g": g, "f": f, "t": g + f, "par_discipline": sorted(par_disc.items()),
                 "prevues": [a for a in acts if a["statut"] in ("Prévue", "Reportée")]}
 
@@ -1185,7 +1229,7 @@ def enregistrer(app, H):
 
     def flow_activites(p, L, resultats=True):
         rows = [[jjmmaaaa(a["date"]) + (" → " + jjmmaaaa(a["date_fin"]) if a["date_fin"] else ""), a["intitule"] or "", a["discipline"] or "", a["categorie"] or "",
-                 a["lieu"] or "", a["statut"] or "", a["participants_g"] or 0, a["participants_f"] or 0, (a["participants_g"] or 0) + (a["participants_f"] or 0)]
+                 a["lieu"] or "", a["statut"] or "", a["pg"] or 0, a["pf"] or 0, (a["pg"] or 0) + (a["pf"] or 0)]
                 + ([((a["resultats"] or "") + (" — " + a["distinctions"] if a["distinctions"] else ""))] if resultats else []) for a in p["activites"]]
         ent = ["Date", "Activité / compétition", "Discipline", "Catégorie", "Lieu", "Statut", "G", "F", "T"] + (["Résultats et distinctions"] if resultats else [])
         larg = [17, 0, 20, 16, 20, 14, 8, 8, 9] + ([36] if resultats else [])
@@ -1198,11 +1242,11 @@ def enregistrer(app, H):
         out = [Paragraph("<b>Journal de caisse</b>", S["p"]),
                table_simple(["Date", "Pièce n°", "Libellé", "Catégorie", "École", "Recette", "Dépense", "Solde"],
                             [[jjmmaaaa(r["date"]), r["piece"] or "", r["libelle"] or "", r["categorie"] or "", r["ecole"] or "",
-                              fcfa(r["montant"]) if r["sens"] == "Recette" else "", fcfa(r["montant"]) if r["sens"] != "Recette" else "", fcfa(r["solde"])] for r in fi["journal"]],
+                              fcfa(r["montant"]) if r["nature"] == "Recette" else "", fcfa(r["montant"]) if r["nature"] != "Recette" else "", fcfa(r["solde"])] for r in fi["journal"]],
                             [18, 16, 0, 34, 28, 22, 22, 22], L, ["Totaux", "", "", "", "", fcfa(fi["recettes"]), fcfa(fi["depenses"]), fcfa(fi["solde"])]),
                Spacer(1, 4), Paragraph("<b>Budget prévisionnel et réalisé</b>", S["p"]),
                table_simple(["Sens", "Catégorie", "Libellé", "Prévu", "Réalisé", "Écart", "Taux"],
-                            [[x["sens"] or "", x["categorie"] or "", x["libelle"] or "", fcfa(x["prevu"]), fcfa(x["realise"]), fcfa(x["ecart"]),
+                            [[x["nature"] or "", x["categorie"] or "", x["libelle"] or "", fcfa(x["prevu"]), fcfa(x["realise"]), fcfa(x["ecart"]),
                               f"{x['taux']} %" if x["taux"] is not None else "—"] for x in fi["budget"]], [18, 40, 0, 24, 24, 24, 14], L),
                Spacer(1, 4), Paragraph("<b>Cotisations par école</b>", S["p"]),
                table_simple(["École", "Montant versé"], [[e, fcfa(v)] for e, v in fi["cotisations"]], [0, 40], L,
@@ -1231,7 +1275,10 @@ def enregistrer(app, H):
         code = code_doc("uascep_rapport", f"Rapport de fin de saison sportive {saison} — bureau UASCEP {NIV_LIB[b['niveau']]} : {b['entite_lib'] or b['entite']}",
                         f"uascep:rapport:{bid}:{saison}:{b['maj'] or ''}:{len(p['activites'])}:{fi['solde']}")
         lib = MPtxt(b["entite_lib"] or b["entite"])
-        garde = [Spacer(1, 40), Paragraph("UNION DES ASSOCIATIONS SCOLAIRES ET CULTURELLES DES ÉCOLES PRIMAIRES (UASCEP)", S["s"]), Spacer(1, 20),
+        from reportlab.platypus import Table
+        grand = Table([[logo_flowable(b["niveau"], b["entite"], b["entite_lib"], 170)]], colWidths=[L])
+        grand.setStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")])
+        garde = [Spacer(1, 10), grand, Spacer(1, 12), Paragraph("UNION DES ASSOCIATIONS SPORTIVES ET CULTURELLES DES ÉCOLES PRIMAIRES (UASCEP)", S["s"]), Spacer(1, 14),
                  Paragraph(MPtxt(r["titre"]).upper(), S["t"]), Spacer(1, 10), Paragraph(f"Bureau — {NIV_LIB[b['niveau']]} : <b>{lib}</b>", S["s"]),
                  Paragraph(f"Saison {saison}", S["s"]), Spacer(1, 30),
                  table_simple(["Fonction", "Nom et prénoms", "Contact"], [[m["fonction"] or "", f"{m['nom']} {m['prenoms'] or ''}", m["contact"] or ""] for m in ms], [55, 0, 40], L),
@@ -1271,17 +1318,17 @@ def enregistrer(app, H):
             n = len(fi["journal"])
         elif doc == "engagements":
             ls = lignes_coll("engagements", bid, saison)
-            h += [table_simple(["École", "Discipline", "Catégorie", "Équipe", "Responsable / encadreur", "Contact", "G", "F", "Droit d'engagement", "Date"],
-                               [[e["ecole"] or "", e["discipline"] or "", e["categorie"] or "", e["equipe"] or "", e["responsable"] or "", e["contact"] or "",
-                                 e["effectif_g"] or 0, e["effectif_f"] or 0, fcfa(e["droit"]), jjmmaaaa(e["date"])] for e in ls],
+            h += [table_simple(["École", "Discipline", "Catégorie", "Équipe", "Encadreur", "Contact", "G", "F", "Droit d'engagement", "Date"],
+                               [[e["ecole"] or "", e["discipline"] or "", e["categorie"] or "", e["equipe"] or "", e["encadreur"] or "", e["contact"] or "",
+                                 e["jg"] or 0, e["jf"] or 0, fcfa(e["droit"]), jjmmaaaa(e["date"])] for e in ls],
                                [0, 26, 20, 30, 36, 24, 9, 9, 24, 18], L,
-                               ["Total", "", "", f"{len(ls)} équipe(s)", "", "", sum(e["effectif_g"] or 0 for e in ls), sum(e["effectif_f"] or 0 for e in ls),
+                               ["Total", "", "", f"{len(ls)} équipe(s)", "", "", sum(e["jg"] or 0 for e in ls), sum(e["jf"] or 0 for e in ls),
                                 fcfa(sum(e["droit"] or 0 for e in ls)), ""])]
             n = len(ls)
         else:
             ls = lignes_coll("materiel", bid, saison)
-            h += [table_simple(["Désignation", "Discipline", "Qté", "État", "Provenance", "Acquis le", "Valeur", "Détenteur / stockage"],
-                               [[x["designation"] or "", x["discipline"] or "", x["quantite"] or 0, x["etat"] or "", x["provenance"] or "", jjmmaaaa(x["date"]),
+            h += [table_simple(["Désignation", "Discipline", "Qté", "État", "Origine", "Acquis le", "Valeur", "Détenteur / stockage"],
+                               [[x["designation"] or "", x["discipline"] or "", x["quantite"] or 0, x["etat"] or "", x["origine"] or "", jjmmaaaa(x["date"]),
                                  fcfa(x["valeur"]), x["detenteur"] or ""] for x in ls], [0, 24, 10, 18, 24, 18, 22, 30], L,
                                ["Total", "", sum(x["quantite"] or 0 for x in ls), "", "", "", fcfa(sum(x["valeur"] or 0 for x in ls)), ""])]
             n = len(ls)
@@ -1307,7 +1354,7 @@ def enregistrer(app, H):
         h = entete_doc("COMPTE RENDU DE RÉUNION", b, r["saison"])
         h += [Paragraph(f"<b>{MPtxt(r['type'] or 'Réunion')}</b> du {jjmmaaaa(r['date']) or '……'}{' à ' + MPtxt(r['heure']) if r['heure'] else ''}"
                         f"{', ' + MPtxt(r['lieu']) if r['lieu'] else ''}.", S["p"])]
-        for k, t in (("ordre_du_jour", "Ordre du jour"), ("presents", "Présents"), ("absents", "Absents"), ("deroulement", "Déroulement et échanges"),
+        for k, t in (("ordre", "Ordre du jour"), ("presents", "Présents"), ("absents", "Absents"), ("deroulement", "Déroulement et échanges"),
                      ("decisions", "Décisions et recommandations")):
             h += [Paragraph(f"<b>{t}</b>", S["p"])] + para_multi(r[k], S["p"])
         if r["prochaine"]:
@@ -1315,29 +1362,126 @@ def enregistrer(app, H):
         h += [Paragraph("L'ordre du jour étant épuisé, la séance a été levée.", S["p"]), Spacer(1, 6), _pied(sigs_saison(b, ms, ["R", "SG", "P"]), L, code)]
         return H.pdf_reponse(_pdf(h, "Compte rendu de réunion UASCEP"), f"uascep_cr_{rid}.pdf")
 
+    def colonnes_excel(coll):
+        lib = {k: l for k, l, _t in COLL[coll]["champs"]}
+        return [(c[0], c[1]) if isinstance(c, tuple) else (c, lib[c]) for c in EXCEL[coll]]
+
+    def lignes_excel(coll, bid, saison):
+        """Lignes d'un registre pour l'Excel commun (colonnes calculées comprises) et ligne de totaux."""
+        typ = {k: t for k, _l, t in COLL[coll]["champs"]}
+        if coll == "caisse":
+            ls = finances(bid, saison)["journal"]
+        elif coll == "budget":
+            ls = finances(bid, saison)["budget"]
+        else:
+            ls = lignes_coll(coll, bid, saison)
+        def val(x, k):
+            if k == "=pt":
+                return (x["pg"] or 0) + (x["pf"] or 0)
+            if k == "=jt":
+                return (x["jg"] or 0) + (x["jf"] or 0)
+            if k == "=recette":
+                return (x["montant"] or 0) if x["nature"] == "Recette" else ""
+            if k == "=depense":
+                return (x["montant"] or 0) if x["nature"] != "Recette" else ""
+            if k == "=solde":
+                return x["solde"]
+            if k == "=realise":
+                return x["realise"]
+            if k == "=ecart":
+                return x["ecart"]
+            if k == "=taux":
+                return f"{x['taux']} %" if x["taux"] is not None else "—"
+            return jjmmaaaa(x[k]) if typ.get(k) == "date" else (x[k] if x[k] is not None else "")
+        cols = colonnes_excel(coll)
+        rows = [[val(x, k) for k, _l in cols] for x in ls]
+        somme = {"ecoles", "equipes", "pg", "pf", "=pt", "encadreurs", "jg", "jf", "=jt", "droit", "=recette", "=depense", "prevu", "=realise", "=ecart",
+                 "quantite", "valeur"}
+        if ls and any(k in somme for k, _l in cols):
+            rows.append(["Total" if i == 0 else (sum(r[i] or 0 for r in rows if isinstance(r[i], int)) if k in somme else "") for i, (k, _l) in enumerate(cols)])
+        return [l for _k, l in cols], rows
+
     @app.route("/uascep/bureau/<int:bid>/saison.xlsx")
     @H.connexion_requise("uascep")
     def uascep_saison_xlsx(bid):
+        """v1.25 : une feuille par registre, mêmes noms de feuilles et mêmes colonnes que le module commun (JS)."""
         b = dict(bureau(bid))
         saison = saison_de()
         ms = membres(bid)
         f = []
         for coll, d in COLL.items():
-            ls = lignes_coll(coll, bid, saison)
-            f.append((d["feuille"], [l for _k, l, _t in d["champs"]],
-                      [[jjmmaaaa(x[k]) if t == "date" else (x[k] if x[k] is not None else "") for k, _l, t in d["champs"]] for x in ls], {}))
+            ent, rows = lignes_excel(coll, bid, saison)
+            f.append((d["feuille"], ent, rows, {}))
         fi = finances(bid, saison)
-        f.append(("État financier", ["Rubrique", "Montant (FCFA)"], [["Recettes", fi["recettes"]], ["Dépenses", fi["depenses"]], ["Solde", fi["solde"]]]
+        f.append(("État financier", ["Rubrique", "Montant (F)"], [["Recettes", fi["recettes"]], ["Dépenses", fi["depenses"]], ["Solde", fi["solde"]]]
                   + [[f"{s} — {c}", v] for (s, c), v in fi["par_cat"]] + [[f"Cotisation — {e}", v] for e, v in fi["cotisations"]], {}))
         r, _e = rapport(b, saison, ms)
         f.append(("Rapport", ["Rubrique", "Texte"], [[l, r[k]] for k, l in RAPPORT_TEXTES], {}))
         nom = "rapport" if request.args.get("rapport") else "saison"
         return H.xlsx.reponse_classeur(f"uascep_{nom}_{saison}.xlsx", f)
 
+    @app.route("/uascep/bureau/<int:bid>/saison/import", methods=["POST"])
+    @H.connexion_requise("uascep")
+    def uascep_saison_import(bid):
+        """v1.25 : import du classeur de la saison (fichier d'une autre application : mêmes feuilles et colonnes).
+        Les lignes importées s'ajoutent à la saison choisie ; les colonnes calculées et la ligne « Total » sont ignorées."""
+        import outils_xlsx as X
+        b = bureau_ecrit(bid)
+        saison = saison_de()
+        fichier = request.files.get("fichier")
+        if not fichier or not fichier.filename:
+            flash("Choisissez le fichier Excel de la saison.", "warning")
+            return redirect(url_for("uascep_saison", bid=bid, saison=saison))
+        try:
+            wb = X._openpyxl().load_workbook(io.BytesIO(fichier.read()), read_only=True, data_only=True)
+        except Exception:  # noqa: BLE001
+            flash("Fichier illisible : utilisez un classeur Excel (.xlsx).", "danger")
+            return redirect(url_for("uascep_saison", bid=bid, saison=saison))
+        feuilles = {X.normaliser(ws.title): ws for ws in wb.worksheets}
+        bilan = []
+        for coll, d in COLL.items():
+            ws = feuilles.get(X.normaliser(d["feuille"])) or feuilles.get(X.normaliser(d["titre"]))
+            if ws is None:
+                continue
+            rows = [list(r) for r in ws.iter_rows(values_only=True)]
+            i0 = next((i for i, r in enumerate(rows[:15]) if r and any(X.normaliser(v) in {X.normaliser(l) for _k, l, _t in d["champs"]} for v in r if v)), None)
+            if i0 is None:
+                continue
+            ent = [X.normaliser(v) for v in rows[i0]]
+            idx = {k: (ent.index(X.normaliser(l)) if X.normaliser(l) in ent else None) for k, l, _t in d["champs"]}
+            n = 0
+            for r in rows[i0 + 1:]:
+                if not r or not any(v not in (None, "") for v in r) or X.normaliser(r[0]) == "total":
+                    continue
+                brut = {k: X.valeur(r, i) for k, i in idx.items()}
+                if coll == "caisse" and not brut.get("montant"):
+                    ir, idp = (ent.index("recette f") if "recette f" in ent else None), (ent.index("depense f") if "depense f" in ent else None)
+                    rec, dep = X.valeur(r, ir), X.valeur(r, idp)
+                    brut["montant"] = rec or dep
+                    if not brut.get("nature"):
+                        brut["nature"] = "Recette" if rec else "Dépense"
+                for k, _l, t in d["champs"]:
+                    if t == "date" and brut.get(k):
+                        brut[k] = iso(brut[k]) or brut[k]
+                v = lire_ligne(coll, brut)
+                if not v.get(d["oblig"]) and v.get(d["oblig"]) != 0:
+                    continue
+                ks = list(v)
+                ex(f"INSERT INTO uascep_{coll} (bureau_id, saison, " + ", ".join(ks) + ", maj) VALUES (?,?," + ",".join("?" * len(ks)) + ",?)",
+                   (bid, saison) + tuple(v[k] for k in ks) + (H.maintenant(),))
+                n += 1
+            if n:
+                bilan.append(f"{d['feuille']} : {n}")
+        H.journal("uascep_saison_import", f"{NIV_LIB[b['niveau']]} {b['entite']} — {saison} : " + ", ".join(bilan))
+        flash(("Import de la saison " + saison + " — " + ", ".join(bilan)) if bilan else "Aucune ligne reconnue dans le fichier.",
+              "success" if bilan else "warning")
+        return redirect(url_for("uascep_saison", bid=bid, saison=saison))
+
     @app.route("/uascep.pdf")
     @H.connexion_requise("uascep")
     def uascep_pdf():
         from reportlab.platypus import PageBreak
+        logo_autorite()
         vis = niveaux_visibles()
         niv = [request.args["niveau"]] if request.args.get("niveau") in vis else vis
         entite = request.args.get("entite") or ""
@@ -1356,6 +1500,146 @@ def enregistrer(app, H):
 
     def MPtxt(t):
         return str(t if t is not None else "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # ------------------------------------------------------------------ v1.25 : logo de l'UASCEP (par bureau / entité)
+    for col in ("logo_haut", "logo_definition", "logo_bas", "logo_c1", "logo_c2", "logo_c3", "logo_image"):
+        H.ajouter_colonne("uascep_bureaux", col, "TEXT")
+
+    def logo_de(niveau, entite, lib=None):
+        """(paramètres du logo, image importée (data URL) ou None) de l'entité : bureau actif, sinon valeurs par défaut."""
+        import logo_uascep as LG
+        b = bureau_actif(niveau, entite) if niveau in NIV_LIB else None
+        lib = lib or (b["entite_lib"] if b else None) or next((l for k, l, _i in entites(niveau) if k == entite), entite)
+        d = {"bas": LG.texte_bas(niveau, lib)}
+        img = None
+        if b:
+            b = dict(b)
+            for k in ("haut", "definition", "bas", "c1", "c2", "c3"):
+                if b.get("logo_" + k):
+                    d[k] = b["logo_" + k]
+            img = b.get("logo_image") or None
+        return LG.params(d), img
+
+    def logo_flowable(niveau, entite, lib=None, taille=60):
+        import logo_uascep as LG
+        import pdfs
+        p, img = logo_de(niveau, entite, lib)
+        return LG.flowable(p, taille, pdfs.image_data_url(img) if img else None)
+
+    def bandeau_logo(niveau, entite, lib, largeur, taille=46):
+        """Bandeau « logo + Union des associations… — UASCEP — niveau : entité » placé sous l'en-tête officiel."""
+        import logo_uascep as LG
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.platypus import Paragraph, Table, TableStyle
+        p, _img = logo_de(niveau, entite, lib)
+        lib = lib or next((l for k, l, _i in entites(niveau) if k == entite), entite)
+        st = ParagraphStyle("bl", fontName="Helvetica-Bold", fontSize=9.5, leading=12)
+        txt = Paragraph(f"{MPtxt(p['definition'].upper())} — {MPtxt(p['haut'])}<br/><font size='8.5' color='#475467'>"
+                        f"{MPtxt(NIV_LIB.get(niveau, niveau))} : {MPtxt(lib)}</font>", st)
+        t = Table([[logo_flowable(niveau, entite, lib, taille), txt]], colWidths=[taille + 8, largeur - taille - 8])
+        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        _ = LG
+        return t
+
+    @app.route("/uascep/logo/<niveau>/<path:entite>", methods=["GET", "POST"])
+    @H.connexion_requise("uascep")
+    def uascep_logo(niveau, entite):
+        """Réglage du logo de l'entité (texte du haut, définition, texte du bas, couleurs) ou logo importé ; aperçu ; SVG / PNG."""
+        import logo_uascep as LG
+        if niveau not in niveaux_visibles():
+            abort(404)
+        lib = next((l for k, l, _i in entites(niveau) if k == entite), entite)
+        if request.method == "POST":
+            exiger_ecriture(niveau)
+            b = bureau_actif(niveau, entite, creer=True, lib=lib)
+            f = request.form
+            if f.get("reinitialiser"):
+                ex("UPDATE uascep_bureaux SET logo_haut=NULL, logo_definition=NULL, logo_bas=NULL, logo_c1=NULL, logo_c2=NULL, logo_c3=NULL, "
+                   "logo_image=NULL, maj=? WHERE id=?", (H.maintenant(), b["id"]))
+                flash("Logo réinitialisé (dessin par défaut).", "success")
+                return redirect(url_for("uascep_logo", niveau=niveau, entite=entite))
+            d = {k: (f.get(k) or "").strip()[:200] for k in ("haut", "definition", "bas")}
+            for k in ("c1", "c2", "c3"):
+                v = (f.get(k) or "").strip()
+                d[k] = v if re.fullmatch(r"#[0-9A-Fa-f]{6}", v) else ""
+            img = b["logo_image"] if "logo_image" in b.keys() else None
+            try:
+                nouv = lire_image(request.files.get("logo_fichier"))
+            except ValueError as e:
+                flash(str(e), "danger")
+                return redirect(url_for("uascep_logo", niveau=niveau, entite=entite))
+            if nouv:
+                img = nouv
+            if f.get("retirer_image"):
+                img = None
+            ex("UPDATE uascep_bureaux SET logo_haut=?, logo_definition=?, logo_bas=?, logo_c1=?, logo_c2=?, logo_c3=?, logo_image=?, maj=? WHERE id=?",
+               (d["haut"] or None, d["definition"] or None, d["bas"] or None, d["c1"] or None, d["c2"] or None, d["c3"] or None, img,
+                H.maintenant(), b["id"]))
+            H.journal("uascep_logo", f"{NIV_LIB[niveau]} {entite}")
+            flash("Logo enregistré.", "success")
+            return redirect(url_for("uascep_logo", niveau=niveau, entite=entite))
+        p, img = logo_de(niveau, entite, lib)
+        return render_template("uascep_logo.html", niveau=niveau, entite=entite, lib=lib, p=p, img=img, NIV_LIB=NIV_LIB, svg=LG.svg(p, 260),
+                               peut_ecrire=niveau in niveaux_ecriture(), defaut=LG.DEFAUT, bas_defaut=LG.texte_bas(niveau, lib))
+
+    @app.route("/uascep/logo/<niveau>/<path:entite>.<fmt>")
+    @H.connexion_requise("uascep")
+    def uascep_logo_fichier(niveau, entite, fmt):
+        import logo_uascep as LG
+        from flask import Response
+        if niveau not in niveaux_visibles() or fmt not in ("svg", "png"):
+            abort(404)
+        p, img = logo_de(niveau, entite)
+        nom = re.sub(r"[^A-Za-z0-9]+", "_", f"logo_uascep_{niveau}_{entite}")
+        if fmt == "svg":
+            return Response(LG.svg(p, 800), mimetype="image/svg+xml", headers={"Content-Disposition": f"attachment; filename={nom}.svg"})
+        if img and request.args.get("importe"):
+            import base64
+            return Response(base64.b64decode(img.split(",", 1)[1]), mimetype=img[5:img.index(";")])
+        taille = max(64, min(1600, request.args.get("taille", type=int) or 800))
+        return Response(LG.png(p, taille), mimetype="image/png", headers={"Content-Disposition": f"attachment; filename={nom}.png"})
+
+    # ------------------------------------------------------------------ v1.25 : services offerts aux autres modules
+    # (sport scolaire : entités, bureaux, signataires ; les résultats des compétitions alimentent le journal de la saison)
+    H.ajouter_colonne("uascep_activites", "source", "TEXT")
+
+    def publier_activite(niveau, entite, lib, source, d, saison=None):
+        """Crée ou met à jour la ligne du journal de la saison du bureau actif (créé au besoin) ; d : rubriques de COLL['activites']."""
+        b = bureau_actif(niveau, entite, creer=True, lib=lib)
+        saison = saison or config.ANNEE_ACTIVE
+        d = {k: v for k, v in d.items() if k in {c for c, _l, _t in COLL["activites"]["champs"]}}
+        r = q("SELECT id FROM uascep_activites WHERE bureau_id=? AND saison=? AND source=?", (b["id"], saison, source), un=True)
+        ks = list(d)
+        if r:
+            ex("UPDATE uascep_activites SET " + ", ".join(f"{k}=?" for k in ks) + ", maj=? WHERE id=?", tuple(d[k] for k in ks) + (H.maintenant(), r["id"]))
+            return r["id"]
+        return ex("INSERT INTO uascep_activites (bureau_id, saison, source, " + ", ".join(ks) + ", maj) VALUES (?,?,?," + ",".join("?" * len(ks)) + ",?)",
+                  (b["id"], saison, source) + tuple(d[k] for k in ks) + (H.maintenant(),))
+
+    def signataires_entite(niveau, entite, roles=("P",)):
+        """Signatures (cachets) des responsables du bureau actif de l'entité : P, SG, T, R, CC, S (responsable sport), V (visa)."""
+        b = bureau_actif(niveau, entite)
+        if not b:
+            pseudo = {"niveau": niveau, "entite": entite}
+            return [visa(pseudo)] if "V" in roles else []
+        b = dict(b)
+        ms = membres(b["id"])
+        out = []
+        for r in roles:
+            if r == "S":
+                m = par_fonction(ms, "responsable sport")
+                if m:
+                    out.append(signataire(m, b, "Le / La Responsable sport"))
+            else:
+                out += sigs_saison(b, ms, [r])
+        return out
+
+    import types as _types
+    H.uascep = _types.SimpleNamespace(NIVEAUX=NIVEAUX, NIV_LIB=NIV_LIB, DISCIPLINES=DISCIPLINES, CATEGORIES=CATEGORIES, entites=entites,
+                                      niveaux_visibles=niveaux_visibles, niveaux_ecriture=niveaux_ecriture, bureau_actif=bureau_actif,
+                                      membres=membres, publier_activite=publier_activite, signataires_entite=signataires_entite,
+                                      visa=visa, juridiction=juridiction, logo_de=logo_de, logo_flowable=logo_flowable,
+                                      bandeau_logo=bandeau_logo)
 
 
 def dessiner_cachet(c, ca, cx, cy, rayon):

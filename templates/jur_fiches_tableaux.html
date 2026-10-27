@@ -3,12 +3,12 @@
 {% block contenu %}
 {{ F.style() }}
 {% set args = f.to_dict() %}
-<div class="entete"><div><h1>📊 Tableaux globaux des fiches</h1>
+<div class="entete"><div><h1>{{ icone('graphique') }} Tableaux globaux des fiches</h1>
   <p class="sous">{{ FICHES[fiche][3] }} · année {{ annee }} · une colonne par {{ lib_g|lower }} et le total · {{ tot_recues }} fiche(s) reçue(s) sur {{ tot_attendues }} attendue(s)</p></div>
   <div class="actions">
     <a class="btn sec petit" href="{{ url_for('jur_fiches_synthese', fiche=fiche, annee=annee) }}">Fiche consolidée (PDF officiel)</a>
     <a class="btn sec" href="{{ url_for('jur_fiches_tableaux', **dict(args, format='xlsx', fiche=fiche, annee=annee)) }}">⇩ Excel (toutes les rubriques)</a>
-    <button class="btn sec" type="button" onclick="window.print()">🖶 Imprimer</button></div></div>
+    <button class="btn sec" type="button" onclick="window.print()">{{ icone('imprimer') }} Imprimer</button></div></div>
 <nav class="onglets" aria-label="Fiches">{% for c, i in FICHES.items() %}<a href="{{ url_for('jur_fiches_tableaux', **dict(args, fiche=c, rubrique='', format='')) }}" class="{{ 'actif' if c == fiche }}">{{ i[4] }}</a>{% endfor %}</nav>
 <form method="get" class="filtres noprint"><input type="hidden" name="fiche" value="{{ fiche }}">
   <label>Année<br><select name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a == annee }}>{{ a }}</option>{% endfor %}</select></label>

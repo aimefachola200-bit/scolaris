@@ -42,7 +42,7 @@
   <div><h1>Carte scolaire du candidat</h1>
   <p class="sous">Format carte (85,6 × 54 mm) recto-verso · planche A4 de 10 cartes pour toute la classe · QR code de vérification</p></div>
   {% if cl %}<div class="actions">
-    <a class="btn sec" href="{{ url_for('carte_planche', cid=cl.id) }}" target="_blank" rel="noopener">🗂 Planche A4 – toute la classe</a>
+    <a class="btn sec" href="{{ url_for('carte_planche', cid=cl.id) }}" target="_blank" rel="noopener">{{ icone('classeur') }} Planche A4 – toute la classe</a>
   </div>{% endif %}
 </div>
 
@@ -63,11 +63,11 @@
 <form method="post" action="{{ url_for('carte_enregistrer', eid=e.id) }}" id="f-carte" class="ca-form" autocomplete="off"
       data-defaut='{{ defaut_json }}' data-donnees="{{ url_for('carte_donnees', eid=e.id) }}">
   {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
-    <button class="btn vert petit">💾 Enregistrer</button>
-    <button type="button" class="btn sec petit" id="ca-charger" title="Recharger les valeurs enregistrées">📂 Charger</button>
-    <button class="btn sec petit" formaction="{{ url_for('carte_pdf', eid=e.id) }}" formtarget="_blank" title="PDF avec les valeurs affichées (même non enregistrées)">📄 Télécharger PDF</button>
+    <button class="btn vert petit">{{ icone('enregistrer') }} Enregistrer</button>
+    <button type="button" class="btn sec petit" id="ca-charger" title="Recharger les valeurs enregistrées">{{ icone('dossier') }} Charger</button>
+    <button class="btn sec petit" formaction="{{ url_for('carte_pdf', eid=e.id) }}" formtarget="_blank" title="PDF avec les valeurs affichées (même non enregistrées)">{{ icone('document') }} Télécharger PDF</button>
     <button type="button" class="btn sec petit" id="ca-reinit" title="Remettre les données de l'inscription et de l'école dans le formulaire">↺ Réinitialiser</button>
-    <button class="btn danger petit" type="submit" form="f-carte-suppr" title="Effacer la carte enregistrée de cet élève (l'élève reste inscrit)">🗑 Supprimer la carte</button>
+    <button class="btn danger petit" type="submit" form="f-carte-suppr" title="Effacer la carte enregistrée de cet élève (l'élève reste inscrit)">{{ icone('supprimer') }} Supprimer la carte</button>
     <label class="aide" style="font-size:12px"><input type="checkbox" name="photo" value="1" form="f-carte-suppr"> avec la photo</label>
   {% endcall %}
 

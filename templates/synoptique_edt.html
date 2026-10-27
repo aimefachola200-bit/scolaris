@@ -11,7 +11,7 @@
   <div><h2 style="margin:0">Emploi du temps — {{ lib }}</h2>
     <p class="sous">{% if d.officiel %}Emploi du temps officiel (non modifié){% else %}Modifié le {{ d.maj }}{% endif %}</p></div>
   <div class="actions">
-    {% if ecrire %}<a class="btn" href="{{ url_for('synoptique_edt_form', niveau=niveau) }}">✎ Modifier</a>
+    {% if ecrire %}<a class="btn" href="{{ url_for('synoptique_edt_form', niveau=niveau) }}">{{ icone('modifier') }} Modifier</a>
     <form method="post" action="{{ url_for('synoptique_edt_reinit', niveau=niveau) }}" style="display:inline" onsubmit="return confirm('Remplacer cet emploi du temps par l&#39;emploi du temps officiel ?')"><button class="btn sec">Réinitialiser (emploi du temps officiel)</button></form>{% endif %}
     <a class="btn sec" href="{{ url_for('synoptique_edt_pdf', niveau=niveau) }}" target="_blank">PDF</a>
     <a class="btn sec" href="{{ url_for('synoptique_edt_xlsx', niveau=niveau) }}">Excel</a>

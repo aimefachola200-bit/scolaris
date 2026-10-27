@@ -7,7 +7,7 @@
 {% if code %}
   {% if doc and not doc.annule %}
   <div class="carte" style="border-color:#ABEFC6">
-    <h2 style="margin-top:0" class="vert">✔ Document authentique</h2>
+    <h2 style="margin-top:0" class="vert">{{ icone('coche') }} Document authentique</h2>
     <dl class="info">
       <dt>Type</dt><dd>{{ TYPES_DOCS.get(doc.type, doc.type) }}</dd>
       <dt>Objet</dt><dd>{{ doc.libelle }}</dd>

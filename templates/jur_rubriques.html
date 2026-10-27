@@ -7,10 +7,10 @@
 {% macro f(v, d=2) %}{{ (('%.' ~ d ~ 'f')|format(v))|replace('.', ',')|replace(',00', '') if v is not none else '–' }}{% endmacro %}
 {% macro cel(c) %}{% if c is none %}<td class="num">–</td>{% else %}<td class="num">{{ c[0] }}<small class="gris">/{{ c[1] }}</small> <small>({{ f(c[2], 1) }} %)</small></td>{% endif %}{% endmacro %}
 
-<div class="entete"><div><h1>📑 Rubriques des fiches, consolidées</h1>
+<div class="entete"><div><h1>{{ icone('classeur') }} Rubriques des fiches, consolidées</h1>
   <p class="sous">{{ FICHES[fiche][3] }} · secteur {{ 'privé' if sect == 'prive' else 'public' }} · année scolaire {{ flt.annee }} · par {{ lib|lower }} · {{ tot.fiches }} fiche(s) reçue(s) sur {{ tot.ecoles }} école(s)</p></div>
   <div class="actions"><a class="btn sec" href="{{ url_for('jur_rubriques', export='xlsx', **args) }}">⇩ Excel (toutes les rubriques)</a>
-    <button class="btn sec" type="button" onclick="document.querySelectorAll('.rb details').forEach(d => d.open = true); window.print()">🖶 Imprimer</button></div></div>
+    <button class="btn sec" type="button" onclick="document.querySelectorAll('.rb details').forEach(d => d.open = true); window.print()">{{ icone('imprimer') }} Imprimer</button></div></div>
 {{ T.filtres(flt, 'jur_rubriques', extra={'par': par, 'fiche': fiche, 'sect': sect}) }}
 <div class="actions noprint" style="margin:-4px 0 6px">Fiche :
   {% for k, x in FICHES.items() %}<a class="btn petit {{ '' if fiche == k else 'sec' }}" href="{{ url_for('jur_rubriques', **dict(args_f, fiche=k)) }}">{{ x[3] }}</a>{% endfor %}</div>

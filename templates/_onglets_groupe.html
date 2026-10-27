@@ -1,0 +1,5 @@
+{# v1.25 — onglets d'un module du moteur des registres (pages propres + registres) #}
+{% set _actif = ep_actif if ep_actif is defined else request.endpoint %}
+<nav class="onglets" aria-label="{{ G.titre }}">
+{% for u, t, e in G.onglets() %}<a class="{{ 'actif' if e == _actif }}" href="{{ u }}">{{ t }}</a>{% endfor %}
+</nav>

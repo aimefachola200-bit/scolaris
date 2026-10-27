@@ -31,7 +31,7 @@
     <td><input name="q_{{ v.id }}" inputmode="decimal" style="max-width:120px" placeholder="0"></td></tr>
   {% else %}<tr><td colspan="3" class="aide">Aucun vivre actif.</td></tr>{% endfor %}
   </tbody></table></div>
-  <p class="actions" style="margin-top:12px"><button class="btn vert">💾 Enregistrer la sortie du jour</button></p>
+  <p class="actions" style="margin-top:12px"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer la sortie du jour</button></p>
   <p class="aide">Laissez vide les vivres non utilisés. Chaque quantité devient un mouvement « Sortie » daté du jour, avec le nombre de rationnaires (utilisé pour la consommation moyenne par rationnaire).</p>
 </form>
 {% endblock %}

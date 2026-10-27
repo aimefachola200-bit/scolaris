@@ -5,18 +5,18 @@
 {% set e = tot.ens %}{% set cp = tot.cep %}
 <div class="entete"><div><h1>Tableau de bord {{ 'de la circonscription' if JUR_NIVEAU == 'cs' else 'départemental' }}</h1>
   <p class="sous">{{ JUR.nom or NOM_APPLI }} · année scolaire {{ flt.annee }}{% if JUR_NIVEAU == 'ddemp' %} · regroupement par {{ lib_groupe|lower }}{% endif %}</p></div>
-  <div class="actions"><a class="btn sec" href="{{ url_for('jur_stats_ecoles', **args) }}">📊 Statistiques détaillées</a>
-    <button class="btn sec" type="button" onclick="window.print()">🖶 Imprimer</button></div></div>
+  <div class="actions"><a class="btn sec" href="{{ url_for('jur_stats_ecoles', **args) }}">{{ icone('graphique') }} Statistiques détaillées</a>
+    <button class="btn sec" type="button" onclick="window.print()">{{ icone('imprimer') }} Imprimer</button></div></div>
 {{ T.filtres(flt, 'jur_tableau', zone=False, type_=False, secteur=False) }}
 {% set rac = raccourcis() %}
 {% if rac %}<div class="raccourcis noprint" aria-label="Actions principales">
-  {% for r in rac %}<a href="{{ r.url }}"><span class="ico" aria-hidden="true">{{ r.ico }}</span><b>{{ r.titre }}</b><span class="d">{{ r.d }}</span></a>{% endfor %}
+  {% for r in rac %}<a href="{{ r.url }}"><span class="ico" aria-hidden="true">{{ icone(r.ico, 22) }}</span><b>{{ r.titre }}</b><span class="d">{{ r.d }}</span></a>{% endfor %}
 </div>{% endif %}
 {% set AP = alertes_pilotage() if ep_existe('jur_alertes') else none %}
 {% if AP and (AP.haute or AP.moyenne or AP.info) %}
-<div class="carte noprint"><h2 style="margin-top:0">🚨 Alertes de pilotage
+<div class="carte noprint"><h2 style="margin-top:0">{{ icone('alerte') }} Alertes de pilotage
   <small>{% if AP.haute %}<span class="puce ko">{{ AP.haute }} urgente(s)</span>{% endif %} {% if AP.moyenne %}<span class="puce moy">{{ AP.moyenne }} à traiter</span>{% endif %} {% if AP.info %}<span class="puce na">{{ AP.info }} pour information</span>{% endif %}</small></h2>
-  {% for a in AP.premieres %}<div class="alerte-l {{ a.niveau }}"><span class="ico" aria-hidden="true">{{ a.ico }}</span><div><b>{{ a.titre }}</b><div class="gris" style="font-size:13px">{{ a.detail }}</div></div></div>{% endfor %}
+  {% for a in AP.premieres %}<div class="alerte-l {{ a.niveau }}"><span class="ico" aria-hidden="true">{{ icone(a.ico, 20) }}</span><div><b>{{ a.titre }}</b><div class="gris" style="font-size:13px">{{ a.detail }}</div></div></div>{% endfor %}
   <a class="btn petit" href="{{ url_for('jur_alertes', annee=flt.annee, cs=flt.cs_id if JUR_NIVEAU == 'ddemp' else none) }}">Voir toutes les alertes</a>
 </div>{% endif %}
 
@@ -60,7 +60,7 @@
   <div class="actions" style="margin-bottom:8px">
     <a class="btn sec petit" href="{{ url_for('jur_classes', **args) }}">Détail par école</a>
     <a class="btn sec petit" href="{{ url_for('jur_classes_xlsx', **args) }}">⇩ Excel</a>
-    <a class="btn sec petit" href="{{ url_for('jur_classes_pdf', **args) }}" target="_blank">📄 PDF</a>
+    <a class="btn sec petit" href="{{ url_for('jur_classes_pdf', **args) }}" target="_blank">{{ icone('document') }} PDF</a>
   </div>
   {% if classes.total.total or classes.lignes %}
   <div class="tw"><table class="t serre">
@@ -167,17 +167,17 @@
 {# ---------------------------------------------------------------- 6. alertes #}
 <div class="carte"><h2>6. Alertes</h2>
   <div class="deux">
-    <div><h3>⚠ Écoles sans transmission ({{ alertes.sans_transmission|length }})</h3>
+    <div><h3>{{ icone('attention') }} Écoles sans transmission ({{ alertes.sans_transmission|length }})</h3>
       {% if alertes.sans_transmission %}<ul class="alerte-liste">{% for l in alertes.sans_transmission[:40] %}<li><a href="{{ url_for('jur_ecole_fiche', eid=l.id) }}">{{ l.nom }}</a> <span class="aide">{{ l.cs_nom if JUR_NIVEAU == 'ddemp' else l.zone_nom }}{% if l.directeur_nom %} · {{ l.directeur_nom }}{% endif %}</span></li>{% endfor %}
         {% if alertes.sans_transmission|length > 40 %}<li class="aide">… et {{ alertes.sans_transmission|length - 40 }} autre(s)</li>{% endif %}</ul>
       {% else %}<p><span class="badge ok">✓ Toutes les écoles ont transmis</span></p>{% endif %}</div>
-    <div><h3>⚠ Écoles sans enseignant pour une classe ({{ alertes.sans_enseignant|length }})</h3>
+    <div><h3>{{ icone('attention') }} Écoles sans enseignant pour une classe ({{ alertes.sans_enseignant|length }})</h3>
       {% if alertes.sans_enseignant %}<ul class="alerte-liste">{% for l in alertes.sans_enseignant %}<li><a href="{{ url_for('jur_ecole_fiche', eid=l.id) }}">{{ l.nom }}</a> : {{ l.besoin.classes }} classe(s), {{ l.besoin.enseignants }} enseignant(s) — <b class="rouge">manque {{ l.besoin.manque }}</b></li>{% endfor %}</ul>
       {% else %}<p><span class="badge ok">✓ Chaque classe a son enseignant</span></p>{% endif %}</div>
-    <div><h3>⚠ Écoles ayant des classes pléthoriques ({{ alertes.plethoriques|length }})</h3>
+    <div><h3>{{ icone('attention') }} Écoles ayant des classes pléthoriques ({{ alertes.plethoriques|length }})</h3>
       {% if alertes.plethoriques %}<ul class="alerte-liste">{% for l in alertes.plethoriques %}<li>{{ l.nom }} : {{ l.plethoriques }} classe(s) de plus de {{ l.seuil }} élèves</li>{% endfor %}</ul>
       {% else %}<p><span class="badge ok">✓ Aucune classe pléthorique</span></p>{% endif %}</div>
-    <div><h3>⏳ Départs à la retraite dans les 2 ans ({{ alertes.retraites|length }})</h3>
+    <div><h3>{{ icone('sablier') }} Départs à la retraite dans les 2 ans ({{ alertes.retraites|length }})</h3>
       {% if alertes.retraites %}<div class="tw"><table class="t serre"><tr><th>Agent</th><th>Grade</th><th>Poste</th><th>Départ</th></tr>
         {% for r in alertes.retraites[:15] %}<tr><td>{% if r.cle and ep_existe('jur_personnel_fiche') %}<a href="{{ url_for('jur_personnel_fiche', cle=r.cle) }}">{{ r.nom }}</a>{% else %}{{ r.nom }}{% endif %}</td><td>{{ r.grade }}</td><td>{{ r.ecole }}{% if JUR_NIVEAU == 'ddemp' and r.cs_nom %}<br><span class="aide">{{ r.cs_nom }}</span>{% endif %}</td>
           <td>{{ r.depart }}{% if r.depasse %} <span class="badge ko">âge atteint</span>{% elif r.restant %}<br><span class="aide">{{ r.restant }}</span>{% endif %}</td></tr>{% endfor %}</table></div>

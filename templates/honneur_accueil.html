@@ -15,9 +15,9 @@
 <form method="get" action="{{ url_for('honneur_accueil') }}" data-doc="{{ cle_entete }}">
   <input type="hidden" name="classe" value="{{ cl.id }}">
   {% call M.barre_doc() %}
-    <button class="btn sec petit">🔎 Afficher la liste</button>
-    <button class="btn petit" formaction="{{ url_for('honneur_pdf') }}" formtarget="_blank">📄 Tableau d'honneur (PDF)</button>
-    <button class="btn vert petit" formaction="{{ url_for('honneur_certificats') }}" formtarget="_blank" {{ 'disabled' if not retenus }}>🎓 Certificats de tous les retenus (PDF)</button>
+    <button class="btn sec petit">{{ icone('rechercher') }} Afficher la liste</button>
+    <button class="btn petit" formaction="{{ url_for('honneur_pdf') }}" formtarget="_blank">{{ icone('document') }} Tableau d'honneur (PDF)</button>
+    <button class="btn vert petit" formaction="{{ url_for('honneur_certificats') }}" formtarget="_blank" {{ 'disabled' if not retenus }}>{{ icone('diplome') }} Certificats de tous les retenus (PDF)</button>
   {% endcall %}
   <div class="carte">
     <div class="grille-id">
@@ -57,7 +57,7 @@
   {% for c in retenus %}
     <tr><td><b>{{ c.rang_txt }}</b></td><td><b>{{ c.eleve.nom }}</b> {{ c.eleve.prenoms }}</td><td class="c">{{ c.eleve.sexe }}</td>
       <td class="num"><b>{{ c.moyenne|res_nb }}</b></td><td>{{ c.mention }}</td><td class="aide">{{ c.detail }}</td>
-      <td><a class="btn sec petit" target="_blank" href="{{ url_for('honneur_certificats', classe=cl.id, ev=choix, seuil=seuil if seuil is not none else '', n=n or '', eleve=c.eleve.id, modele=modele) }}">🎓 {{ 'Diplôme' if modele == 'diplome' else 'Certificat' }}</a></td></tr>
+      <td><a class="btn sec petit" target="_blank" href="{{ url_for('honneur_certificats', classe=cl.id, ev=choix, seuil=seuil if seuil is not none else '', n=n or '', eleve=c.eleve.id, modele=modele) }}">{{ icone('diplome') }} {{ 'Diplôme' if modele == 'diplome' else 'Certificat' }}</a></td></tr>
   {% else %}
     <tr><td colspan="7" class="gris">Aucun élève ne remplit les critères retenus{% if nb_ok %} : baissez la moyenne minimale ou augmentez le nombre de lauréats{% else %} (notes non saisies ou aucune réussite){% endif %}.</td></tr>
   {% endfor %}

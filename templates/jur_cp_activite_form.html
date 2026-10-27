@@ -30,6 +30,6 @@
   <label for="obs">Observations / résultats</label>
   <textarea id="obs" name="observations" rows="3" style="width:100%">{{ v.observations or '' }}</textarea>
   <p class="aide">« Toute la CS » convient aux séances d'UP, formations et concertations qui réunissent le CCS et tous les CP : elles comptent alors pour chaque ligne du bilan (et une seule fois au total).</p>
-  <div class="actions"><button class="btn vert">💾 Enregistrer</button>{% if not a %}<button class="btn sec" name="suite" value="nouvelle">💾 Enregistrer et ajouter une autre</button>{% endif %}</div>
+  <div class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button>{% if not a %}<button class="btn sec" name="suite" value="nouvelle">{{ icone('enregistrer') }} Enregistrer et ajouter une autre</button>{% endif %}</div>
 </form>
 {% endblock %}

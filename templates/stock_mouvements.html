@@ -5,14 +5,14 @@
   <p class="sous">Entrées, sorties, pertes et inventaires — année scolaire {{ annee }}</p></div>
   <div class="actions">
     {% if modifiable %}
-    <a class="btn vert petit" href="{{ url_for('stock_mouvement', mid=0, type='entree') }}">⬆ Entrée</a>
-    <a class="btn orange petit" href="{{ url_for('stock_mouvement', mid=0, type='sortie') }}">⬇ Sortie</a>
+    <a class="btn vert petit" href="{{ url_for('stock_mouvement', mid=0, type='entree') }}">{{ icone('importer') }} Entrée</a>
+    <a class="btn orange petit" href="{{ url_for('stock_mouvement', mid=0, type='sortie') }}">{{ icone('telecharger') }} Sortie</a>
     <a class="btn danger petit" href="{{ url_for('stock_mouvement', mid=0, type='perte') }}">Perte</a>
     <a class="btn sec petit" href="{{ url_for('stock_mouvement', mid=0, type='inventaire') }}">Inventaire</a>
     <a class="btn sec petit" href="{{ url_for('stock_sortie_jour') }}">Sortie du jour</a>
     {% endif %}
-    <a class="btn sec petit" target="_blank" href="{{ url_for('stock_mouvements_pdf', annee=annee, vivre=f.vivre, type=f.type, du=f.du, au=f.au) }}">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('stock_mouvements_xlsx', annee=annee, vivre=f.vivre, type=f.type, du=f.du, au=f.au) }}">⬇ Excel</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('stock_mouvements_pdf', annee=annee, vivre=f.vivre, type=f.type, du=f.du, au=f.au) }}">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('stock_mouvements_xlsx', annee=annee, vivre=f.vivre, type=f.type, du=f.du, au=f.au) }}">{{ icone('telecharger') }} Excel</a>
   </div>
 </div>
 {% include "stock_onglets.html" %}

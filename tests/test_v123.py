@@ -139,7 +139,7 @@ class TestFichiers(unittest.TestCase):
             for m in MATS:
                 self.assertGreaterEqual(tab.get((co, m), 0), 1, (co, m))
         lot = c["lots"]["v123-resumes"]
-        self.assertEqual(lot["total"], len(c["resumes"]))
+        self.assertLessEqual(lot["total"], len(c["resumes"]))   # v1.25 : résumés ajoutés depuis (lot v125-resumes)
         ids = [r["id"] for r in c["resumes"]]
         self.assertEqual(len(ids), len(set(ids)))
         brut = json.dumps(c["resumes"], ensure_ascii=False)

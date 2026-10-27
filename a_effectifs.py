@@ -382,7 +382,7 @@ def _t(s):
     return str(escape(str(s)))
 
 
-TYPES_GRAPHIQUE = [("ligne", "📈 Courbe"), ("barres", "📊 Histogramme"), ("empilees", "▤ Barres empilées"),
+TYPES_GRAPHIQUE = [("ligne", "Courbe"), ("barres", "Histogramme"), ("empilees", "▤ Barres empilées"),
                    ("aire", "◭ Aires"), ("points", "⁘ Points")]
 
 

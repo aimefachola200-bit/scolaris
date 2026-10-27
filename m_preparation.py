@@ -194,7 +194,7 @@ def refs_de_la_semaine(refs, matiere, jour):
 
 # ---------------------------------------------------------------- texte : HTML et PDF
 def txt_html(t):
-    """Texte de fiche (« **gras** », sauts de ligne, ▪) -> HTML échappé."""
+    """Texte de fiche (« **gras** », sauts de ligne, puces) -> HTML échappé."""
     s = _html.escape(str(t or ""))
     s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s, flags=re.S)
     return s.replace("\n", "<br>")
@@ -202,7 +202,7 @@ def txt_html(t):
 
 def txt_pdf(t):
     s = str(t or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    s = s.replace("▪", "•").replace("\u25aa", "•").replace("\u2610", "□")   # glyphes absents de Helvetica
+    s = s.replace("\u25aa", "•").replace("\u2610", "□")   # glyphes absents de Helvetica
     s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s, flags=re.S)
     return s.replace("\n", "<br/>")
 
@@ -315,31 +315,128 @@ def _num_fiche(f):
     return int(m.group(1)) if m else None
 
 
+OUTILS_FR = ["Sons et graphies", "Structures de la langue", "Grammaire", "Conjugaison", "Orthographe", "Vocabulaire", "Lecture",
+             "Expression écrite", "Écriture", "Communication orale"]
+DOMAINES_MA = ["Numération et arithmétique", "Mesures", "Géométrie", "Résolution de problèmes"]
+MOIS_SCO = ["Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin"]
+
+
+def table_domaines(rs):
+    """v1.25 — nombre de résumés par cours × matière × domaine (Français : outils de la langue ; Mathématiques : domaines)."""
+    t = {}
+    for r in rs:
+        if r["matiere"] in ("francais", "maths"):
+            k = (r["cours"], r["matiere"], r["domaine"])
+            t[k] = t.get(k, 0) + 1
+    return t
+
+
+def ordre_resume(r):
+    """Clé d'ordre de la progression : mois scolaire, puis unité / dossier / SA / leçon, puis séance."""
+    o = r.get("ordre") or [99]
+    return (list(o) + [0, 0, 0])[:3] + [r["matiere"], (OUTILS_FR + DOMAINES_MA).index(r["domaine"]) if r["domaine"] in OUTILS_FR + DOMAINES_MA else 99, r["titre"]]
+
+
+def _cles_fiche(f):
+    """Repères d'une fiche pour la retrouver dans les ancres des résumés."""
+    u = str(f.get("unite") or "")
+    out = set()
+    m = re.search(r"(\d+)", u)
+    n = int(m.group(1)) if m else None
+    if f.get("matiere") == "francais":
+        if re.match(r"(?i)le[çc]on", u) and n:
+            out.add(("lecon", n))
+        elif n:
+            out.add(("unite", n))
+    elif f.get("matiere") == "maths":
+        sa = f.get("sa") if isinstance(f.get("sa"), int) else None
+        if "DOSSIER" in u.upper() and n:
+            out.add(("dossier", n, sa) if sa else ("dossier", n))
+        elif sa:
+            out.add(("sa", sa))
+        elif n and "SA" in u.upper():
+            out.add(("sa", n))
+    num = _num_fiche(f)
+    if num and not out:
+        out.add(("num", num))
+    return out
+
+
+def _cles_resume(r):
+    out = set()
+    for a in r.get("ancres") or []:
+        t = a.get("type")
+        if t == "unite":
+            out.add(("unite", a["unite"]))
+        elif t == "lecon":
+            out.add(("lecon", a["lecon"]))
+        elif t == "dossier":
+            out.add(("dossier", a["dossier"], a["sa"]))
+            out.add(("dossier", a["dossier"]))
+        elif t == "sa":
+            out.add(("sa", a["sa"]))
+    for n in r.get("sa") or []:
+        out.add(("num", n))
+    return out
+
+
 def resumes_semaine(cours, fiches_par_mat):
-    """v1.23 — résumés « l'essentiel à retenir » qui accompagnent les fiches d'une semaine : même cours, même matière,
-    même SA / unité (champ « sa » du résumé) et, si le résumé en porte, une sous-matière concordante (« mots_cles »)."""
+    """v1.23 / v1.25 — résumés « l'essentiel à retenir » qui accompagnent les fiches d'une semaine (ou d'un jour) : même cours,
+    même matière, même repère de progression (unité, leçon, dossier et SA, SA) ; en français, l'outil de la langue du résumé
+    doit correspondre à une sous-matière des fiches (grammaire, conjugaison…) quand les fiches en indiquent une."""
     out = {}
     rs = [r for r in corpus().get("resumes") or [] if r["cours"] == cours and r.get("collection") != "Révision CEP"]
     for mat, fiches in fiches_par_mat.items():
         if not fiches:
             continue
-        nums = {_num_fiche(f) for f in fiches} - {None}
+        cles = set()
+        for f in fiches:
+            cles |= _cles_fiche(f)
         sous = " | ".join((f.get("sous_matiere") or "").lower() for f in fiches).strip(" |")
         liste = []
         for r in rs:
             if r["matiere"] != mat:
                 continue
-            sa, mc = r.get("sa") or [], r.get("mots_cles") or []
-            mc_ok = any(k in sous for k in mc)
-            if sa:
-                if not set(sa) & nums or (mc and sous and not mc_ok):
-                    continue
-            elif not mc_ok:
+            rc = _cles_resume(r)
+            if not rc:
+                mc = r.get("mots_cles") or []
+                if mc and any(k in sous for k in mc):
+                    liste.append(r)
                 continue
+            if not rc & cles:
+                continue
+            outil = (r.get("outil") or "").lower()
+            if mat == "francais" and outil and sous and outil.split()[0][:6] not in sous and outil not in ("sons et graphies",):
+                if any(o.lower().split()[0][:6] in sous for o in OUTILS_FR):
+                    continue
             liste.append(r)
         if liste:
-            out[mat] = liste
+            out[mat] = sorted(liste, key=ordre_resume)
     return out
+
+
+def resumes_mois(cours, mois_lib):
+    """v1.25 — résumés de Français et de Mathématiques placés dans un mois de la progression annuelle du cours."""
+    out = {}
+    for r in corpus().get("resumes") or []:
+        if r["cours"] == cours and r["matiere"] in ("francais", "maths") and _sans_accent(r.get("mois") or "").lower() == _sans_accent(mois_lib).lower():
+            out.setdefault(r["matiere"], []).append(r)
+    return {m: sorted(v, key=ordre_resume) for m, v in out.items()}
+
+
+def progression_resumes(rs):
+    """v1.25 — [(trimestre, [(mois, [(repère, [résumés])])])] dans l'ordre de l'année."""
+    arb = {}
+    for r in sorted(rs, key=ordre_resume):
+        tri = r.get("trimestre") or "—"
+        mois = r.get("mois") or "—"
+        rep = ((r.get("ancres") or [{}])[0]).get("libelle") or "—"
+        arb.setdefault(tri, {}).setdefault(mois, {}).setdefault(rep, []).append(r)
+    ordre_t = ["I", "II", "III", "—"]
+    return [(t, [(m, list(v.items())) for m, v in sorted(arb[t].items(), key=lambda x: MOIS_SCO.index(x[0]) if x[0] in MOIS_SCO else 99)])
+            for t in sorted(arb, key=lambda x: ordre_t.index(x) if x in ordre_t else 9)]
+
+
 _GLYPHES = {"→": "->", "−": "-", "ᵉ": "e", "ɔ": "o", "≈": "~", "≤": "<=", "≥": ">="}
 
 
@@ -533,9 +630,9 @@ def enregistrer(app, H):
     def fiche_vierge(cl=None, matiere="francais"):
         return {"matiere": matiere, "cours": NIVEAU_COURS.get(cl["niveau"]) if cl else "", "titre": "", "duree": "45 min",
                 "strategies": "Travail individuel — travail en groupe — travail collectif",
-                "deroulement": [["**INTRODUCTION**\n\nMise en situation", "▪ Rappel / prérequis.\n▪ Situation de départ.\n▪ Proposition : aujourd'hui, tu vas apprendre …", "Réponses variables."],
-                                ["**RÉALISATION**", "▪ Tâche / consignes.\n▪ Travail individuel, en groupe, mise en commun.\n▪ Synthèse.", ""],
-                                ["**RETOUR ET PROJECTION**", "▪ Objectivation : dis ce que tu as appris et comment.\n▪ Évaluation.\n▪ Projection.", ""]]}
+                "deroulement": [["**INTRODUCTION**\n\nMise en situation", "• Rappel / prérequis.\n• Situation de départ.\n• Proposition : aujourd'hui, tu vas apprendre …", "Réponses variables."],
+                                ["**RÉALISATION**", "• Tâche / consignes.\n• Travail individuel, en groupe, mise en commun.\n• Synthèse.", ""],
+                                ["**RETOUR ET PROJECTION**", "• Objectivation : dis ce que tu as appris et comment.\n• Évaluation.\n• Projection.", ""]]}
 
     def depuis_modele(m, cl):
         d = fiche_vierge(cl, m.get("matiere") or "francais")
@@ -993,13 +1090,16 @@ def enregistrer(app, H):
         tous = corpus().get("resumes") or []
         rs = resumes_filtres(col, cours, mat, dom)
         groupes = {}
-        for r in rs:
+        for r in sorted(rs, key=ordre_resume):
             groupes.setdefault((r["collection"], r["cours"]), {}).setdefault(r["domaine"], []).append(r)
+        vue = a.get("vue") if a.get("vue") in ("progression", "domaines") else ("progression" if cours and mat in ("francais", "maths") else "domaines")
         ordre = sorted(groupes, key=lambda k: ([c for c, _l in COLLECTIONS_RES].index(COLLECTION_DE[k[0]]), COURS.index(k[1])))
         return render_template("prep_resumes.html", groupes=groupes, ordre=ordre, col=col, cours=cours, mat=mat, dom=dom, n=len(rs),
                                table=table_resumes(tous), COURS_RES=COURS_RES, MATS_RES=MATS_RES, COLLECTIONS=COLLECTIONS_RES, COURS=[c for c in COURS if any(r["cours"] == c for r in tous)],
                                MATS=[m for m in ORDRE_MAT if any(r["matiere"] == m for r in tous)],
-                               DOMS=sorted({r["domaine"] for r in tous}))
+                               DOMS=sorted({r["domaine"] for r in tous}), vue=vue,
+                               progression=progression_resumes([r for r in rs if r["matiere"] in ("francais", "maths")]) if vue == "progression" else [],
+                               tdom=table_domaines(tous), OUTILS_FR=OUTILS_FR, DOMAINES_MA=DOMAINES_MA)
 
     @app.route("/preparation/resumes/<rid>")
     @H.connexion_requise("preparation")
@@ -1007,7 +1107,7 @@ def enregistrer(app, H):
         r = next((x for x in corpus().get("resumes") or [] if x["id"] == rid), None)
         if not r:
             abort(404)
-        meme = [x for x in resumes_filtres(COLLECTION_DE[r["collection"]], r["cours"], r["matiere"])]
+        meme = sorted(resumes_filtres(COLLECTION_DE[r["collection"]], r["cours"], r["matiere"]), key=ordre_resume)
         i = meme.index(r)
         return render_template("prep_resume.html", r=r, eleve=bool(request.args.get("eleve")),
                                prec=meme[i - 1] if i > 0 else None, suiv=meme[i + 1] if i + 1 < len(meme) else None)

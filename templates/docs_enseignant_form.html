@@ -18,8 +18,8 @@
   <div><h1>{{ d.titre }}</h1><p class="sous">{{ d.desc }}</p></div>
   <div class="actions">
     <a class="btn sec petit" href="{{ url_for('docs_enseignant_accueil') }}">← Documents</a>
-    <a class="btn sec petit" href="{{ url_for('docs_enseignant_vierge', doc=doc) }}" target="_blank" rel="noopener">📄 PDF vierge</a>
-    <a class="btn sec petit" href="{{ url_for('docs_enseignant_historique', type=doc) }}">🗂 Historique</a>
+    <a class="btn sec petit" href="{{ url_for('docs_enseignant_vierge', doc=doc) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF vierge</a>
+    <a class="btn sec petit" href="{{ url_for('docs_enseignant_historique', type=doc) }}">{{ icone('classeur') }} Historique</a>
   </div>
 </div>
 
@@ -116,8 +116,8 @@
   <div class="de-barre actions">
     {% if peut_signer %}<label style="font-weight:normal"><input type="checkbox" name="signer" value="1" checked> Apposer cachet et signature{% if d.qr %} (+ QR de vérification){% endif %}</label>
     {% else %}<span class="aide">Document imprimé sans cachet ni signature (à faire signer).</span>{% endif %}
-    <button class="btn" name="action" value="pdf" formtarget="_blank">📄 Générer le PDF</button>
-    <button class="btn vert" name="action" value="sauver">💾 Enregistrer la saisie</button>
+    <button class="btn" name="action" value="pdf" formtarget="_blank">{{ icone('document') }} Générer le PDF</button>
+    <button class="btn vert" name="action" value="sauver">{{ icone('enregistrer') }} Enregistrer la saisie</button>
     <a class="btn sec" href="{{ url_for('docs_enseignant_form', doc=doc, p=pid, classe=classe.id if classe else None, reinit=1) }}" data-confirmer="Revenir aux données de SCOLARIS (la saisie non enregistrée sera perdue) ?">↺ Revenir aux données SCOLARIS</a>
   </div>
 </form>
@@ -145,7 +145,7 @@
     </div>
     <div class="actions" style="margin-top:10px">
       {% if peut_signer %}<label style="font-weight:normal"><input type="checkbox" name="signer" value="1" checked> Cachet et signature</label>{% endif %}
-      <button class="btn">📚 PDF groupé</button>
+      <button class="btn">{{ icone('livre') }} PDF groupé</button>
     </div>
   </form>
 </div>

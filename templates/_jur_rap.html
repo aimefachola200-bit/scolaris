@@ -8,14 +8,14 @@
       <select name="periode" onchange="this.form.submit()" aria-label="Période">{% for k, l in PERIODES_RAP.items() %}<option value="{{ k }}" {{ 'selected' if k == rap_periode }}>{{ l }}</option>{% endfor %}</select></form>
   </div>
   {% macro cellule(v) %}<td class="num" style="white-space:nowrap">{{ v.real }}<span class="gris"> / {{ v.prog }}</span>{% if v.taux is not none %}<br><span class="badge {{ 'ok' if v.taux >= 75 else ('att' if v.taux >= 40 else 'ko') }}" style="font-size:11px">{{ v.taux|round|int }} %</span>{% endif %}</td>{% endmacro %}
-  <h3 style="margin-top:12px">🎖️ {{ 'Chefs de circonscription scolaire (CCS)' if JUR_NIVEAU == 'ddemp' else 'Chef de la circonscription (CCS)' }}</h3>
+  <h3 style="margin-top:12px">{{ icone('medaille') }} {{ 'Chefs de circonscription scolaire (CCS)' if JUR_NIVEAU == 'ddemp' else 'Chef de la circonscription (CCS)' }}</h3>
   <div class="tw"><table class="t compact">
     <tr><th>{{ 'Circonscription' if JUR_NIVEAU == 'ddemp' else 'Acteur' }}</th><th>CCS</th>{% for k, l in INDIC_RAP %}<th class="num">{{ l }}</th>{% endfor %}<th class="num">Ensemble</th></tr>
     {% for c in rap %}{% if c.ccs %}<tr><td><b>{{ c.cs_nom }}</b>{% if c.source == 'transmis' %}<br><span class="aide">bilan transmis</span>{% endif %}</td><td>{{ c.ccs.nom or '—' }}</td>
       {% for k, l in INDIC_RAP %}{{ cellule(c.ccs.vals[k]) }}{% endfor %}
       <td class="num"><b>{{ c.ccs.real }}</b><span class="gris"> / {{ c.ccs.prog }}</span>{% if c.ccs.taux is not none %}<br><b>{{ c.ccs.taux|round|int }} %</b>{% endif %}</td></tr>{% endif %}{% endfor %}
   </table></div>
-  <details {{ 'open' if JUR_NIVEAU == 'cs' }} style="margin-top:10px"><summary><b>👥 Conseillers pédagogiques (CP)</b> — {{ rap|sum(attribute='cps', start=[])|length }} zone(s)</summary>
+  <details {{ 'open' if JUR_NIVEAU == 'cs' }} style="margin-top:10px"><summary><b>{{ icone('groupe') }} Conseillers pédagogiques (CP)</b> — {{ rap|sum(attribute='cps', start=[])|length }} zone(s)</summary>
   <div class="tw" style="font-size:13px"><table class="t compact serre">
     <tr>{% if JUR_NIVEAU == 'ddemp' %}<th>CS</th>{% endif %}<th>Zone</th><th>CP</th>{% for k, l in INDIC_RAP %}<th class="num">{{ l }}</th>{% endfor %}<th class="num">Ensemble</th></tr>
     {% for c in rap %}{% for p in c.cps %}<tr>{% if JUR_NIVEAU == 'ddemp' %}<td class="gris">{{ c.cs_nom }}</td>{% endif %}<td>{{ p.zone or p.lib }}</td><td>{{ p.nom or '—' }}</td>

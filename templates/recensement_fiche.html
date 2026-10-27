@@ -110,7 +110,7 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
   </tr>
   {% endfor %}
   </tbody></table></div>
-{% if tv.dyn %}<button type="button" class="btn sec petit" data-ajout="{{ tv.k }}">➕ Ajouter une ligne</button>{% endif %}
+{% if tv.dyn %}<button type="button" class="btn sec petit" data-ajout="{{ tv.k }}">{{ icone('ajouter') }} Ajouter une ligne</button>{% endif %}
 {% endmacro %}
 
 {% macro items(liste) %}
@@ -129,11 +129,11 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
 
 <form id="rc-form" class="carte" data-typ="{{ typ }}" data-annee="{{ annee }}" data-url="{{ J.enregistrer if J else url_for('recensement_enregistrer', typ=typ) }}" onsubmit="return false">
   {% call M.barre_doc() %}
-    {% if J %}<a class="btn petit" href="{{ J.pdf }}" target="_blank" rel="noopener">📄 PDF rempli</a>
-    <a class="btn sec petit" href="{{ J.pdf_vierge }}" target="_blank" rel="noopener">📄 PDF vierge</a>
-    {% else %}<a class="btn petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee) }}" target="_blank" rel="noopener">📄 PDF rempli</a>
-    <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee, vierge=1) }}" target="_blank" rel="noopener">📄 PDF vierge</a>
-    <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=typ, annee=annee) }}">📊 Excel</a>{% endif %}
+    {% if J %}<a class="btn petit" href="{{ J.pdf }}" target="_blank" rel="noopener">{{ icone('document') }} PDF rempli</a>
+    <a class="btn sec petit" href="{{ J.pdf_vierge }}" target="_blank" rel="noopener">{{ icone('document') }} PDF vierge</a>
+    {% else %}<a class="btn petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF rempli</a>
+    <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=typ, annee=annee, vierge=1) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF vierge</a>
+    <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=typ, annee=annee) }}">{{ icone('graphique') }} Excel</a>{% endif %}
   {% endcall %}
   <div class="rc-legende" aria-label="Légende">
     <span><span class="rc-badge o-calculée">calculée</span> valeur proposée par SCOLARIS (laisser vide pour la garder)</span>
@@ -159,7 +159,7 @@ table.rc-t input.rc-saisi{background:#FFF6D6;font-weight:700}
 {% if not J %}<div class="grille2">
   <form class="carte" method="post" enctype="multipart/form-data" action="{{ url_for('recensement_import', typ=typ, annee=annee) }}">
     <h3>Importer depuis Excel</h3>
-    <p class="aide">Exportez la fiche (📊 Excel), modifiez la feuille « Données (import) » puis réimportez-la.</p>
+    <p class="aide">Exportez la fiche ({{ icone('graphique') }} Excel), modifiez la feuille « Données (import) » puis réimportez-la.</p>
     <label for="rc-xlsx">Fichier Excel (.xlsx)</label><input id="rc-xlsx" type="file" name="fichier" accept=".xlsx" required>
     <button class="btn petit">Importer</button>
   </form>

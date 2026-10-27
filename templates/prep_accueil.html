@@ -15,7 +15,7 @@
   <div class="entete"><div><h3 style="margin:0">{{ s.classe.nom }} <span class="sous">({{ s.classe.niveau }})</span></h3>
     <p class="sous">{% if s.bornes %}Planification mensuelle, semaine du {{ s.bornes[0] }} au {{ s.bornes[1] }}{% else %}Planification annuelle du cours — mois de {{ s.mois }} (la planification mensuelle de la classe n'a pas de case remplie pour cette semaine){% endif %}</p></div>
     <div class="actions">
-      <a class="btn petit" href="{{ url_for('prep_semaine_pdf', classe=s.classe.id) }}" target="_blank">📄 Fiches de la semaine (PDF)</a>
+      <a class="btn petit" href="{{ url_for('prep_semaine_pdf', classe=s.classe.id) }}" target="_blank">{{ icone('document') }} Fiches de la semaine (PDF)</a>
       <a class="btn sec petit" href="{{ url_for('prep_fiches', classe=s.classe.id, semaine=1) }}">Voir les fiches</a>
       <a class="btn sec petit" href="{{ url_for('prep_preparer', classe=s.classe.id) }}">+ Préparer</a>
     </div></div>

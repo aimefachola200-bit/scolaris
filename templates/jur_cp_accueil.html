@@ -63,7 +63,7 @@ table.t.cp input,table.t.cp select{width:100%;min-width:70px}
     <tr><td>{{ PERIODES[r.periode][0] }}</td><td>{{ 'Zone – ' ~ noms.get(r.zone_id, '?') if r.niveau == 'zone' else 'Circonscription (CS)' }}</td>
       <td><span class="etat {{ r.etat }}">{{ 'Validé' if r.etat == 'valide' else 'Brouillon' }}</span></td><td>{{ r.maj or '' }}</td>
       <td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('jur_cp_bilan', annee=annee, periode=r.periode, zone=r.zone_id or None, cs=cs_id if JUR_NIVEAU == 'ddemp' else None) }}">Ouvrir</a>
-        <a class="btn sec petit" href="{{ url_for('jur_cp_bilan_pdf', annee=annee, periode=r.periode, zone=r.zone_id or None, cs=cs_id if JUR_NIVEAU == 'ddemp' else None) }}" target="_blank">📄 PDF</a></td></tr>
+        <a class="btn sec petit" href="{{ url_for('jur_cp_bilan_pdf', annee=annee, periode=r.periode, zone=r.zone_id or None, cs=cs_id if JUR_NIVEAU == 'ddemp' else None) }}" target="_blank">{{ icone('document') }} PDF</a></td></tr>
     {% else %}
     <tr><td colspan="5" class="gris">Aucun bilan enregistré pour {{ annee }} : ouvrez le <a href="{{ url_for('jur_cp_bilan', annee=annee, periode=periode, cs=cs_id if JUR_NIVEAU == 'ddemp' else None) }}">bilan de la CS</a> ou celui d'une zone, vérifiez les chiffres calculés et enregistrez.</td></tr>
     {% endfor %}
@@ -78,7 +78,7 @@ table.t.cp input,table.t.cp select{width:100%;min-width:70px}
     {% for x in recus %}
     <tr><td>{{ x.cs_nom }}</td><td>{{ PERIODES.get(x.periode, ('?',))[0] }}</td><td>{{ ('Zone – ' ~ x.zone) if x.niveau == 'zone' else 'CS' }}</td>
       <td><span class="etat {{ x.etat }}">{{ 'Validé' if x.etat == 'valide' else 'Brouillon' }}</span></td><td>{{ x.maj or '' }}</td>
-      <td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('jur_cp_bilan_pdf', cs=x.cs_id, annee=annee, recu=x.index) }}" target="_blank">📄 PDF</a>
+      <td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('jur_cp_bilan_pdf', cs=x.cs_id, annee=annee, recu=x.index) }}" target="_blank">{{ icone('document') }} PDF</a>
         <a class="btn sec petit" href="{{ url_for('jur_cp_bilan_xlsx', cs=x.cs_id, annee=annee, recu=x.index) }}">⇩ Excel</a></td></tr>
     {% else %}
     <tr><td colspan="6" class="gris">Aucun bilan reçu pour {{ annee }} (ils arrivent avec les paquets des CS).</td></tr>

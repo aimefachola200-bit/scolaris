@@ -63,6 +63,6 @@
     {{ champ('note_evaluation', "Note d'évaluation (/20)", type='dec', max=6) }}
   </div>
   <div><label for="s-gestion_collegiale">Gestion collégiale (responsabilités)</label><textarea id="s-gestion_collegiale" name="gestion_collegiale" rows="2" maxlength="500">{{ v.get('gestion_collegiale') or '' }}</textarea></div>
-  <p class="actions" style="margin-top:14px"><button class="btn">💾 Enregistrer</button>{% if not f %}<button class="btn sec" name="suivant" value="1">Enregistrer et ajouter un autre</button>{% endif %}</p>
+  <p class="actions" style="margin-top:14px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button>{% if not f %}<button class="btn sec" name="suivant" value="1">Enregistrer et ajouter un autre</button>{% endif %}</p>
 </form>
 {% endblock %}

@@ -15,7 +15,7 @@ table.t tr.total td{background:#F2F6FB;font-weight:700}
     {% if peut('jur_visites') %}<a class="btn" href="{{ url_for('jur_visite_form') }}">+ Enregistrer une visite</a>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_bilan_activites', annee=annee, cs=cs_id or '') }}">Bilan CP et CCS</a>
     <a class="btn sec" href="{{ url_for('jur_cp', annee=annee, cs=cs_id or '', export='xlsx') }}">⇩ Excel</a>
-    <a class="btn sec" href="{{ url_for('jur_cp', annee=annee, cs=cs_id or '', export='pdf') }}" target="_blank">📄 PDF signé</a>
+    <a class="btn sec" href="{{ url_for('jur_cp', annee=annee, cs=cs_id or '', export='pdf') }}" target="_blank">{{ icone('document') }} PDF signé</a>
   </div>
 </div>
 

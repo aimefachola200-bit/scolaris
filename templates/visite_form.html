@@ -12,7 +12,7 @@
   <div><h1>{% if visite %}{{ TYPES[visite.type] }} du {{ date_fr(visite.date) }}{% else %}Nouvelle visite{% endif %}</h1>
   <p class="sous">{% if visite %}{{ visite.visiteur_qualite }} {{ visite.visiteur_nom }}{% if visite.enseignant_nom %} — {{ visite.enseignant_nom }}{% endif %}{% if visite.classe_nom %} ({{ visite.classe_nom }}){% endif %}{% else %}Visite d'un conseiller pédagogique (CP) ou du CCS{% endif %}</p></div>
   <div class="actions">
-    {% if visite %}<a class="btn petit" href="{{ url_for('visite_fiche_pdf', vid=visite.id) }}" target="_blank">📄 Fiche PDF</a>{% endif %}
+    {% if visite %}<a class="btn petit" href="{{ url_for('visite_fiche_pdf', vid=visite.id) }}" target="_blank">{{ icone('document') }} Fiche PDF</a>{% endif %}
     <a class="btn sec petit" href="{{ url_for('visites_accueil') }}">← Liste des visites</a>
   </div>
 </div>
@@ -77,7 +77,7 @@
     </div>
     <label for="vsu">Suites données</label><textarea id="vsu" name="suites" maxlength="4000">{{ v.suites or '' }}</textarea>
   </fieldset>
-  {% if saisie %}<p class="actions"><button class="btn vert">💾 Enregistrer la visite</button></p>{% endif %}
+  {% if saisie %}<p class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer la visite</button></p>{% endif %}
 </form>
 {% if visite and direction %}
 <form method="post" action="{{ url_for('visite_supprimer', vid=visite.id) }}"><button class="btn danger petit" data-confirmer="Supprimer définitivement cette visite ?">Supprimer la visite</button></form>

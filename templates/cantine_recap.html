@@ -8,7 +8,7 @@
   <div><h1>Récapitulatifs de la cantine</h1>
   <p class="sous">{{ r.titre }} — {{ r.portee }}</p></div>
   <div class="actions">
-    <a class="btn petit" href="{{ url_for('cantine_recap_pdf', **request.args) }}" target="_blank" rel="noopener">📄 Télécharger le PDF</a>
+    <a class="btn petit" href="{{ url_for('cantine_recap_pdf', **request.args) }}" target="_blank" rel="noopener">{{ icone('document') }} Télécharger le PDF</a>
     <a class="btn sec petit" href="{{ url_for('cantine_accueil') }}">← Paiements</a>
   </div>
 </div>

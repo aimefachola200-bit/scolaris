@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block titre %}Mot de passe oublié{% endblock %}
 {% block contenu %}
 <div class="login carte" style="max-width:520px">
-  <h1>🔑 Mot de passe oublié</h1>
+  <h1>{{ icone('cle') }} Mot de passe oublié</h1>
   {% if etape == 'ident' %}
   <p class="sous">Indiquez votre identifiant de connexion.</p>
   <form method="post" class="f">
@@ -18,7 +18,7 @@
   </form>
   {% elif etape == 'envoyee' %}
   <p>Votre demande est enregistrée. L'administrateur (ou le directeur) la voit dans <b>Administration → Utilisateurs</b> et vous remettra un mot de passe provisoire ; vous en choisirez un nouveau à la connexion.</p>
-  {% if wa %}<p><a class="btn sec" href="{{ wa }}" target="_blank" rel="noopener">💬 Prévenir l'école par WhatsApp</a></p>{% endif %}
+  {% if wa %}<p><a class="btn sec" href="{{ wa }}" target="_blank" rel="noopener">{{ icone('message') }} Prévenir l'école par WhatsApp</a></p>{% endif %}
   {% else %}
   <p class="sous">Identifiant : <b>{{ ident }}</b> · <a href="{{ url_for('mdp_oublie') }}">changer</a></p>
   {% if question %}
@@ -39,7 +39,7 @@
     <label for="mo-msg">Message (facultatif)</label><textarea id="mo-msg" name="message" rows="2" maxlength="500"></textarea>
     <p><button class="btn sec" style="width:100%">Envoyer la demande à l'administrateur</button></p>
   </form>
-  {% if wa %}<p><a class="btn sec" href="{{ wa }}" target="_blank" rel="noopener">💬 Écrire à l'école par WhatsApp</a></p>{% endif %}
+  {% if wa %}<p><a class="btn sec" href="{{ wa }}" target="_blank" rel="noopener">{{ icone('message') }} Écrire à l'école par WhatsApp</a></p>{% endif %}
   {% endif %}
   <p class="aide"><a href="{{ url_for('login') }}">← Retour à la connexion</a></p>
 </div>

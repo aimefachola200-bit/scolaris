@@ -15,11 +15,11 @@
 <form method="get" action="{{ url_for('eval_statistiques_pdf') }}" data-doc="{{ cle_entete }}" target="_blank">
   <input type="hidden" name="classe" value="{{ cl.id }}"><input type="hidden" name="ev" value="{{ ev.id }}">
   {% call M.barre_doc() %}
-    <button class="btn petit" formaction="{{ url_for('eval_statistiques_pdf') }}">📄 Export PDF</button>
-    <button class="btn sec petit" formaction="{{ url_for('eval_statistiques_xlsx') }}" formtarget="_self">📊 Export Excel</button>
-    <a class="btn sec petit" href="{{ url_for('eval_analyse', classe=cl.id, ev=ev.id) }}">📝 Analyse et rapport</a>
-    <a class="btn sec petit" href="{{ url_for('honneur_accueil', classe=cl.id, ev=ev.id) }}">🏅 Tableau d'honneur</a>
-    {% if ep_existe('eval_saisie') %}<a class="btn sec petit" href="{{ url_for('eval_saisie', ev_id=ev.id) }}">✎ Notes</a>{% endif %}
+    <button class="btn petit" formaction="{{ url_for('eval_statistiques_pdf') }}">{{ icone('document') }} Export PDF</button>
+    <button class="btn sec petit" formaction="{{ url_for('eval_statistiques_xlsx') }}" formtarget="_self">{{ icone('graphique') }} Export Excel</button>
+    <a class="btn sec petit" href="{{ url_for('eval_analyse', classe=cl.id, ev=ev.id) }}">{{ icone('note') }} Analyse et rapport</a>
+    <a class="btn sec petit" href="{{ url_for('honneur_accueil', classe=cl.id, ev=ev.id) }}">{{ icone('medaille') }} Tableau d'honneur</a>
+    {% if ep_existe('eval_saisie') %}<a class="btn sec petit" href="{{ url_for('eval_saisie', ev_id=ev.id) }}">{{ icone('modifier') }} Notes</a>{% endif %}
   {% endcall %}
   {{ R.entete_docs(v, cl) }}
 </form>

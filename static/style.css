@@ -291,3 +291,6 @@ tr.prep-vide{display:none}
 .prep-contenu table{border-collapse:collapse;width:100%;margin:8px 0}.prep-contenu td,.prep-contenu th{border:1px solid #98A2B3;padding:4px 6px;vertical-align:top}
 .prep-semaine{margin-bottom:14px}
 @media print{#menu,.onglets,.actions,.filtres{display:none!important}}
+
+/* v1.25 : icônes au trait (dessins SVG, couleur du texte) à la place des émojis */
+.icone{display:inline-block;vertical-align:-.18em;flex:none}.btn .icone{margin-right:3px}.ico .icone{vertical-align:middle}

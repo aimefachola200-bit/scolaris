@@ -16,12 +16,26 @@
 </tbody></table></div>
 <p class="aide">Chaque résumé est rattaché à son cours, sa matière et sa SA / unité : la planification (vue semaine) affiche les « résumés de la semaine » à côté des fiches. Résumés conçus selon le programme — à valider par le conseiller pédagogique.</p>
 </details>
+<details class="carte" style="margin:8px 0"><summary><b>Français et Mathématiques : résumés par cours et par domaine</b></summary>
+<div class="tw"><table class="t" aria-label="Résumés par cours et par domaine"><thead><tr><th>Cours</th>{% for d in OUTILS_FR %}<th>{{ d }}</th>{% endfor %}{% for d in DOMAINES_MA %}<th>Maths — {{ d }}</th>{% endfor %}</tr></thead><tbody>
+{% for c in COURS_RES %}<tr><td>{{ PREP_COURS_LIB[c] }}</td>{% for d in OUTILS_FR %}<td>{% set k = tdom.get((c, 'francais', d), 0) %}{% if k %}<a href="{{ url_for('prep_resumes', cours=c, matiere='francais', domaine=d) }}">{{ k }}</a>{% else %}·{% endif %}</td>{% endfor %}{% for d in DOMAINES_MA %}<td>{% set k = tdom.get((c, 'maths', d), 0) %}{% if k %}<a href="{{ url_for('prep_resumes', cours=c, matiere='maths', domaine=d) }}">{{ k }}</a>{% else %}·{% endif %}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+<p class="aide">Français : outils de la langue (grammaire, conjugaison, orthographe, vocabulaire ; sons et graphies et structures de la langue au CI / CP), lecture et expression écrite. Mathématiques : numération et arithmétique, mesures, géométrie, résolution de problèmes. Chaque résumé est rattaché à son unité, sa leçon ou son dossier / SA / séances et placé dans le mois de la progression annuelle.</p>
+</details>
+{% if cours and mat in ('francais', 'maths') %}<nav class="onglets" aria-label="Présentation"><a class="{{ 'actif' if vue == 'progression' }}" href="{{ url_for('prep_resumes', cours=cours, matiere=mat, domaine=dom or None, vue='progression') }}">Dans l'ordre de la progression</a><a class="{{ 'actif' if vue == 'domaines' }}" href="{{ url_for('prep_resumes', cours=cours, matiere=mat, domaine=dom or None, vue='domaines') }}">Par domaine</a></nav>{% endif %}
 {% if n %}
 <div class="actions" style="margin:6px 0 12px">
   <a class="btn petit" href="{{ url_for('prep_resumes_pdf', col=col, cours=cours, matiere=mat, domaine=dom) }}">PDF enseignant ({{ n }})</a>
   <a class="btn sec petit" href="{{ url_for('prep_resumes_pdf', col=col, cours=cours, matiere=mat, domaine=dom, eleve=1) }}">PDF élève à imprimer</a>
 </div>
 {% endif %}
+{% if vue == 'progression' and progression %}
+{% for t, mois in progression %}<h3>Trimestre {{ t }}</h3>
+{% for m, reps in mois %}<div class="tw"><table class="t" aria-label="{{ m }}"><thead><tr><th style="width:22%">{{ m }}</th><th>Résumé</th><th style="width:18%">Domaine</th><th style="width:1%"></th></tr></thead><tbody>
+{% for rep, rs in reps %}{% for r in rs %}<tr><td>{% if loop.first %}<b>{{ rep }}</b>{% endif %}</td><td><a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a>{% set a = (r.ancres or [{}])[0] %}{% if a.seance_titre and a.seance_titre != r.titre %} <span class="aide">· séance « {{ a.seance_titre }} »</span>{% endif %}</td><td>{{ r.domaine }}</td>
+<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id) }}">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1) }}">Élève</a></td></tr>{% endfor %}{% endfor %}
+</tbody></table></div>{% endfor %}{% endfor %}
+{% else %}
 {% for k in ordre %}{% set collection, c = k %}
 <h3>{{ collection }} — {{ PREP_COURS_LIB[c] }}</h3>
 {% for d, rs in groupes[k].items() %}
@@ -31,4 +45,5 @@
 </tbody></table></div>
 {% endfor %}
 {% else %}<div class="carte"><p class="aide">Aucun résumé pour ce choix.</p></div>{% endfor %}
+{% endif %}
 {% endblock %}

@@ -14,13 +14,13 @@
     <label for="imp-f">Fichier Excel</label><input id="imp-f" type="file" name="fichier" accept=".xlsx,.csv" required>
     <label for="imp-ref">Référence du texte (facultatif)</label><input id="imp-ref" name="reference_arrete" maxlength="400" value="{{ meta.reference_arrete or '' }}">
     <label for="imp-src">Source (facultatif)</label><input id="imp-src" name="source" maxlength="200" value="{{ meta.source or '' }}">
-    <p class="actions" style="margin-top:12px"><button class="btn" onclick="return confirm('Importer et remplacer les lignes de l\'année {{ annee }} ?')">⬆ Importer</button>
+    <p class="actions" style="margin-top:12px"><button class="btn" onclick="return confirm('Importer et remplacer les lignes de l\'année {{ annee }} ?')">{{ icone('importer') }} Importer</button>
       <a class="btn sec" href="{{ url_for('calendrier_officiel_modele_xlsx', **params) }}">Télécharger le modèle Excel</a></p>
   </form>
   <div class="carte">
     <h3 style="margin-top:0">Exporter</h3>
-    <p><a class="btn" href="{{ url_for('calendrier_officiel_xlsx', **params) }}">⬇ Calendrier {{ annee }} en Excel</a> <span class="aide">feuilles Calendrier et Jours de classe</span></p>
-    <p><a class="btn sec" href="{{ url_for('calendrier_officiel_pdf', **params) }}" target="_blank">📄 PDF</a></p>
+    <p><a class="btn" href="{{ url_for('calendrier_officiel_xlsx', **params) }}">{{ icone('telecharger') }} Calendrier {{ annee }} en Excel</a> <span class="aide">feuilles Calendrier et Jours de classe</span></p>
+    <p><a class="btn sec" href="{{ url_for('calendrier_officiel_pdf', **params) }}" target="_blank">{{ icone('document') }} PDF</a></p>
     <p class="aide">Le classeur exporté peut être corrigé puis réimporté (feuille Calendrier) : c'est le moyen le plus simple de saisir le calendrier d'une nouvelle année scolaire dès la parution de l'arrêté.</p>
   </div>
 </div>

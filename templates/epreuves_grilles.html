@@ -5,7 +5,7 @@
   <p class="sous">Critères, indicateurs et barèmes (APC) — année scolaire {{ annee }}</p></div>
   <div class="actions">
     {% if modifiable %}<a class="btn petit" href="{{ url_for('grille_form', gid=0, annee=annee) }}">＋ Nouvelle grille</a>{% endif %}
-    <a class="btn sec petit" href="{{ url_for('grilles_xlsx', annee=annee) }}">⬇ Excel</a>
+    <a class="btn sec petit" href="{{ url_for('grilles_xlsx', annee=annee) }}">{{ icone('telecharger') }} Excel</a>
   </div>
 </div>
 {% include "epreuves_onglets.html" %}
@@ -37,7 +37,7 @@
   <td class="c">{{ gr.lignes|length }}</td><td class="c">{{ num(gr.total) if gr.type != 'observation' else 'A / ECA / NA' }}</td>
   <td>{% if gr.epreuve_id %}<a href="{{ url_for('epreuve_form', eid=gr.epreuve_id) if modifiable else url_for('epreuve_pdf', eid=gr.epreuve_id) }}">épreuve n° {{ gr.epreuve_id }}</a>{% endif %}</td>
   <td style="white-space:nowrap">
-    <a class="btn sec petit" target="_blank" href="{{ url_for('grille_pdf', gid=gr.id) }}">📄 PDF</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('grille_pdf', gid=gr.id) }}">{{ icone('document') }} PDF</a>
     {% if modifiable %}<a class="btn sec petit" href="{{ url_for('grille_form', gid=gr.id) }}">Modifier</a>
     <form method="post" action="{{ url_for('grille_dupliquer', gid=gr.id) }}" style="display:inline"><button class="btn sec petit">Dupliquer</button></form>
     <form method="post" action="{{ url_for('grille_supprimer', gid=gr.id) }}" style="display:inline"><button class="btn danger petit" data-confirmer="Supprimer la grille « {{ gr.titre }} » ?">Supprimer</button></form>{% endif %}

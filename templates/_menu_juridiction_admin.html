@@ -1,6 +1,6 @@
 {# Administration des applications CS / DDEMP (v1.6 : complétée par a_integration – mêmes liens que base.html) #}
 {% if peut('parametres') %}
-{% call groupe('adm', 'Administration', ep in ('utilisateurs','journal_page','parametres','en_ligne_page','demandes_ecoles','reglages_messages','reglages_paiement_en_ligne','affectations','jur_ecoles_modules','jur_messages') or ep.startswith('ecole'), '⚙') %}
+{% call groupe('adm', 'Administration', ep in ('utilisateurs','journal_page','parametres','en_ligne_page','demandes_ecoles','reglages_messages','reglages_paiement_en_ligne','affectations','jur_ecoles_modules','jur_messages') or ep.startswith('ecole'), 'reglages') %}
   {{ lien('ecoles', 'Écoles (ajout, modification, suppression)', ep.startswith('ecole')) }}
   {% if ep_existe('jur_ecoles_modules') %}{{ lien('jur_ecoles_modules', 'Ouvrir une école (modules)', ep=='jur_ecoles_modules') }}{% endif %}
   {{ lien('parametres', 'Paramètres généraux', ep=='parametres') }}

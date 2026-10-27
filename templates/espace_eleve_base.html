@@ -30,7 +30,7 @@ header.top.eleve{background:#5B2C83}
 {% set moi = g.get('eleve_session') %}
 <header class="top eleve">
   <a class="marque" href="{{ url_for('eleve_accueil') if moi else url_for('eleve_login') }}">SCOLARIS · Espace élève</a>
-  <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu" onclick="var n=document.getElementById('menu');var o=n.classList.toggle('ouvert');this.setAttribute('aria-expanded',o)">☰ Menu</button>
+  <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu" onclick="var n=document.getElementById('menu');var o=n.classList.toggle('ouvert');this.setAttribute('aria-expanded',o)">{{ icone('menu') }} Menu</button>
   <nav id="menu" aria-label="Menu de l'espace élève">
     {% if moi %}
     <a href="{{ url_for('eleve_accueil') }}" class="{{ 'actif' if ep=='eleve_accueil' }}">Accueil</a>

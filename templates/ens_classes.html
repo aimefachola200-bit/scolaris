@@ -9,7 +9,7 @@
       <a class="btn sec petit" href="{{ url_for('eleves_import') }}">Importer</a>
       {% if not c.effectif %}<form method="post" style="display:inline" onsubmit="return confirm('Supprimer la classe {{ c.nom }} ?')">
         <input type="hidden" name="action" value="supprimer"><input type="hidden" name="cid" value="{{ c.id }}">
-        <button class="btn sec petit">🗑 Supprimer</button></form>{% endif %}</td></tr>
+        <button class="btn sec petit">{{ icone('supprimer') }} Supprimer</button></form>{% endif %}</td></tr>
   {% else %}<tr><td colspan="4">Aucune classe.</td></tr>{% endfor %}
   </tbody></table>
 </div>

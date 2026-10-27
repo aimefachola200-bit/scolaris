@@ -3,7 +3,7 @@
 {% include "jur_synoptique_onglets.html" %}
 <div class="entete">
   <div><h2 style="margin:0">Divisions / services et leurs chefs</h2><p class="sous">{{ lst|length }} service(s) actif(s) · article de l'AOF (arrêté portant attributions, organisation et fonctionnement)</p></div>
-  <div class="actions"><a class="btn sec" href="{{ url_for('jur_synoptique_services_pdf') }}" target="_blank">📄 PDF des services</a>
+  <div class="actions"><a class="btn sec" href="{{ url_for('jur_synoptique_services_pdf') }}" target="_blank">{{ icone('document') }} PDF des services</a>
     {% if ep_existe('jur_divisions') %}<a class="btn sec" href="{{ url_for('jur_divisions') }}">Divisions, modules et attributions</a>{% endif %}
     {% if ep_existe('jur_organigramme') %}<a class="btn sec" href="{{ url_for('jur_organigramme') }}">Services et attributions</a>{% endif %}</div>
 </div>

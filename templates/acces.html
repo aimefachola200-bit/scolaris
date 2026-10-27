@@ -1,11 +1,11 @@
 {% extends "base.html" %}{% block titre %}Code d'accès personnel{% endblock %}
 {% block contenu %}
-<div class="entete"><div><h1>🔐 Code d'accès personnel</h1>
+<div class="entete"><div><h1>{{ icone('verrou') }} Code d'accès personnel</h1>
   <p class="sous">{{ appli }} · compte « {{ g.user.identifiant }} » · installation {{ installation }}</p></div>
   {% if gestion %}<div class="actions"><a class="btn sec" href="{{ url_for('acces_comptes') }}">Codes de tous les comptes</a></div>{% endif %}
 </div>
 {% if ok %}
-<div class="carte" style="max-width:760px">✅ Votre compte est autorisé : votre code d'accès personnel est enregistré. Vous n'avez rien d'autre à faire.</div>
+<div class="carte" style="max-width:760px">{{ icone('valider') }} Votre compte est autorisé : votre code d'accès personnel est enregistré. Vous n'avez rien d'autre à faire.</div>
 {% else %}
 <div class="carte" style="max-width:760px">
   <p>L'utilisation de {{ appli }} est soumise à l'autorisation de son concepteur, <b>Maître Aimé FACHE</b>. Chaque compte reçoit
@@ -16,8 +16,8 @@
   <p>Votre demande :</p>
   <pre id="demande" style="white-space:pre-wrap;background:#F2F4F7;border-radius:8px;padding:10px 12px;font-size:14px">{{ demande }}</pre>
   <div class="actions">
-    <a class="btn wa" href="{{ lien_wa }}" target="_blank" rel="noopener">💬 Envoyer la demande par WhatsApp</a>
-    <button type="button" class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('demande').textContent).then(function(){SCOLARIS.toast('Demande copiée.')})">📋 Copier la demande</button>
+    <a class="btn wa" href="{{ lien_wa }}" target="_blank" rel="noopener">{{ icone('message') }} Envoyer la demande par WhatsApp</a>
+    <button type="button" class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('demande').textContent).then(function(){SCOLARIS.toast('Demande copiée.')})">{{ icone('presse_papiers') }} Copier la demande</button>
   </div>
   <h3>2. Saisissez le code reçu</h3>
   <form method="post" class="f">

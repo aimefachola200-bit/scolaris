@@ -17,6 +17,6 @@
     <div><label for="m-ordre">Ordre d'affichage</label><input id="m-ordre" name="ordre" inputmode="numeric" value="{{ v.get('ordre') if v.get('ordre') is not none else '' }}" maxlength="3"></div>
   </div>
   <div><label for="m-obs">Observations</label><textarea id="m-obs" name="observations" rows="2" maxlength="300">{{ v.get('observations') or '' }}</textarea></div>
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button></p>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button></p>
 </form>
 {% endblock %}

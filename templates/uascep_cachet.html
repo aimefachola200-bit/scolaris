@@ -27,7 +27,7 @@
 <label>Forme <select name="cachet_forme">
   <option value="rond" {{ 'selected' if (m.cachet_forme or 'rond') == 'rond' }}>Rond (UASCEP, niveau et entité autour, fonction au centre)</option>
   <option value="rect" {{ 'selected' if m.cachet_forme == 'rect' }}>Rectangulaire (griffe : fonction, nom, entité)</option></select></label>
-<label>Couleur <select name="cachet_couleur"><option value="bleu" {{ 'selected' if (m.cachet_couleur or 'bleu') == 'bleu' }}>Bleu</option><option value="rouge" {{ 'selected' if m.cachet_couleur == 'rouge' }}>Rouge</option></select></label>
+<label>Couleur <select name="cachet_couleur"><option value="bleu" {{ 'selected' if (m.cachet_couleur or 'bleu') == 'bleu' }}>Bleu</option><option value="rouge" {{ 'selected' if m.cachet_couleur == 'rouge' }}>Rouge</option><option value="vert" {{ 'selected' if m.cachet_couleur == 'vert' }}>Vert</option><option value="noir" {{ 'selected' if m.cachet_couleur == 'noir' }}>Noir</option></select></label>
 <label>Texte du haut (vide = « {{ defaut.sup }} ») <input name="cachet_sup" maxlength="60" value="{{ m.cachet_sup or '' }}"></label>
 <label>Texte du bas (vide = « {{ defaut.inf }} ») <input name="cachet_inf" maxlength="60" value="{{ m.cachet_inf or '' }}"></label>
 <label>Texte du centre (vide = « {{ defaut.centre }} ») <input name="cachet_centre" maxlength="40" value="{{ m.cachet_centre or '' }}"></label>
@@ -40,7 +40,7 @@
 </form>
 <form method="post" action="{{ url_for('uascep_cachet_reinitialiser', mid=m.id) }}" class="carte" onsubmit="return confirm('Rétablir le cachet généré par défaut et effacer la signature ?')">
 <p class="aide">Réinitialiser : cachet généré par défaut (bleu, rond), signature effacée.</p>
-<button class="btn sec petit">♻ Réinitialiser le cachet et la signature</button></form>
+<button class="btn sec petit">{{ icone('reinitialiser') }} Réinitialiser le cachet et la signature</button></form>
 {% endif %}
 </div>
 {% endblock %}

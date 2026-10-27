@@ -50,7 +50,7 @@ courante » (table ``ecoles``, ``g.ecole``). Ce module les ouvre à la CS / DDEM
    base.html ni aux trois gabarits de menu (le contrôle réel reste côté serveur). ``H.perimetre_division(code)``
    alimente la fiche /juridiction/divisions/<code> (comptes rattachés, préfixes, modules).
 7. Comptes des directeurs et enseignants (/juridiction/comptes, droit ``jur_comptes``) : à la place du groupe
-   « Parents » des éditions école. Liste des comptes directeur / enseignant (utilisateurs.ecole_id → ecoles ↔
+   « Parents » des éditions école. Liste des comptes directeur / enseignant (utilisateurs.ecole_id → ecoles 
    jur_ecoles), création rapide (école de la juridiction → école locale via ``assurer_ecole_locale``, identifiant
    proposé « dir-<code école> » ou « prenom.nom », mot de passe provisoire, ``doit_changer_mdp=1``), affectation aux
    classes (page « affectations »), réinitialisation, désactivation, codes d'accès PDF (mots de passe vérifiés contre
@@ -110,6 +110,8 @@ ENDPOINTS_COMMUNS = {
     "uascep", "uascep_bureau", "uascep_membre", "uascep_membre_supprimer", "uascep_reinitialiser", "uascep_reinitialiser_tous",
     "uascep_renouveler", "uascep_xlsx", "uascep_modele", "uascep_import", "uascep_pdf",
 }
+# v1.25 : familles d'endpoints de la structure (sport scolaire, pilotage, moteur des registres)
+PREFIXES_EP_COMMUNS = ("sport_", "pilotage", "reg_")
 # adresses accessibles sans école ouverte (structure, administration, connexion, fichiers, espaces publics et API) :
 # toute autre adresse est une page de module d'école et demande une école ouverte (page « Choisissez une école »)
 PREFIXES_STRUCTURE = (
@@ -118,6 +120,7 @@ PREFIXES_STRUCTURE = (
     "/paiements/en-ligne/reglages", "/paie/parametres", "/manifest.webmanifest", "/sw.js", "/hors-ligne",
     "/installer", "/referentiel.js", "/rejoindre", "/sante", "/signatures", "/cachet.svg",
     "/groupes-whatsapp", "/acces", "/uascep",
+    "/sport", "/pilotage", "/reg",   # v1.25 : sport scolaire, pilotage, registres (structure ; registres d'école : école ouverte)
     # espaces publics (élèves, parents), API de transmission et de notification, retours de paiement en ligne
     "/eleve", "/parent", "/api", "/webhooks", "/paiement",
 )
@@ -225,7 +228,7 @@ def enregistrer(app, H):
     def nom_niveau():
         return "DDEMP" if ddemp() else "CS"
 
-    # ================================================================ 2. écoles locales ↔ écoles de la juridiction
+    # ================================================================ 2. écoles locales  écoles de la juridiction
     def ecoles_locales():
         """Écoles locales de la juridiction : liées à une école de jur_ecoles ou créées par l'utilisateur ;
         l'école d'exemple n° 1 (m_ecoles : ``ecole_exemple_vide``) n'en fait pas partie."""
@@ -318,7 +321,7 @@ def enregistrer(app, H):
         if not config.juridiction():
             return
         ep = request.endpoint or ""
-        g.page_ecole = bool(ep) and not ep.startswith("jur_") and ep not in ENDPOINTS_COMMUNS
+        g.page_ecole = bool(ep) and not ep.startswith("jur_") and ep not in ENDPOINTS_COMMUNS and not ep.startswith(PREFIXES_EP_COMMUNS)
         g.publique_ecole = publique_ecole()
         if g.page_ecole and g.get("ecole") and getattr(H, "appliquer_identite_ecole", None):
             H.appliquer_identite_ecole(g.ecole)

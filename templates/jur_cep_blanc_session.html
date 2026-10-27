@@ -19,7 +19,7 @@
   <p class="sous">{{ NIV }} · {{ s.niveau }} · année {{ s.annee }} · {{ s.mats|length }} matière(s) · maîtrise = au moins {{ s.seuil_eff }} matière(s) à 10/20{% if s.date %} · {{ date_fr(s.date) }}{% endif %}</p></div>
   <div class="actions">
     <select aria-label="Charger un autre examen blanc" onchange="if(this.value) location.href=this.value">
-      <option value="">📂 Autre examen blanc…</option>
+      <option value="">{{ icone('dossier') }} Autre examen blanc…</option>
       {% for a in autres if a.id != s.id %}<option value="{{ url_for('jur_cep_blanc_session', sid=a.id) }}">N° {{ a.numero }} – {{ a.annee }} – {{ a.nom }}</option>{% endfor %}
     </select>
     <a class="btn sec" href="{{ url_for('jur_cep_blanc_session', sid=s.id, vue=vue, ecole=ecole.id if ecole else None, export='pdf') }}" target="_blank">⎙ PDF</a>

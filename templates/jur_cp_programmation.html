@@ -23,7 +23,7 @@
   </table></div>
   <p class="aide">Case vide : le bilan compte les activités programmées du journal (et les séances prévues des UP). Les visites programmées doivent être saisies ici.</p>
   <div class="actions">
-    {% if saisie %}<button class="btn vert" name="action" value="enregistrer">💾 Enregistrer</button>{% endif %}
+    {% if saisie %}<button class="btn vert" name="action" value="enregistrer">{{ icone('enregistrer') }} Enregistrer</button>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_cp_programmation_xlsx', annee=annee, periode=periode, cs=CSP) }}">⇩ Télécharger (Excel)</a>
     {% if saisie %}<button class="btn danger" name="action" value="reinitialiser" data-confirmer="Effacer toute la programmation de ce trimestre ?">↺ Réinitialiser</button>{% endif %}
   </div>
@@ -31,7 +31,7 @@
 {% if saisie %}
 <form method="post" action="{{ url_for('jur_cp_programmation_import') }}" enctype="multipart/form-data" class="carte">
   <input type="hidden" name="annee" value="{{ annee }}"><input type="hidden" name="periode" value="{{ periode }}">{% if CSP %}<input type="hidden" name="cs" value="{{ CSP }}">{% endif %}
-  <h2>📂 Charger une programmation (Excel)</h2>
+  <h2>{{ icone('dossier') }} Charger une programmation (Excel)</h2>
   <p class="aide">Téléchargez le modèle ci-dessus, complétez les cases blanches, puis chargez-le ici.</p>
   <input type="file" name="fichier" accept=".xlsx" required> <button class="btn sec">Charger</button>
 </form>

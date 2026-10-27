@@ -20,7 +20,7 @@
     <div><label for="v-actif">État</label><select id="v-actif" name="actif"><option value="1" {{ 'selected' if v.get('actif') in (1, '1', none) }}>Actif</option><option value="0" {{ 'selected' if v.get('actif') in (0, '0') }}>Désactivé</option></select></div>
   </div>
   <p class="actions" style="margin-top:12px">
-    <button class="btn vert">💾 Enregistrer</button>
+    <button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button>
     {% if not obj %}<button class="btn sec" name="suivant" value="1">Enregistrer et ajouter un autre</button>{% endif %}
   </p>
 </form>

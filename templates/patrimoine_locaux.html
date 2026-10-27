@@ -4,7 +4,7 @@
   <div><h1>Infrastructures</h1>
   <p class="sous">Bâtiments, salles, latrines, point d'eau, clôture, électricité, cuisine, logements, terrain de sport…</p></div>
   <div class="actions"><a class="btn" href="{{ url_for('patrimoine_local', oid=0, type=typ or none) }}">＋ Ajouter</a>
-    <a class="btn sec petit" href="{{ url_for('patrimoine_inventaire_pdf') }}" target="_blank">📄 Inventaire PDF</a></div>
+    <a class="btn sec petit" href="{{ url_for('patrimoine_inventaire_pdf') }}" target="_blank">{{ icone('document') }} Inventaire PDF</a></div>
 </div>
 {% include "patrimoine_onglets.html" %}
 {% set sc = s.salles_classe %}

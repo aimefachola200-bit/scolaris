@@ -49,13 +49,13 @@ table.sy .rf{color:var(--rouge);font-weight:700}
   <input type="hidden" name="type" value="{{ type_ }}"><input type="hidden" name="numero" value="{{ numero }}">
   <input type="hidden" name="classe" value="{{ cid or '' }}">
   <div class="barre-doc">
-    <button class="btn petit" name="action" value="sauver">💾 Sauvegarder</button>
-    <a class="btn sec petit" href="{{ url_for('synthese_accueil', type=type_, numero=numero, classe=cid) }}" title="Recharger la synthèse enregistrée (les modifications non sauvegardées sont perdues)">📂 Charger</a>
+    <button class="btn petit" name="action" value="sauver">{{ icone('enregistrer') }} Sauvegarder</button>
+    <a class="btn sec petit" href="{{ url_for('synthese_accueil', type=type_, numero=numero, classe=cid) }}" title="Recharger la synthèse enregistrée (les modifications non sauvegardées sont perdues)">{{ icone('dossier') }} Charger</a>
     <button class="btn sec petit" name="action" value="prefill" data-confirmer="Recalculer les fiches des classes de SCOLARIS à partir des notes ? Les chiffres modifiés à la main pour ces classes seront remplacés (les fiches des autres écoles sont conservées).">⟳ Pré-remplir depuis SCOLARIS</button>
     {% if not cid %}<button class="btn sec petit" name="action" value="ajouter">＋ Fiche d'une autre école</button>{% endif %}
     <span class="sep"></span>
-    <button class="btn sec petit" name="action" value="excel" title="Sauvegarde puis télécharge le classeur Excel">⬇ Excel</button>
-    <button class="btn sec petit" name="action" value="pdf" formtarget="_blank" title="Sauvegarde puis ouvre le PDF">🖨 PDF</button>
+    <button class="btn sec petit" name="action" value="excel" title="Sauvegarde puis télécharge le classeur Excel">{{ icone('telecharger') }} Excel</button>
+    <button class="btn sec petit" name="action" value="pdf" formtarget="_blank" title="Sauvegarde puis ouvre le PDF">{{ icone('imprimer') }} PDF</button>
     <span class="sep"></span>
     <button class="btn danger petit" formaction="{{ url_for('synthese_supprimer') }}" formnovalidate
       data-confirmer="Supprimer la synthèse enregistrée pour cette évaluation (toutes les fiches, y compris celles des autres écoles) ?">↺ Réinitialiser</button>

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """v1.13 — Modifier, supprimer, réinitialiser (écoles privées surtout) : corriger une saisie sans tout recommencer.
 
-* Paiements de scolarité (contribution des familles) : ✏️ Modifier (montant, date, mode, référence, téléphone, motif ;
-  le reçu garde son numéro), 🗑 Supprimer (reçu supprimé, journalisé), ♻ Réinitialiser les paiements d'un élève pour
+* Paiements de scolarité (contribution des familles) :  Modifier (montant, date, mode, référence, téléphone, motif ;
+  le reçu garde son numéro),  Supprimer (reçu supprimé, journalisé),  Réinitialiser les paiements d'un élève pour
   l'année (confirmation écrite « REINITIALISER »).
-* Journal de caisse (trésorerie) : ✏️ Modifier et 🗑 Supprimer une opération saisie à la main.
-* Cantine : ♻ Réinitialiser la contribution d'une classe (montant journalier et validation effacés) et, si on le demande,
+* Journal de caisse (trésorerie) :  Modifier et  Supprimer une opération saisie à la main.
+* Cantine :  Réinitialiser la contribution d'une classe (montant journalier et validation effacés) et, si on le demande,
   supprimer les paiements de cantine de la classe pour l'année.
 Droits : administrateur, fondateur, directeur (et comptable pour la trésorerie et la cantine). Tout est journalisé
 avec l'ancienne valeur.

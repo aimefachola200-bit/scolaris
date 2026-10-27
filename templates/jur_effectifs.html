@@ -35,10 +35,10 @@
 {% endmacro %}
 <style>.ages small.pc{color:#6b7280;font-size:.72em;white-space:nowrap}.ages td.ens{background:#f5f7fb}.ages tr.stat td{background:#fff8e1}</style>
 {{ T.styles() }}
-<div class="entete"><div><h1>👥 Effectifs : apprenants et personnel enseignant</h1>
+<div class="entete"><div><h1>{{ icone('groupe') }} Effectifs : apprenants et personnel enseignant</h1>
   <p class="sous">{{ tot.ecoles }} école(s) · année scolaire {{ flt.annee }} · par {{ lib|lower }} · d'après les fiches de recensement et l'état nominatif transmis par les écoles</p></div>
   <div class="actions"><a class="btn sec" href="{{ url_for('jur_effectifs', export='xlsx', **args) }}">⇩ Excel</a>
-    <button class="btn sec" type="button" onclick="window.print()">🖶 Imprimer</button></div></div>
+    <button class="btn sec" type="button" onclick="window.print()">{{ icone('imprimer') }} Imprimer</button></div></div>
 {{ T.filtres(flt, 'jur_effectifs', extra={'par': par}) }}
 <div class="actions noprint" style="margin:-4px 0 12px">Regrouper par :
   {% if JUR_NIVEAU == 'ddemp' %}<a class="btn petit {{ '' if par == 'cs' else 'sec' }}" href="{{ url_for('jur_effectifs', **dict(args0, par='cs')) }}">circonscription</a>{% endif %}
@@ -54,7 +54,7 @@
   <div class="kpi"><div class="l">CEAP</div><div class="v">{{ tot.dip.ceap_ep.t + tot.dip.ceap_em.t }}</div><div class="d">EP {{ tot.dip.ceap_ep.t }} · EM {{ tot.dip.ceap_em.t }}</div></div>
 </div>
 <div class="grille indicateurs">
-  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">🏫 Écoles privées (à part)</div><div class="v">{{ tot.prive.ecoles }}</div><div class="d">{{ tot.prive.app.t.t|jur_nb }} apprenants ({{ tot.prive.app.t.g|jur_nb }} G · {{ tot.prive.app.t.f|jur_nb }} F)</div></div>
+  <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">{{ icone('ecole') }} Écoles privées (à part)</div><div class="v">{{ tot.prive.ecoles }}</div><div class="d">{{ tot.prive.app.t.t|jur_nb }} apprenants ({{ tot.prive.app.t.g|jur_nb }} G · {{ tot.prive.app.t.f|jur_nb }} F)</div></div>
   <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">Enseignants du privé</div><div class="v">{{ tot.prive.ens.t }}</div><div class="d">{{ tot.prive.ens.h }} H · {{ tot.prive.ens.f }} F</div></div>
   <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">Directeurs du privé</div><div class="v">{{ tot.prive.dir.t }}</div><div class="d">{{ tot.prive.dir.h }} H · {{ tot.prive.dir.f }} F</div></div>
   <div class="kpi" style="border-left:4px solid #8e44ad"><div class="l">CAP / CEAP (privé)</div><div class="v">{{ tot.prive.cap.t }} <small>/ {{ tot.prive.ceap.t }}</small></div><div class="d">CAP / CEAP</div></div>

@@ -64,7 +64,7 @@
   {% endfor %}</tbody>
   <tfoot><tr><th colspan="{{ 3 + (r.jours|length if grille else 1) }}" style="text-align:left">Total {{ gr.c.nom }}</th><th class="c">{{ gr.n }}</th><th class="num">{{ milliers(gr.du) }}</th></tr></tfoot>
 </table></div>
-{% else %}<div class="carte gris">Tous les élèves de {{ gr.c.nom }} ont payé sur cette période. ✔</div>{% endif %}
+{% else %}<div class="carte gris">Tous les élèves de {{ gr.c.nom }} ont payé sur cette période. {{ icone('coche') }}</div>{% endif %}
 <p><a class="btn petit" href="{{ url_for('cantine_classe', cid=gr.c.id, semaine=gr.semaine) }}">Ouvrir la grille de paiement de {{ gr.c.nom }}</a></p>
 {% endfor %}
 {% endif %}

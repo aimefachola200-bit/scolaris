@@ -11,7 +11,7 @@
   <form method="post" enctype="multipart/form-data" class="carte f">
     <h2 style="margin-top:0">Importer</h2>
     <label for="imp-f">Fichier Excel (.xlsx) ou CSV</label><input id="imp-f" type="file" name="fichier" accept=".xlsx,.csv" required>
-    <p class="actions" style="margin-top:12px"><button class="btn">⬆ Importer</button> <a class="btn sec" href="{{ url_for('stock_modele_xlsx') }}">Télécharger le modèle Excel</a></p>
+    <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('importer') }} Importer</button> <a class="btn sec" href="{{ url_for('stock_modele_xlsx') }}">Télécharger le modèle Excel</a></p>
     <p class="aide">Les vivres existants (même nom) sont mis à jour, les autres ajoutés ; un mouvement dont le vivre est inconnu crée ce vivre. Les mouvements importés s'ajoutent à ceux déjà saisis.</p>
   </form>
   <div class="carte">

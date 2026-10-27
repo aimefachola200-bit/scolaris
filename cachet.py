@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Cachets officiels, en deux rendus identiques : SVG (écran) et ReportLab (PDF).
 
-* Cachet circulaire (`svg`, `dessiner`), tel qu'utilisé dans les écoles : texte en arc supérieur ★ texte en arc
-  inférieur ★, texte central, bleu ou rouge.
+* Cachet circulaire (`svg`, `dessiner`), tel qu'utilisé dans les écoles : texte en arc supérieur, étoile, texte en arc
+  inférieur, étoile, texte central, bleu ou rouge.
 * Cachet rectangulaire du nom du responsable, la « griffe » (`svg_nom`, `dessiner_nom`) : bord double (trait épais
   + trait fin), coins droits, 2 à 3 lignes centrées en majuscules — titre / fonction, NOM Prénoms, et une ligne
   facultative (grade, qualité). La griffe est préconçue : elle est composée automatiquement à partir du titre et du
@@ -12,7 +12,7 @@
 import math
 from html import escape
 
-COULEURS = {"bleu": "#1E3A8A", "rouge": "#B91C1C"}
+COULEURS = {"bleu": "#1E3A8A", "rouge": "#B91C1C", "vert": "#166534", "noir": "#111827"}   # v1.25 : vert et noir
 
 
 ANGLE_MAX = 150  # degrés occupés au maximum par chaque texte en arc
@@ -29,6 +29,17 @@ def _angles(texte, rayon, taille):
         taille *= f
         larg = [w * f for w in larg]
     return taille, [math.degrees(w / rayon) for w in larg]
+
+
+def _etoile_svg(x, y, r):
+    """Étoile à cinq branches dessinée (pas de caractère émoji)."""
+    import math as _m
+    pts = []
+    for k in range(10):
+        a = _m.radians(-90 + 36 * k)
+        rr = r if k % 2 == 0 else r * 0.42
+        pts.append(f"{x + rr * _m.cos(a):.2f},{y + rr * _m.sin(a):.2f}")
+    return f'<polygon points="{" ".join(pts)}"/>'
 
 
 def svg(sup="", inf="", centre="", couleur="bleu", taille=180):
@@ -69,7 +80,7 @@ def svg(sup="", inf="", centre="", couleur="bleu", taille=180):
     arc(inf, False)
     for a in (0, 180):
         x = r + rt * math.cos(math.radians(a))
-        parts.append(f'<text x="{x:.2f}" y="{r:.2f}" font-size="{fs * 1.1:.2f}" text-anchor="middle" dominant-baseline="central">★</text>')
+        parts.append(_etoile_svg(x, r, fs * 0.55))
     lignes = [l for l in (centre or "").upper().split("|") if l.strip()] or [""]
     fc = _taille_centre([l.strip() for l in lignes], r)
     y0 = r - (len(lignes) - 1) * fc * 0.6
@@ -123,7 +134,7 @@ def dessiner(c, cx, cy, rayon, sup="", inf="", centre="", couleur="bleu"):
 
     arc(sup, True)
     arc(inf, False)
-    # étoiles (dessinées : la police standard n'a pas le caractère ★)
+    # étoiles (dessinées : la police standard n'a pas le caractère étoile)
     for a in (0, 180):
         x = cx + rt * math.cos(math.radians(a))
         _etoile(c, x, cy, fs * 0.55)

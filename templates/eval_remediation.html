@@ -6,9 +6,9 @@
   <p class="sous">{{ cl.nom }} ({{ cl.niveau }}) · {{ composes }} élève(s) ayant composé · année {{ ev.annee }}</p></div>
   <div class="actions">
     <a class="btn sec petit" href="{{ url_for('eval_saisie', ev_id=ev.id) }}">← Saisie des notes</a>
-    {% if ep_existe('ma_classe_detail') %}<a class="btn sec petit" href="{{ url_for('ma_classe_detail', cid=cl.id) }}">🏫 Ma classe</a>{% endif %}
-    <a class="btn sec petit" href="{{ url_for('eval_remediation_pdf', ev_id=ev.id) }}" target="_blank" rel="noopener">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('eval_remediation_xlsx', ev_id=ev.id) }}">📊 Excel</a>
+    {% if ep_existe('ma_classe_detail') %}<a class="btn sec petit" href="{{ url_for('ma_classe_detail', cid=cl.id) }}">{{ icone('ecole') }} Ma classe</a>{% endif %}
+    <a class="btn sec petit" href="{{ url_for('eval_remediation_pdf', ev_id=ev.id) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('eval_remediation_xlsx', ev_id=ev.id) }}">{{ icone('graphique') }} Excel</a>
   </div>
 </div>
 
@@ -48,6 +48,6 @@
     <td>{{ x.matieres|join(', ') or '—' }}</td></tr>
   {% endfor %}
 </table></div>
-{% else %}<div class="carte">Tous les élèves ayant composé sont en maîtrise. 👏</div>{% endif %}
+{% else %}<div class="carte">Tous les élèves ayant composé sont en maîtrise. {{ icone('valider') }}</div>{% endif %}
 {% endif %}
 {% endblock %}

@@ -98,12 +98,12 @@ def enregistrer(app, H):
         limite = (jour - timedelta(days=JOURS_TRANSMISSION)).isoformat()
         anciennes = [e for e in ecs if e["id"] in derniere and derniere[e["id"]] and derniere[e["id"]] < limite]
         if jamais:
-            alertes.append({"niveau": "haute", "ico": "📭", "titre": f"{len(jamais)} école(s) sans aucune transmission en {annee}",
+            alertes.append({"niveau": "haute", "ico": "courrier", "titre": f"{len(jamais)} école(s) sans aucune transmission en {annee}",
                             "detail": "Leurs effectifs, enseignants et résultats manquent dans les statistiques et les bilans.",
                             "lien": url_for("jur_transmissions") if "jur_transmissions" in app.view_functions else None,
                             "ecoles": noms(jamais)})
         if anciennes:
-            alertes.append({"niveau": "moyenne", "ico": "⏳",
+            alertes.append({"niveau": "moyenne", "ico": "sablier",
                             "titre": f"{len(anciennes)} école(s) sans transmission depuis plus de {JOURS_TRANSMISSION} jours",
                             "detail": "Relancer les directeurs pour une transmission à jour (appel, notes, effectifs).",
                             "lien": url_for("jur_transmissions") if "jur_transmissions" in app.view_functions else None,
@@ -119,14 +119,14 @@ def enregistrer(app, H):
         manque = [l for l in lignes if (l.get("besoin") or {}).get("manque")]
         if manque:
             total = sum(l["besoin"]["manque"] for l in manque)
-            alertes.append({"niveau": "haute", "ico": "👩‍🏫", "titre": f"Manque de {total} enseignant(s) dans {len(manque)} école(s)",
+            alertes.append({"niveau": "haute", "ico": "enseignant", "titre": f"Manque de {total} enseignant(s) dans {len(manque)} école(s)",
                             "detail": "Classes sans enseignant titulaire d'après les effectifs et le personnel transmis.",
                             "lien": url_for("jur_tableau") if "jur_tableau" in app.view_functions else None,
                             "ecoles": [f"{l['nom']} : {l['besoin']['manque']} manquant(s)" for l in
                                        sorted(manque, key=lambda x: -x["besoin"]["manque"])]})
         pleth = [l for l in lignes if l.get("plethoriques")]
         if pleth:
-            alertes.append({"niveau": "moyenne", "ico": "👥",
+            alertes.append({"niveau": "moyenne", "ico": "groupe",
                             "titre": f"{sum(l['plethoriques'] for l in pleth)} classe(s) pléthorique(s) dans {len(pleth)} école(s)",
                             "detail": "Classes au-delà du seuil d'effectif : envisager un dédoublement ou une redistribution.",
                             "lien": url_for("jur_tableau") if "jur_tableau" in app.view_functions else None,
@@ -140,7 +140,7 @@ def enregistrer(app, H):
             non_vues = [e for e in ecs if e["id"] not in vues]
             part = avancement(annee, periode, jour)
             if non_vues and part >= .25:
-                alertes.append({"niveau": "moyenne" if part >= .6 else "info", "ico": "🔎",
+                alertes.append({"niveau": "moyenne" if part >= .6 else "info", "ico": "rechercher",
                                 "titre": f"{len(non_vues)} école(s) sur {len(ecs)} sans visite ce trimestre",
                                 "detail": f"Aucune visite de classe ni d'école enregistrée depuis le {d1[8:10]}/{d1[5:7]}/{d1[:4]} "
                                           f"({round(part * 100)} % du trimestre écoulé).",
@@ -169,7 +169,7 @@ def enregistrer(app, H):
                             retards.append(f"{a['lib']}{' – ' + a['nom'] if a.get('nom') else ''} : {r.get(real_k) or 0} "
                                            f"{lib} réalisée(s) sur {r.get(prog_k)} programmée(s)")
                 if retards:
-                    alertes.append({"niveau": "moyenne", "ico": "📅",
+                    alertes.append({"niveau": "moyenne", "ico": "calendrier",
                                     "titre": f"Retard sur la programmation du {periode[1]}{'er' if periode == 'T1' else 'e'} trimestre"
                                              + (f" – {cs['nom']}" if not cs_id else ""),
                                     "detail": f"{round(part * 100)} % du trimestre est écoulé ; les activités ci-dessous ont "
@@ -190,7 +190,7 @@ def enregistrer(app, H):
         except Exception:  # noqa: BLE001 — module des UP absent
             seances = []
         if seances:
-            alertes.append({"niveau": "info", "ico": "🧑‍🤝‍🧑", "titre": f"{len(seances)} séance(s) d'UP prévue(s) et non tenue(s)",
+            alertes.append({"niveau": "info", "ico": "groupe", "titre": f"{len(seances)} séance(s) d'UP prévue(s) et non tenue(s)",
                             "detail": "Date passée sans exécution enregistrée : reprogrammer ou mettre à jour le suivi des UP.",
                             "lien": url_for("jur_up") if "jur_up" in app.view_functions else None,
                             "ecoles": [f"{s['up_nom']} – {s['date'][8:10]}/{s['date'][5:7]}/{s['date'][:4]}"
@@ -198,7 +198,7 @@ def enregistrer(app, H):
         # v1.9 : directeurs injoignables sur WhatsApp (numéro absent ou invalide)
         sans_num = [e for e in ecs if not H.notif.normaliser_tel(e["directeur_tel"])]
         if sans_num:
-            alertes.append({"niveau": "info", "ico": "💬",
+            alertes.append({"niveau": "info", "ico": "message",
                             "titre": f"{len(sans_num)} directeur(s) sans numéro de téléphone valide",
                             "detail": "Ils ne peuvent pas être ajoutés au groupe WhatsApp des directeurs : compléter la fiche de l'école.",
                             "lien": url_for("groupes_whatsapp", groupe="directeurs", cs=cs_id or None) if "groupes_whatsapp" in app.view_functions else None,

@@ -3,9 +3,9 @@
   <div><h1>Tableau synoptique de la {{ 'DDEMP' if ddemp else 'circonscription scolaire' }}</h1>
     <p class="sous">{{ ident.structure_nom }} — année scolaire {{ ANNEE }} · département {{ ident.departement or '—' }}{% if not ddemp %} · CS {{ ident.cs_nom or '—' }}{% endif %}</p></div>
   <div class="actions">
-    <a class="btn petit" href="{{ url_for('jur_synoptique_pdf') }}" target="_blank">📄 PDF complet</a>
-    <a class="btn sec petit" href="{{ url_for('jur_synoptique_xlsx') }}">⬇ Excel</a>
-    {% if ecrire %}<a class="btn sec petit" href="{{ url_for('jur_synoptique_import') }}">⬆ Import / export</a>{% endif %}
+    <a class="btn petit" href="{{ url_for('jur_synoptique_pdf') }}" target="_blank">{{ icone('document') }} PDF complet</a>
+    <a class="btn sec petit" href="{{ url_for('jur_synoptique_xlsx') }}">{{ icone('telecharger') }} Excel</a>
+    {% if ecrire %}<a class="btn sec petit" href="{{ url_for('jur_synoptique_import') }}">{{ icone('importer') }} Import / export</a>{% endif %}
   </div>
 </div>
 <nav class="onglets" aria-label="Rubriques du tableau synoptique">

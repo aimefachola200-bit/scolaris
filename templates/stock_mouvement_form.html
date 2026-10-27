@@ -33,7 +33,7 @@
   </div>
   <div><label for="m-obs">Observations</label><textarea id="m-obs" name="observations" rows="2" maxlength="500">{{ v.get('observations') or '' }}</textarea></div>
   <p class="actions" style="margin-top:12px">
-    <button class="btn vert">💾 Enregistrer</button>
+    <button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button>
     {% if not obj %}<button class="btn sec" name="suivant" value="1">Enregistrer et saisir un autre</button>{% endif %}
     {% if obj %}<a class="btn sec" href="{{ url_for('stock_mouvements', annee=obj.annee) }}">Annuler</a>{% endif %}
   </p>

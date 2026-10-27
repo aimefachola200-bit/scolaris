@@ -37,7 +37,7 @@
     <div><dt>{{ lib }}</dt><dd>{{ v or '—' }}</dd></div>
     {% endfor %}
   </dl>
-  {% if ep_existe('ecole_form') and peut('ecoles') %}<p><a class="btn sec petit" href="{{ url_for('ecole_form', eid=e.id) }}">✎ Modifier la fiche de l'école</a></p>{% endif %}
+  {% if ep_existe('ecole_form') and peut('ecoles') %}<p><a class="btn sec petit" href="{{ url_for('ecole_form', eid=e.id) }}">{{ icone('modifier') }} Modifier la fiche de l'école</a></p>{% endif %}
   <p class="aide">Ces informations alimentent automatiquement la rubrique 1 des fiches de recensement.</p>
   {% else %}<p>Aucune école n'est encore enregistrée.</p>{% endif %}
 </section>
@@ -51,10 +51,10 @@
     <p class="aide" style="margin:0">{{ f.pct }} % des cases remplies — {{ f.ctx.n_calcules }} calculée(s), {{ f.ctx.n_saisis }} saisie(s){% if f.ctx.maj %} — enregistrée le {{ f.ctx.maj[:16] }}{% endif %}.</p>
     {% if f.ctx.ctrl %}<span class="badge att">{{ f.ctx.ctrl|length }} contrôle(s) à revoir</span>{% else %}<span class="badge ok">Cohérente</span>{% endif %}
     <div class="actions">
-      <a class="btn petit" href="{{ url_for('recensement_fiche', typ=f.typ, annee=annee) }}">✎ Remplir</a>
-      <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=f.typ, annee=annee) }}" target="_blank" rel="noopener">📄 PDF rempli</a>
-      <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=f.typ, annee=annee, vierge=1) }}" target="_blank" rel="noopener">📄 Vierge</a>
-      <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=f.typ, annee=annee) }}">📊 Excel</a>
+      <a class="btn petit" href="{{ url_for('recensement_fiche', typ=f.typ, annee=annee) }}">{{ icone('modifier') }} Remplir</a>
+      <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=f.typ, annee=annee) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF rempli</a>
+      <a class="btn sec petit" href="{{ url_for('recensement_pdf', typ=f.typ, annee=annee, vierge=1) }}" target="_blank" rel="noopener">{{ icone('document') }} Vierge</a>
+      <a class="btn sec petit" href="{{ url_for('recensement_excel', typ=f.typ, annee=annee) }}">{{ icone('graphique') }} Excel</a>
     </div>
   </div>
   {% endfor %}
@@ -76,7 +76,7 @@
     <div><label for="d-annee">Année scolaire</label><select id="d-annee" name="annee">{% for a in annees %}<option {{ 'selected' if a==annee }}>{{ a }}</option>{% endfor %}</select></div>
     <div><label for="d-lib">Libellé (facultatif)</label><input id="d-lib" name="libelle" maxlength="120" placeholder="ex. fiche signée par le CP"></div>
     <div><label for="d-f">Fichier (PDF ou image, 15 Mo max.)</label><input id="d-f" type="file" name="fichier" accept=".pdf,image/*" required></div>
-    <div><button class="btn">⬆ Téléverser</button></div>
+    <div><button class="btn">{{ icone('importer') }} Téléverser</button></div>
   </form>
   <h3>Archives</h3>
   {% if depots %}

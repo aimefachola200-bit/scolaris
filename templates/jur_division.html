@@ -25,7 +25,7 @@ details.aof summary{cursor:pointer;font-weight:600;color:var(--bleu)}
     {% if peut('jur_structure') %}<a class="btn sec" href="{{ url_for('jur_service_form', sid=d.id) }}">Nom, sigle, chef</a>{% endif %}
     {% if modifiable %}<a class="btn sec" href="{{ url_for('jur_division_import', code=d.code, annee=annee) }}">⇧ Importer (Excel)</a>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_division_xlsx', code=d.code, annee=annee) }}">⇩ Excel</a>
-    <a class="btn" href="{{ url_for('jur_division_pdf', code=d.code, annee=annee) }}" target="_blank">📄 Plan d'action (PDF)</a>
+    <a class="btn" href="{{ url_for('jur_division_pdf', code=d.code, annee=annee) }}" target="_blank">{{ icone('document') }} Plan d'action (PDF)</a>
   </div></div>
 
 <form method="get" class="filtres carte">

@@ -426,6 +426,8 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_corrections",
            # v1.14 : SCOLARIS Enseignant — application personnelle de l'enseignant et portail /enseignant des écoles
            "m_enseignant",
+           # v1.25 : sport scolaire (licences, compétitions, classements, records, palmarès, diplômes), tableau de bord du pilotage
+           "m_sport", "m_pilotage",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 
@@ -434,6 +436,8 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_path=config.INSTANCE_DIR,
                 template_folder=os.path.join(config.WEB_DIR, "templates"),
                 static_folder=os.path.join(config.WEB_DIR, "static"))
+    import icones   # v1.25 : icônes au trait (pas d'émojis)
+    icones.installer(app)
     os.makedirs(os.path.join(app.instance_path, "photos"), exist_ok=True)
     os.makedirs(config.ECOLE_DIR, exist_ok=True)
     cle = os.path.join(app.instance_path, "secret.key")
@@ -532,7 +536,7 @@ def create_app(test_config=None):
         except OSError:
             dernieres = "Aucune erreur enregistrée."
         return (f"<!doctype html><html lang='fr'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-                f"<title>Diagnostic</title></head><body style='font-family:system-ui,Arial;padding:16px'><h1>🩺 Diagnostic</h1>"
+                f"<title>Diagnostic</title></head><body style='font-family:system-ui,Arial;padding:16px'><h1> Diagnostic</h1>"
                 f"<pre style='white-space:pre-wrap'>{_html.escape(chr(10).join(lignes))}</pre><h2>Dernières erreurs</h2>"
                 f"<pre style='white-space:pre-wrap;font-size:.85em'>{_html.escape(dernieres)}</pre><p><a href='/'>Retour à l'accueil</a></p></body></html>")
 
@@ -1602,8 +1606,22 @@ def create_app(test_config=None):
                 db.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
                 db.commit()
 
+    def renommer_colonnes(table, renommages):
+        """v1.25 : renomme des colonnes (ancien -> nouveau) quand l'ancienne existe et pas la nouvelle."""
+        if not renommages:
+            return
+        with app.app_context():
+            db = get_db()
+            cols = {r[1] for r in db.execute(f"PRAGMA table_info({table})")}
+            for ancien, nouveau in renommages.items():
+                if ancien in cols and nouveau not in cols:
+                    db.execute(f"ALTER TABLE {table} RENAME COLUMN {ancien} TO {nouveau}")
+                    cols = (cols - {ancien}) | {nouveau}
+            db.commit()
+
     H.schema = schema
     H.ajouter_colonne = ajouter_colonne
+    H.renommer_colonnes = renommer_colonnes
     H.eco = eco
     notif.configurer(H)
     H.notif = notif
@@ -1666,7 +1684,7 @@ a.b{{display:inline-block;margin:6px 6px 0 0;padding:9px 14px;border-radius:6px;
 <p>L'application n'a pas pu afficher <b>{_html.escape(chemin)}</b>. Vos données ne sont pas perdues.
 Envoyez ce rapport au concepteur pour une correction rapide, puis revenez à l'accueil.</p>
 <pre>{_html.escape(resume)}</pre>
-<a class="b w" href="{_html.escape(wa)}">📲 Envoyer le rapport par WhatsApp</a><a class="b" href="/">🏠 Retour à l'accueil</a><a class="b" href="/diagnostic">🩺 Diagnostic</a>
+<a class="b w" href="{_html.escape(wa)}"> Envoyer le rapport par WhatsApp</a><a class="b" href="/"> Retour à l'accueil</a><a class="b" href="/diagnostic"> Diagnostic</a>
 <p style="color:#64748b;font-size:.85em">Le rapport complet est aussi enregistré dans le fichier erreurs.log du dossier des données.</p></div></body></html>"""
 
 

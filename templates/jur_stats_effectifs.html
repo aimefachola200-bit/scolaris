@@ -6,7 +6,7 @@
   <p class="sous">{{ tot.ecoles }} école(s) · {{ tot.classes }} classe(s) · année scolaire {{ flt.annee }}</p></div>
   <div class="actions">
     <a class="btn sec" href="{{ url_for('jur_stats_effectifs', export='xlsx', **args) }}">⇩ Excel (plusieurs feuilles)</a>
-    <a class="btn sec" href="{{ url_for('jur_stats_effectifs', export='pdf', **args) }}" target="_blank">🖶 PDF</a></div></div>
+    <a class="btn sec" href="{{ url_for('jur_stats_effectifs', export='pdf', **args) }}" target="_blank">{{ icone('imprimer') }} PDF</a></div></div>
 {{ T.filtres(flt, 'jur_stats_effectifs') }}
 
 <div class="grille indicateurs">

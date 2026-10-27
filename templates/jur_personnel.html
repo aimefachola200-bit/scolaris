@@ -12,7 +12,7 @@
 <div class="entete">
   <div><h1>Personnel et gestion de carrière</h1>
     <p class="sous">Année {{ a.annee }} · anciennetés au {{ reference.strftime('%d/%m/%Y') }} · retraite : A = 60 ans, B = 58 ans, C = 55 ans</p></div>
-  <div class="actions">{% if ep_existe('jur_saisie') %}<a class="btn" href="{{ url_for('jur_saisie') }}">✍️ Saisir le personnel d'une école</a>{% endif %}
+  <div class="actions">{% if ep_existe('jur_saisie') %}<a class="btn" href="{{ url_for('jur_saisie') }}">{{ icone('signature') }} Saisir le personnel d'une école</a>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_personnel', export='pdf', **qs) }}" target="_blank">PDF (onglet)</a>
     <a class="btn sec" href="{{ url_for('jur_personnel', export='xlsx', **qs) }}">Excel (tous les modules)</a>
     {% if peut('jur_personnel') %}<a class="btn" href="{{ url_for('jur_agents') }}">Agents de la {{ 'circonscription' if not ddemp else 'DDEMP' }}</a>{% endif %}

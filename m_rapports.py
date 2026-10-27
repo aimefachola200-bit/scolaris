@@ -11,7 +11,7 @@ Principe
   (clé ``e<école>:rapports:<doc>:<année>`` dans documents_modules) avec un instantané complet des valeurs.
   Vider une case = revenir à la valeur calculée. « - » = case volontairement laissée sans objet.
 * Les renseignements stables (année de création, références, infrastructures, mobilier, diplômes…) sont repris
-  du rapport « frère » de la même année (rentrée ↔ fin d'année) ou du rapport de l'année précédente.
+  du rapport « frère » de la même année (rentrée  fin d'année) ou du rapport de l'année précédente.
 * PDF : reproduction de la mise en forme de chaque modèle (mêmes rubriques, cadres, tableaux, numérotation),
   version remplie ou vierge ; annexe SCOLARIS facultative (résultats, CEP, présence, âges, cantine).
 * Export Excel (même structure) ; téléversement du rapport officiel scanné (archive par année).

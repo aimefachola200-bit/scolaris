@@ -1,7 +1,8 @@
 {# v1.19 — un résumé : vue enseignant (corrigé) ou élève (?eleve=1, sans les réponses), imprimable #}
 {% extends "base.html" %}{% block titre %}{{ r.titre }}{% endblock %}
 {% block contenu %}{% set onglet = 'resumes' %}{% include "_prep_onglets.html" %}
-<p class="aide"><a href="{{ url_for('prep_resumes', col={'Mathématiques': 'maths', 'Français CM1': 'francais-cm1', 'Révision CEP': 'cep'}[r.collection], cours=r.cours) }}">← {{ r.collection }} — {{ PREP_COURS_LIB[r.cours] }}</a> · {{ prep_nom_matiere(r.matiere) }} · {{ r.domaine }}{% if r.etape %} · {{ r.etape }}{% endif %}</p>
+<p class="aide"><a href="{{ url_for('prep_resumes', cours=r.cours, matiere=r.matiere) }}">← {{ prep_nom_matiere(r.matiere) }} — {{ PREP_COURS_LIB[r.cours] }}</a> · {{ r.domaine }}{% if r.sous_domaine %} ({{ r.sous_domaine }}){% endif %}{% if r.etape %} · {{ r.etape }}{% endif %}</p>
+{% if r.ancres %}<p class="aide">Progression : {% if r.trimestre %}trimestre {{ r.trimestre }} · {{ r.mois }} · {% endif %}{% for a in r.ancres %}{{ a.libelle }}{% if a.seance_titre and a.seance_titre != r.titre %} (« {{ a.seance_titre }} »){% endif %}{% if not loop.last %} ; {% endif %}{% endfor %}</p>{% endif %}
 <div class="actions" style="margin:6px 0 10px">
   {% if eleve %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id) }}">Version enseignant</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id, eleve=1) }}">Version élève</a>{% endif %}
   <a class="btn petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1 if eleve else None) }}">PDF {{ 'élève' if eleve else 'enseignant' }}</a>

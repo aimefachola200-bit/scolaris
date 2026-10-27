@@ -28,7 +28,7 @@
   <p class="sous">{{ s.centre or 'Centre non précisé' }} · année {{ s.annee }} · {{ s.mats|length }} matière(s) · maîtrise = au moins {{ s.seuil_eff }} matière(s) à 10/20</p></div>
   <div class="actions">
     <select aria-label="Charger un autre examen blanc" onchange="if(this.value) location.href=this.value">
-      <option value="">📂 Charger un autre examen…</option>
+      <option value="">{{ icone('dossier') }} Charger un autre examen…</option>
       {% for a in autres if a.id != s.id %}<option value="{{ url_for('cep_blanc_session', sid=a.id) }}">N° {{ a.numero }} – {{ a.annee }} – {{ a.centre or '' }}</option>{% endfor %}
     </select>
     <a class="btn sec petit" href="{{ url_for('cep_blanc_accueil') }}">← Examens blancs</a>
@@ -55,29 +55,29 @@
     <form method="post" action="{{ url_for('cep_blanc_numeroter', sid=s.id) }}" id="f-num">
       <label>Préfixe<br><input name="prefixe" form="f-num" maxlength="10" style="width:70px" placeholder="ex. A"></label>
       <label>À partir de<br><input name="debut" form="f-num" type="number" min="1" value="1" style="width:70px"></label>
-      <button class="btn sec petit" form="f-num" data-confirmer="Renuméroter TOUS les candidats dans l'ordre alphabétique (les numéros actuels seront remplacés) ?">🔢 Numéroter les tables</button>
+      <button class="btn sec petit" form="f-num" data-confirmer="Renuméroter TOUS les candidats dans l'ordre alphabétique (les numéros actuels seront remplacés) ?">{{ icone('nombres') }} Numéroter les tables</button>
     </form>
     <form method="get" action="{{ url_for('cep_blanc_releves', sid=s.id) }}" target="_blank" id="f-rel">
       <label>Relevés de notes<br><select name="ecole" form="f-rel"><option value="">Tous les candidats</option>
         {% for e in ecoles %}<option value="{{ e }}">École : {{ e }}</option>{% endfor %}</select></label>
-      <button class="btn sec petit" form="f-rel">📄 Relevés PDF</button>
+      <button class="btn sec petit" form="f-rel">{{ icone('document') }} Relevés PDF</button>
     </form>
   </div>
 </div>
 
 <form method="post" action="{{ url_for('cep_blanc_sauvegarder', sid=s.id, tri=tri) }}" id="f-blanc" autocomplete="off">
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
-  <button class="btn vert petit" title="Enregistrer l'en-tête, les candidats et les notes">💾 Sauvegarder</button>
-  <a class="btn sec petit" href="{{ url_for('cep_blanc_session', sid=s.id, tri=tri) }}" title="Recharger les données enregistrées (abandonne les saisies non sauvegardées)">📂 Charger</a>
+  <button class="btn vert petit" title="Enregistrer l'en-tête, les candidats et les notes">{{ icone('enregistrer') }} Sauvegarder</button>
+  <a class="btn sec petit" href="{{ url_for('cep_blanc_session', sid=s.id, tri=tri) }}" title="Recharger les données enregistrées (abandonne les saisies non sauvegardées)">{{ icone('dossier') }} Charger</a>
   <span class="sep"></span>
-  <label class="btn sec petit cb-import" title="Importer la liste des candidats (et les notes) depuis un fichier Excel">📥 Importer liste
+  <label class="btn sec petit cb-import" title="Importer la liste des candidats (et les notes) depuis un fichier Excel">{{ icone('recevoir') }} Importer liste
     <input type="file" name="fichier" form="f-import" accept=".xlsx,.xlsm,.csv" data-envoi-auto></label>
-  <a class="btn sec petit" href="{{ url_for('cep_blanc_canevas', sid=s.id) }}">📋 Canevas Excel</a>
-  <a class="btn sec petit" href="{{ url_for('cep_blanc_excel', sid=s.id, tri=tri) }}">📊 Exporter Excel</a>
-  <a class="btn sec petit" href="{{ url_for('cep_blanc_pdf', sid=s.id, tri=tri) }}" target="_blank" rel="noopener">📄 PDF</a>
+  <a class="btn sec petit" href="{{ url_for('cep_blanc_canevas', sid=s.id) }}">{{ icone('presse_papiers') }} Canevas Excel</a>
+  <a class="btn sec petit" href="{{ url_for('cep_blanc_excel', sid=s.id, tri=tri) }}">{{ icone('graphique') }} Exporter Excel</a>
+  <a class="btn sec petit" href="{{ url_for('cep_blanc_pdf', sid=s.id, tri=tri) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF</a>
   <span class="sep"></span>
-  {% if tri == 'merite' %}<a class="btn petit" href="{{ url_for('cep_blanc_session', sid=s.id) }}">🔢 Ordre des numéros de table</a>
-  {% else %}<a class="btn petit" href="{{ url_for('cep_blanc_session', sid=s.id, tri='merite') }}">🏆 Classer par mérite</a>{% endif %}
+  {% if tri == 'merite' %}<a class="btn petit" href="{{ url_for('cep_blanc_session', sid=s.id) }}">{{ icone('nombres') }} Ordre des numéros de table</a>
+  {% else %}<a class="btn petit" href="{{ url_for('cep_blanc_session', sid=s.id, tri='merite') }}">{{ icone('trophee') }} Classer par mérite</a>{% endif %}
   <span class="sep"></span>
   <select name="quoi" form="f-reinit" aria-label="Que réinitialiser ?" data-nosave><option value="notes">Effacer les notes</option><option value="tout">Vider la liste</option></select>
   <button class="btn danger petit" form="f-reinit" data-confirmer="Réinitialiser cet examen blanc ? (notes effacées, ou liste vidée selon votre choix)">↺ Réinitialiser</button>
@@ -115,7 +115,7 @@
     <td><input name="ecole" value="{{ c.ecole or '' }}" aria-label="École de provenance"></td>
     {% for v in l.notes %}<td class="c"><input class="cb-note" name="n{{ loop.index0 }}" value="{{ cep_num(v) }}" inputmode="decimal" aria-label="{{ s.mats[loop.index0] }}"></td>{% endfor %}
     <td class="c cb-total"></td><td class="c cb-moy"></td><td class="c cb-ok"></td><td class="cb-dec c"></td><td class="c cb-rang"></td>
-    <td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('cep_blanc_releves', sid=s.id, candidat=c.id) }}" target="_blank" rel="noopener" title="Relevé de notes">📄</a>
+    <td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('cep_blanc_releves', sid=s.id, candidat=c.id) }}" target="_blank" rel="noopener" title="Relevé de notes">{{ icone('document') }}</a>
       <input type="checkbox" name="suppr" value="{{ c.id }}" hidden>
       <button type="button" class="btn danger petit" data-suppr title="Supprimer ce candidat">✕</button></td>
   </tr>
@@ -132,7 +132,7 @@
     <td><button type="button" class="btn danger petit" data-suppr title="Retirer cette ligne">✕</button></td></tr></template>
 <div class="actions" style="margin:10px 0">
   <button type="button" class="btn sec" id="cb-ajouter">＋ Ajouter un candidat</button>
-  <button class="btn vert">💾 Sauvegarder</button>
+  <button class="btn vert">{{ icone('enregistrer') }} Sauvegarder</button>
   <span class="aide">Notes de 0 à 20 (virgule acceptée) ; case vide = pas de note. Entrée = case du dessous.</span>
 </div>
 </form>

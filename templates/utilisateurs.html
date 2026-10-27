@@ -10,7 +10,7 @@
 </div>
 {% set _dm = mdp_demandes_attente() if mdp_demandes_attente is defined else [] %}
 {% if _dm %}<div class="carte" style="border-left:4px solid var(--orange,#B54708)">
-  <h2 style="margin-top:0">🔑 Demandes « mot de passe oublié » ({{ _dm|length }})</h2>
+  <h2 style="margin-top:0">{{ icone('cle') }} Demandes « mot de passe oublié » ({{ _dm|length }})</h2>
   <div class="tw"><table><thead><tr><th>Date</th><th>Identifiant</th><th>Nom</th><th>Contact</th><th>Message</th><th></th></tr></thead><tbody>
   {% for d in _dm %}<tr><td>{{ (d.cree_le or '')[:16] }}</td><td><b>{{ d.identifiant }}</b>{% if not d.user_id %} <span class="aide">(compte inconnu)</span>{% endif %}</td><td>{{ d.nom }}</td><td>{{ d.contact }}</td><td>{{ d.message }}</td>
     <td style="white-space:nowrap"><form method="post" action="{{ url_for('mdp_demande_traiter', did=d.id) }}" style="display:inline">{% if d.user_id %}<button class="btn petit" name="action" value="reinit">Mot de passe provisoire</button>{% endif %}

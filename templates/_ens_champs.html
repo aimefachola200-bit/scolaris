@@ -1,6 +1,6 @@
 {# Champs du profil et de l'école de l'enseignant (assistant du premier lancement, « Mon profil et mon école ») #}
 <div class="carte">
-  <h2 style="margin-top:0">👤 Mon profil</h2>
+  <h2 style="margin-top:0">{{ icone('personne') }} Mon profil</h2>
   <div class="grille-id">
     <div><label for="nom">Nom *</label><input id="nom" name="nom" value="{{ f.nom }}" required></div>
     <div><label for="prenoms">Prénoms *</label><input id="prenoms" name="prenoms" value="{{ f.prenoms }}" required></div>
@@ -27,7 +27,7 @@
   </div>
 </div>
 <div class="carte">
-  <h2 style="margin-top:0">🏫 Mon école</h2>
+  <h2 style="margin-top:0">{{ icone('ecole') }} Mon école</h2>
   <div class="grille-id">
     <div><label for="ecole_nom">Nom de l'école *</label><input id="ecole_nom" name="ecole_nom" value="{{ f.ecole_nom }}" required placeholder="ex. EPP Akpakpa Centre"></div>
     <div><label for="secteur">Secteur *</label><select id="secteur" name="secteur" required>

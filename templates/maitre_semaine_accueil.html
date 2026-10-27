@@ -62,9 +62,9 @@
   {% endfor %}
   </div>
   <p class="actions" style="margin-top:12px">
-    <a class="btn" href="{{ url_for('maitre_semaine_journal') }}">✎ Journal d'aujourd'hui</a>
+    <a class="btn" href="{{ url_for('maitre_semaine_journal') }}">{{ icone('modifier') }} Journal d'aujourd'hui</a>
     <a class="btn sec" href="{{ url_for('maitre_semaine_semaine', semaine=lun.isoformat()) }}">Rapport de la semaine</a>
-    <a class="btn sec" href="{{ url_for('maitre_semaine_rapport_pdf', semaine=lun.isoformat()) }}" target="_blank">📄 Rapport PDF</a>
+    <a class="btn sec" href="{{ url_for('maitre_semaine_rapport_pdf', semaine=lun.isoformat()) }}" target="_blank">{{ icone('document') }} Rapport PDF</a>
   </p>
 </div>
 

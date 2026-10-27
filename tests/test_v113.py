@@ -26,7 +26,7 @@ def ok(r,code=200):
 ok(c.post("/login",data={"identifiant":"admin","mdp":"admin123"}),302)
 ok(c.post("/paiements/nouveau",data={"eleve_id":el,"montant":"10000","mode":"especes","motif":"Frais"}),302)
 with app.app_context(): pid=q("SELECT id FROM paiements",un=True)["id"]
-t=html.unescape(ok(c.get(f"/eleves/{el}")).data.decode()); assert "✏️ Modifier" in t and "Réinitialiser les paiements" in t
+t=html.unescape(ok(c.get(f"/eleves/{el}")).data.decode()); assert "Modifier" in t and "ic-modifier" in t and "Réinitialiser les paiements" in t
 ok(c.get(f"/paiements/{pid}/modifier"))
 ok(c.post(f"/paiements/{pid}/modifier",data={"montant":"12000","date":"2026-10-20","mode":"especes","motif":"Frais"}),302)
 with app.app_context(): assert q("SELECT montant FROM paiements WHERE id=?",(pid,),un=True)["montant"]==12000

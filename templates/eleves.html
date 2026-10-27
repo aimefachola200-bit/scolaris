@@ -9,7 +9,7 @@
     {% if ep_existe('eleves_import') %}<a class="btn sec" href="{{ url_for('eleves_import') }}">Importer (Excel)</a>
     <a class="btn sec" href="{{ url_for('eleves_modele_xlsx') }}">Modèle Excel</a>
     <a class="btn sec" href="{{ url_for('eleves_export_xlsx', q=rech, classe=cid, statut=statut) }}">Exporter (Excel)</a>{% endif %}{% endif %}
-    {% if peut('eleves') and ep_existe('insc_photo') %}<a class="btn sec" href="{{ url_for('insc_photo', classe=cid) }}">📷 Photos à la caméra</a>{% endif %}
+    {% if peut('eleves') and ep_existe('insc_photo') %}<a class="btn sec" href="{{ url_for('insc_photo', classe=cid) }}">{{ icone('photo') }} Photos à la caméra</a>{% endif %}
   </div>
 </div>
 <form class="filtres">
@@ -40,7 +40,7 @@
 </table></div>
 {% if suppr %}
   <div class="actions" style="margin-top:8px">
-    <button class="btn danger" onclick="document.getElementById('sel-mode').value='supprimer';this.form._mode='supprimer'">🗑 Supprimer la sélection</button>
+    <button class="btn danger" onclick="document.getElementById('sel-mode').value='supprimer';this.form._mode='supprimer'">{{ icone('supprimer') }} Supprimer la sélection</button>
     <button class="btn sec" onclick="document.getElementById('sel-mode').value='retirer';this.form._mode='retirer'">Retirer la sélection (statut « sorti »)</button>
     <span class="aide">La suppression est refusée pour un élève ayant des paiements non annulés ou des documents officiels émis : il faut alors le retirer.</span>
   </div>

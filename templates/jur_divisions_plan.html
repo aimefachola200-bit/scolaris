@@ -14,7 +14,7 @@ table.t.plan td.mods{font-size:12px;color:#475467}
   <div class="actions">
     <a class="btn sec" href="{{ url_for('jur_divisions', annee=annee) }}">← Divisions</a>
     <a class="btn sec" href="{{ url_for('jur_divisions_plan_xlsx', annee=annee) }}">⇩ Excel</a>
-    <a class="btn" href="{{ url_for('jur_divisions_plan_pdf', annee=annee) }}" target="_blank">📄 PDF</a>
+    <a class="btn" href="{{ url_for('jur_divisions_plan_pdf', annee=annee) }}" target="_blank">{{ icone('document') }} PDF</a>
   </div></div>
 
 <form method="get" class="filtres carte">

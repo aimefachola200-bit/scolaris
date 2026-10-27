@@ -56,7 +56,7 @@
     <tr class="{{ 'annulee' if l.annule }}"><td style="white-space:nowrap">{{ date_fr(l.date) }}</td><td>{{ l.categorie }}</td>
       <td>{{ l.libelle }}{% if l.reference %}<br><span class="gris">{{ l.reference }}</span>{% endif %}</td>
       <td>{{ l.beneficiaire or '' }}</td><td>{{ modes.get(l.mode or '', l.mode or '') }}</td>
-      <td>{% if l.piece %}<a href="{{ url_for('depense_piece', did=l.id) }}" target="_blank" title="{{ l.piece_nom }}">📎 Voir</a>{% endif %}</td>
+      <td>{% if l.piece %}<a href="{{ url_for('depense_piece', did=l.id) }}" target="_blank" title="{{ l.piece_nom }}">{{ icone('piece_jointe') }} Voir</a>{% endif %}</td>
       <td class="num">{{ milliers(l.montant) }}</td>
       {% if l.annule %}<td class="motif">Annulée : {{ l.annule_motif }}</td>
       {% else %}<td><form class="annul" method="post" action="{{ url_for('depense_annuler', did=l.id) }}">

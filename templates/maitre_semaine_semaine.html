@@ -9,7 +9,7 @@
     <a class="btn sec petit" href="{{ url_for('maitre_semaine_semaine', semaine=prec) }}">← Précédente</a>
     <a class="btn sec petit" href="{{ url_for('maitre_semaine_semaine') }}">Cette semaine</a>
     <a class="btn sec petit" href="{{ url_for('maitre_semaine_semaine', semaine=suiv) }}">Suivante →</a>
-    <a class="btn petit" href="{{ url_for('maitre_semaine_rapport_pdf', semaine=lun.isoformat()) }}" target="_blank">📄 Rapport PDF</a>
+    <a class="btn petit" href="{{ url_for('maitre_semaine_rapport_pdf', semaine=lun.isoformat()) }}" target="_blank">{{ icone('document') }} Rapport PDF</a>
   </div>
 </div>
 
@@ -48,7 +48,7 @@
   </tbody></table></div>
 {% if direction and s.jx and not s.tous_vises %}
 <form method="post" action="{{ url_for('maitre_semaine_viser_semaine') }}"><input type="hidden" name="semaine" value="{{ lun.isoformat() }}">
-  <button class="btn vert">✔ Viser toutes les journées de la semaine</button></form>
+  <button class="btn vert">{{ icone('coche') }} Viser toutes les journées de la semaine</button></form>
 {% endif %}
 
 <form method="post" class="carte" style="margin-top:16px">
@@ -61,6 +61,6 @@
     {% if direction %}<div>{{ M.signature('ecole:' ~ g.ecole.id ~ ':directeur', 'Signature du directeur / de la directrice') }}
       <p class="aide">Apposée avec le cachet sur le rapport lorsque toutes les journées sont visées.</p></div>{% endif %}
   </div>
-  <p class="actions"><button class="btn vert">💾 Enregistrer</button></p>
+  <p class="actions"><button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button></p>
 </form>
 {% endblock %}

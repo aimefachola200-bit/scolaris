@@ -33,6 +33,8 @@
 <label>Note <input name="note" value="{{ c.note }}"></label>
 <button class="btn petit">Enregistrer</button> {% if c.modifie %}<button class="btn sec petit" name="retablir" value="1">Rétablir</button>{% endif %}</form></details></td></tr>{% endfor %}
 </tbody></table></div>
+{% if resumes_jour %}<h3>Résumés des séances du jour</h3>
+<ul>{% for m, liste in resumes_jour.items() %}<li><b>{{ prep_nom_matiere(m) }}</b> : {% for r in liste %}<a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a> <span class="aide">({{ r.domaine }})</span>{% if not loop.last %} · {% endif %}{% endfor %}</li>{% endfor %}</ul>{% endif %}
 {% elif vue == 'semaine' %}
 {% for dj, js in semaine %}
 <h3><a href="{{ url_for('prep_planif', classe=cl.id, vue='jour', date=dj.isoformat()) }}">{{ JOURS_LIB[dj.weekday()] }} {{ dj.strftime('%d/%m/%Y') }}</a></h3>
@@ -49,6 +51,8 @@
 {% if ligne %}<div class="tw"><table class="t"><thead><tr><th>Matière (planification annuelle)</th><th>Contenu du mois</th></tr></thead><tbody>
 {% for k, lib in cols %}{% if ligne[k] %}<tr><td>{{ lib }}</td><td>{{ ligne[k] }}</td></tr>{% endif %}{% endfor %}</tbody></table></div>{% endif %}
 {% if pm %}<p class="aide">Planification mensuelle de la classe enregistrée (modifiable dans le tableau synoptique).</p>{% endif %}
+{% if resumes_mois %}<h3>Résumés du mois (progression annuelle)</h3>
+{% for m, liste in resumes_mois.items() %}<p><b>{{ prep_nom_matiere(m) }}</b></p><ul>{% for r in liste %}<li>{{ (r.ancres or [{}])[0].libelle }} — <a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a> <span class="aide">({{ r.domaine }})</span></li>{% endfor %}</ul>{% endfor %}{% endif %}
 {% for s, fs in semaine_resume %}
 <h3><a href="{{ url_for('prep_planif', classe=cl.id, vue='semaine', date=s.isoformat()) }}">Semaine du {{ s.strftime('%d/%m') }}</a></h3>
 <ul>{% for m, liste in fs.items() %}<li><b>{{ prep_nom_matiere(m) }}</b> : {% for f in liste[:6] %}<a href="{{ url_for('prep_fiche', fid=f.id) }}">{{ f.titre }}</a>{% if not loop.last %} · {% endif %}{% endfor %}{% if liste|length > 6 %} … ({{ liste|length }}){% endif %}</li>{% else %}<li class="aide">La planification ne cite pas encore de SA, d'unité ou de dossier pour cette semaine.</li>{% endfor %}</ul>

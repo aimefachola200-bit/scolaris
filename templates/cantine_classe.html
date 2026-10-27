@@ -42,12 +42,12 @@ table.cant-grille th.j button{margin-top:3px;padding:1px 6px;font-size:11px}
 <form method="post" action="{{ url_for('cantine_enregistrer', cid=cl.id) }}" id="f-cant" autocomplete="off">
 <input type="hidden" name="semaine" value="{{ lun.isoformat() }}">
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
-  <button type="submit" class="btn vert petit" title="Enregistrer l'en-tête et les paiements de la semaine">💾 Sauvegarder</button>
-  <a class="btn sec petit" href="{{ url_for('cantine_classe', cid=cl.id, semaine=lun.isoformat()) }}" title="Recharger les paiements enregistrés (annule les modifications non sauvegardées)">📂 Charger</a>
+  <button type="submit" class="btn vert petit" title="Enregistrer l'en-tête et les paiements de la semaine">{{ icone('enregistrer') }} Sauvegarder</button>
+  <a class="btn sec petit" href="{{ url_for('cantine_classe', cid=cl.id, semaine=lun.isoformat()) }}" title="Recharger les paiements enregistrés (annule les modifications non sauvegardées)">{{ icone('dossier') }} Charger</a>
   <button type="button" class="btn sec petit" id="b-reinit" title="Décocher toutes les cases à l'écran (rien n'est supprimé tant que vous ne sauvegardez pas)">↺ Réinitialiser</button>
   <span class="sep"></span>
-  <button type="submit" class="btn sec petit" formaction="{{ url_for('cantine_classe_pdf', cid=cl.id, semaine=lun.isoformat()) }}" formtarget="_blank" title="PDF de la semaine (paiements enregistrés)">📄 PDF</button>
-  <a class="btn sec petit" href="{{ url_for('cantine_recap', type='semaine', date=lun.isoformat(), classe=cl.id) }}">📊 Récapitulatifs</a>
+  <button type="submit" class="btn sec petit" formaction="{{ url_for('cantine_classe_pdf', cid=cl.id, semaine=lun.isoformat()) }}" formtarget="_blank" title="PDF de la semaine (paiements enregistrés)">{{ icone('document') }} PDF</button>
+  <a class="btn sec petit" href="{{ url_for('cantine_recap', type='semaine', date=lun.isoformat(), classe=cl.id) }}">{{ icone('graphique') }} Récapitulatifs</a>
 {% endcall %}
 
 <details class="carte">

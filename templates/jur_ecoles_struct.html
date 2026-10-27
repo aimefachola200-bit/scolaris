@@ -67,10 +67,10 @@
 </div>
 {% endmacro %}
 
-<div class="entete"><div><h1>🏫 Écoles : nombre, structure pédagogique et équipements</h1>
+<div class="entete"><div><h1>{{ icone('ecole') }} Écoles : nombre, structure pédagogique et équipements</h1>
   <p class="sous">{{ SOURCES[source] }} · année scolaire {{ flt.annee }} · par {{ lib|lower }} · secteur public, et secteur privé à part</p></div>
   <div class="actions"><a class="btn sec" href="{{ url_for('jur_ecoles_struct', export='xlsx', **args) }}">⇩ Excel</a>
-    <button class="btn sec" type="button" onclick="window.print()">🖶 Imprimer</button></div></div>
+    <button class="btn sec" type="button" onclick="window.print()">{{ icone('imprimer') }} Imprimer</button></div></div>
 {{ T.filtres(flt, 'jur_ecoles_struct', extra={'par': par, 'source': source}) }}
 <div class="actions noprint" style="margin:-4px 0 6px">Source :
   {% for k, l in SOURCES.items() %}<a class="btn petit {{ '' if source == k else 'sec' }}" href="{{ url_for('jur_ecoles_struct', **dict(args1, source=k)) }}">{{ l }}</a>{% endfor %}</div>

@@ -24,7 +24,7 @@
     <label>Titulaire (nom pour la signature)<input name="titulaire_visa" value="{{ d.titulaire_visa }}" maxlength="120" placeholder="laisser vide = titulaire de la classe"></label>
     <label>Visa du directeur / de la directrice (mention)<input name="directeur_visa" value="{{ d.directeur_visa }}" maxlength="120" placeholder="ex. Vu et approuvé"></label>
   </div>
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button>
     <button type="button" class="btn sec" id="pm-vider">Vider les gabarits</button>
     <span class="aide">« Vider les gabarits » efface uniquement les cases encore égales au gabarit du modèle.</span></p>
 </form>

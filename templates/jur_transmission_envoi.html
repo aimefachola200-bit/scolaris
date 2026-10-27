@@ -2,7 +2,7 @@
 {% block contenu %}
 <div class="entete"><div><h1>Envoyer à la DDEMP</h1>
   <p class="sous">Paquet de la circonscription : toutes ses écoles et ses données propres — année {{ annee }}</p></div>
-  <div class="actions">{% if apercu and peut('jur_transmission') %}<a class="btn" href="{{ url_for('jur_transmission_envoi', annee=annee, telecharger=1) }}">⬇ Télécharger le fichier</a>{% endif %}</div></div>
+  <div class="actions">{% if apercu and peut('jur_transmission') %}<a class="btn" href="{{ url_for('jur_transmission_envoi', annee=annee, telecharger=1) }}">{{ icone('telecharger') }} Télécharger le fichier</a>{% endif %}</div></div>
 <form method="get" class="filtres"><label>Année scolaire<br><select name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a==annee }}>{{ a }}</option>{% endfor %}</select></label></form>
 {% if erreur %}<div class="flash danger">{{ erreur }}</div>{% endif %}
 {% if apercu %}

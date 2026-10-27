@@ -51,15 +51,15 @@ table.aff-liste input.tel{width:150px}
 <input type="hidden" name="age" value="{{ mode }}">
 {% call M.barre_doc(sauver=False, charger=False, reinit=False) %}
   <a class="btn petit" href="#ajout" onclick="document.getElementById('ajout').open=true">＋ Ajouter élève</a>
-  <label class="btn sec petit aff-import" title="Fichier Excel ou CSV : Nom, Prénoms, Sexe, Date de naissance, Scolarité, Contact">📥 Importer Excel
+  <label class="btn sec petit aff-import" title="Fichier Excel ou CSV : Nom, Prénoms, Sexe, Date de naissance, Scolarité, Contact">{{ icone('recevoir') }} Importer Excel
     <input type="file" name="fichier" form="f-import" accept=".xlsx,.xlsm,.csv" onchange="if(this.files.length) this.form.submit()"></label>
-  <a class="btn sec petit" href="{{ url_for('affichage_modele') }}" title="Modèle Excel vierge pour l'import">📊 Modèle</a>
+  <a class="btn sec petit" href="{{ url_for('affichage_modele') }}" title="Modèle Excel vierge pour l'import">{{ icone('graphique') }} Modèle</a>
   <span class="sep"></span>
-  <a class="btn sec petit" href="{{ url_for('affichage_accueil', classe=cl.id, age=mode) }}" title="Recharger les données enregistrées (annule les modifications non sauvegardées)">📂 Charger</a>
-  <button type="submit" class="btn vert petit" title="Enregistrer l'en-tête, la scolarité et les contacts">💾 Sauvegarder</button>
+  <a class="btn sec petit" href="{{ url_for('affichage_accueil', classe=cl.id, age=mode) }}" title="Recharger les données enregistrées (annule les modifications non sauvegardées)">{{ icone('dossier') }} Charger</a>
+  <button type="submit" class="btn vert petit" title="Enregistrer l'en-tête, la scolarité et les contacts">{{ icone('enregistrer') }} Sauvegarder</button>
   <button type="submit" class="btn sec petit" form="f-reinit" data-confirmer="Revenir à l'en-tête par défaut (fiche de l'école) ? Les élèves ne sont pas modifiés." title="Remettre l'en-tête aux valeurs de la fiche de l'école">↺ Réinitialiser</button>
   <span class="sep"></span>
-  <button type="submit" class="btn sec petit" formaction="{{ url_for('affichage_pdf', classe=cl.id, age=mode) }}" formtarget="_blank" title="PDF A4 avec l'en-tête affiché à l'écran">📄 PDF</button>
+  <button type="submit" class="btn sec petit" formaction="{{ url_for('affichage_pdf', classe=cl.id, age=mode) }}" formtarget="_blank" title="PDF A4 avec l'en-tête affiché à l'écran">{{ icone('document') }} PDF</button>
 {% endcall %}
 
 <details class="carte" open>

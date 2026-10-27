@@ -37,7 +37,7 @@
   </div>
   <label for="t-cr">Compte rendu</label>
   <textarea id="t-cr" name="compte_rendu" rows="4" maxlength="4000">{{ v.compte_rendu or '' }}</textarea>
-  <p class="actions" style="margin-top:12px"><button class="btn">💾 Enregistrer</button> <a class="btn sec" href="{{ url_for('themes_up', **params) }}">Annuler</a></p>
+  <p class="actions" style="margin-top:12px"><button class="btn">{{ icone('enregistrer') }} Enregistrer</button> <a class="btn sec" href="{{ url_for('themes_up', **params) }}">Annuler</a></p>
 </form>
 <script>
 function tuCategorie() {

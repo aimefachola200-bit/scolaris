@@ -11,8 +11,8 @@
   <div><h1>Fiches d'inscription au CEP</h1>
   <p class="sous">Certificat d'Études Primaires · élèves de CM2 · modèle officiel de la DDEMP (Service des Examens et Concours)</p></div>
   {% if cl %}<div class="actions">
-    <a class="btn" href="{{ url_for('cep_fiches_classe_pdf', cid=cl.id) }}" target="_blank" rel="noopener">📄 PDF de toute la classe</a>
-    <a class="btn sec" href="{{ url_for('cep_candidats_excel', cid=cl.id) }}">📊 Liste des candidats (Excel)</a>
+    <a class="btn" href="{{ url_for('cep_fiches_classe_pdf', cid=cl.id) }}" target="_blank" rel="noopener">{{ icone('document') }} PDF de toute la classe</a>
+    <a class="btn sec" href="{{ url_for('cep_candidats_excel', cid=cl.id) }}">{{ icone('graphique') }} Liste des candidats (Excel)</a>
   </div>{% endif %}
 </div>
 
@@ -45,7 +45,7 @@
       <div><label for="p-cert">Certifié à (directeur)</label><input id="p-cert" name="certifie_a" value="{{ p.certifie_a }}"></div>
     </div>
     <div class="actions" style="margin-top:10px">
-      <button class="btn vert">💾 Enregistrer les paramètres</button>
+      <button class="btn vert">{{ icone('enregistrer') }} Enregistrer les paramètres</button>
       <button class="btn sec" name="appliquer" value="1" data-confirmer="Recopier la session, le centre, l'option et « Fait à » dans les fiches de tous les élèves de {{ cl.nom }} ?">Enregistrer et appliquer à toutes les fiches</button>
     </div>
   </form>
@@ -58,7 +58,7 @@
 <div class="cep-sel">
   <button type="button" class="btn sec petit" data-cocher="1">Tout cocher</button>
   <button type="button" class="btn sec petit" data-cocher="0">Tout décocher</button>
-  <button class="btn petit">📄 PDF des fiches cochées (<span class="nb-coches">0</span>)</button>
+  <button class="btn petit">{{ icone('document') }} PDF des fiches cochées (<span class="nb-coches">0</span>)</button>
 </div>
 <div class="tw"><table class="t">
   <thead><tr><th></th><th class="c">N°</th><th>Photo</th><th>Nom et prénoms</th><th class="c">Sexe</th><th>Né(e) le / à</th>

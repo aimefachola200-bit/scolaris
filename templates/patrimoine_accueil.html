@@ -12,8 +12,8 @@
   <div><h1>Patrimoine et ressources</h1>
   <p class="sous">Infrastructures, mobilier et matériel didactique — année scolaire {{ ANNEE }}</p></div>
   <div class="actions">
-    <a class="btn petit" href="{{ url_for('patrimoine_inventaire_pdf') }}" target="_blank">📄 Inventaire PDF</a>
-    <a class="btn sec petit" href="{{ url_for('patrimoine_inventaire_xlsx') }}">⬇ Inventaire Excel</a>
+    <a class="btn petit" href="{{ url_for('patrimoine_inventaire_pdf') }}" target="_blank">{{ icone('document') }} Inventaire PDF</a>
+    <a class="btn sec petit" href="{{ url_for('patrimoine_inventaire_xlsx') }}">{{ icone('telecharger') }} Inventaire Excel</a>
   </div>
 </div>
 {% include "patrimoine_onglets.html" %}

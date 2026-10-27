@@ -4,8 +4,8 @@
   <div><h1>Récapitulatif du stock de vivres</h1>
   <p class="sous">Par mois et par vivre : entrées, sorties, pertes, stock fin de mois ; consommation moyenne et autonomie — {{ annee }}</p></div>
   <div class="actions">
-    <a class="btn sec petit" target="_blank" href="{{ url_for('stock_recap_pdf', annee=annee) }}">📄 PDF</a>
-    <a class="btn sec petit" href="{{ url_for('stock_recap_xlsx', annee=annee) }}">⬇ Excel</a>
+    <a class="btn sec petit" target="_blank" href="{{ url_for('stock_recap_pdf', annee=annee) }}">{{ icone('document') }} PDF</a>
+    <a class="btn sec petit" href="{{ url_for('stock_recap_xlsx', annee=annee) }}">{{ icone('telecharger') }} Excel</a>
   </div>
 </div>
 {% include "stock_onglets.html" %}

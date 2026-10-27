@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block titre %}Modifier le reçu {{ p.numero_recu }}{% endblock %}
 {% block contenu %}
-<h1>✏️ Modifier le paiement — reçu {{ p.numero_recu }}</h1>
+<h1>{{ icone('modifier') }} Modifier le paiement — reçu {{ p.numero_recu }}</h1>
 <p class="sous">{{ e.nom }} {{ e.prenoms }} · {{ e.matricule }} · année {{ p.annee }}{% if p.annule %} · <span class="badge ko">annulé</span>{% endif %}</p>
 <div class="carte" style="max-width:620px">
 <form method="post" class="f">

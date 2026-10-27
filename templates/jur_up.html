@@ -16,7 +16,7 @@ table.t.up tr.total td{background:#1F4E79;color:#fff;font-weight:700}
     {% if saisie %}<a class="btn" href="{{ url_for('jur_up_form', cs=cs_id if JUR_NIVEAU == 'ddemp' else None) }}">+ Ajouter une UP</a>
     <a class="btn sec" href="{{ url_for('jur_up_import') }}">⇧ Importer (Excel)</a>{% endif %}
     <a class="btn sec" href="{{ url_for('jur_up_xlsx', annee=annee, cs=cs_id or '') }}">⇩ Excel</a>
-    <a class="btn sec" href="{{ url_for('jur_up_pdf', annee=annee, cs=cs_id or '') }}" target="_blank">📄 PDF</a>
+    <a class="btn sec" href="{{ url_for('jur_up_pdf', annee=annee, cs=cs_id or '') }}" target="_blank">{{ icone('document') }} PDF</a>
   </div></div>
 
 <form method="get" class="filtres carte">

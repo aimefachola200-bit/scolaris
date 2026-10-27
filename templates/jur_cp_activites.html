@@ -33,7 +33,7 @@
 {% if saisie %}
 <form method="post" action="{{ url_for('jur_cp_activites_import') }}" enctype="multipart/form-data" class="carte">
   {% if CSP %}<input type="hidden" name="cs" value="{{ CSP }}">{% endif %}
-  <h2>📂 Charger des activités (Excel)</h2>
+  <h2>{{ icone('dossier') }} Charger des activités (Excel)</h2>
   <p class="aide">Le classeur « Télécharger (Excel) » sert de modèle : une ligne par activité (acteur : « C/CS », « CP Zone 1 »… ou « commune » pour une activité de toute la CS ; date au format JJ/MM/AAAA). Les lignes sont ajoutées au journal.</p>
   <input type="file" name="fichier" accept=".xlsx" required> <button class="btn sec">Charger</button>
 </form>

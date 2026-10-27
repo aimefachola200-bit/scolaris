@@ -48,7 +48,7 @@
   {% endfor %}
   </div>
   <p class="actions">
-    <button class="btn vert">💾 Enregistrer</button>
+    <button class="btn vert">{{ icone('enregistrer') }} Enregistrer</button>
     {% if not obj %}<button class="btn sec" name="suivant" value="1">Enregistrer et ajouter un autre</button>{% endif %}
   </p>
 </form>

@@ -2,12 +2,12 @@
 {% block contenu %}
 <style>.js-t td.f{text-align:center;white-space:nowrap}.js-t .b{font-size:11px;border-radius:9px;padding:1px 7px;display:inline-block;margin-bottom:2px}
 .b.saisie{background:#E3F1E8;color:#1b6b3a}.b.recue{background:#E5EEF9;color:#1F4E79}.b.absente{background:#FCEBEA;color:#a5281b}</style>
-<div class="entete"><div><h1>✍️ Saisie manuelle des fiches et du personnel</h1>
+<div class="entete"><div><h1>{{ icone('signature') }} Saisie manuelle des fiches et du personnel</h1>
   <p class="sous">Remplir directement, école par école, les fiches officielles (recensement, rapports de rentrée et de fin d'année, primaire et maternelle, public et privé)
   et l'état nominatif du personnel — sans importer de fichier Excel ni attendre la transmission de l'école · année {{ annee }}</p></div>
-  <div class="actions"><a class="btn sec" href="{{ url_for('jur_saisie_directeurs') }}">👤 Directeurs des écoles</a>
-    {% if ep_existe('jur_agents') %}<a class="btn sec" href="{{ url_for('jur_agents') }}">🗂️ Agents administratifs de la structure</a>{% endif %}
-    <a class="btn sec" href="{{ url_for('jur_fiches', annee=annee) }}">📋 Fiches des écoles</a></div>
+  <div class="actions"><a class="btn sec" href="{{ url_for('jur_saisie_directeurs') }}">{{ icone('personne') }} Directeurs des écoles</a>
+    {% if ep_existe('jur_agents') %}<a class="btn sec" href="{{ url_for('jur_agents') }}">{{ icone('classeur') }} Agents administratifs de la structure</a>{% endif %}
+    <a class="btn sec" href="{{ url_for('jur_fiches', annee=annee) }}">{{ icone('presse_papiers') }} Fiches des écoles</a></div>
 </div>
 <form method="get" class="filtres">
   <label for="js-annee">Année<br><select id="js-annee" name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a == annee }}>{{ a }}</option>{% endfor %}</select></label>
@@ -27,6 +27,6 @@ Une fiche enregistrée ici est exploitée par tous les modules (fiches, synthès
     <td>{{ e.type }}</td><td>{{ JUR_SECTEURS.get(e.secteur, e.secteur) }}</td>
     {% for f in FICHES %}{% set st = l.etats[f[0]] %}<td class="f">{% if st %}<span class="b {{ st }}">{{ st }}</span><br>
       <a class="btn {{ 'sec ' if st != 'absente' }}petit" href="{{ url_for('jur_saisie_fiche', eid=e.id, code=f[0], annee=annee) }}">{{ 'Compléter' if st != 'absente' else 'Saisir' }}</a>{% else %}<span class="aide">—</span>{% endif %}</td>{% endfor %}
-    <td class="f"><span class="b {{ 'saisie' if l.n_pers else 'absente' }}">{{ l.n_pers }} agent(s)</span><br><a class="btn {{ 'sec ' if l.n_pers }}petit" href="{{ url_for('jur_saisie_personnel', eid=e.id, annee=annee) }}">👥 Saisir les noms</a></td></tr>{% endfor %}
+    <td class="f"><span class="b {{ 'saisie' if l.n_pers else 'absente' }}">{{ l.n_pers }} agent(s)</span><br><a class="btn {{ 'sec ' if l.n_pers }}petit" href="{{ url_for('jur_saisie_personnel', eid=e.id, annee=annee) }}">{{ icone('groupe') }} Saisir les noms</a></td></tr>{% endfor %}
 </table></div>{% endif %}
 {% endblock %}

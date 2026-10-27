@@ -8,7 +8,7 @@
     <a class="btn petit" href="{{ url_for('stock_vivre', vid=0) }}">＋ Ajouter un vivre</a>
     <form method="post" action="{{ url_for('stock_vivres_type') }}" style="display:inline"><button class="btn sec petit" data-confirmer="Ajouter les vivres de la liste type qui n'existent pas encore ?">Charger la liste type</button></form>
     {% endif %}
-    <a class="btn sec petit" href="{{ url_for('stock_xlsx') }}">⬇ Excel</a>
+    <a class="btn sec petit" href="{{ url_for('stock_xlsx') }}">{{ icone('telecharger') }} Excel</a>
   </div>
 </div>
 {% include "stock_onglets.html" %}

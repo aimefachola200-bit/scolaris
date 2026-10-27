@@ -11,8 +11,8 @@
     <p class="sous">{{ lst|length }} agent(s){{ '' if tous else ' en activité' }} · anciennetés au {{ reference.strftime('%d/%m/%Y') }} · retraite : A = {{ ages.A }} ans, B = {{ ages.B }} ans, C = {{ ages.C }} ans</p></div>
   <div class="actions">
     {% if ecrire %}<a class="btn" href="{{ url_for('jur_synoptique_agent', aid=0) }}">+ Ajouter un agent</a>{% endif %}
-    <a class="btn sec" href="{{ url_for('jur_synoptique_personnel_pdf', tous=1 if tous else None) }}" target="_blank">📄 PDF du personnel</a>
-    <a class="btn sec" href="{{ url_for('jur_synoptique_personnel_xlsx', tous=1 if tous else None) }}">⬇ Excel</a>
+    <a class="btn sec" href="{{ url_for('jur_synoptique_personnel_pdf', tous=1 if tous else None) }}" target="_blank">{{ icone('document') }} PDF du personnel</a>
+    <a class="btn sec" href="{{ url_for('jur_synoptique_personnel_xlsx', tous=1 if tous else None) }}">{{ icone('telecharger') }} Excel</a>
     <a class="btn sec" href="{{ url_for('jur_synoptique_personnel', tous=None if tous else 1) }}">{{ 'Masquer les agents retirés' if tous else 'Voir aussi les agents retirés' }}</a>
   </div>
 </div>

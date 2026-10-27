@@ -423,8 +423,8 @@ def svg_pyramide(ages, aria="Pyramide des âges"):
     hl, cx, demi = 17, 320, 250
     haut = 30 + hl * len(lst)
     p = [f'<svg viewBox="0 0 640 {haut}" width="100%" role="img" aria-label="{_t(aria)}" class="jsvg">',
-         f'<text x="{cx - 14}" y="12" text-anchor="end" class="lg">◀ Garçons</text>',
-         f'<text x="{cx + 14}" y="12" class="lg">Filles ▶</text>']
+         f'<text x="{cx - 14}" y="12" text-anchor="end" class="lg">← Garçons</text>',
+         f'<text x="{cx + 14}" y="12" class="lg">Filles →</text>']
     for i, a in enumerate(reversed(lst)):
         g, f = ages[a]
         y = 20 + i * hl
