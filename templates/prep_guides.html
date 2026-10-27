@@ -8,7 +8,7 @@
 {% for nom, gs in groupes.items() %}
 <h2>{{ nom }}</h2>
 <div class="tw"><table class="t"><thead><tr><th>Guide</th><th>Cours</th><th>Rubrique</th><th></th></tr></thead><tbody>
-{% for x in gs %}<tr><td><a href="{{ url_for('prep_guide', gid=x.id) }}">{{ x.titre }}</a>{% if x.statut == 'concu' %} <span class="badge" title="{{ x.mention }}">conçu</span>{% endif %}</td>
+{% for x in gs %}<tr><td><a href="{{ url_for('prep_guide', gid=x.id) }}">{{ x.titre }}</a>{% if x.statut == 'concu' %} <span class="badge" title="{{ x.mention }}">conçu</span>{% elif x.statut == 'officiel' %} <span class="badge ok" title="{{ x.mention }}">officiel</span>{% endif %}</td>
   <td>{{ (x.cours or [])|join(', ') }}</td><td>{{ x.groupe or '' }}</td><td><a class="btn sec petit" href="{{ url_for('prep_guide_pdf', gid=x.id) }}">PDF</a></td></tr>{% endfor %}
 </tbody></table></div>
 {% else %}<div class="carte"><p class="aide">Aucun guide pour ce choix.</p></div>{% endfor %}

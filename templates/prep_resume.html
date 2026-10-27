@@ -1,0 +1,20 @@
+{# v1.19 — un résumé : vue enseignant (corrigé) ou élève (?eleve=1, sans les réponses), imprimable #}
+{% extends "base.html" %}{% block titre %}{{ r.titre }}{% endblock %}
+{% block contenu %}{% set onglet = 'resumes' %}{% include "_prep_onglets.html" %}
+<p class="aide"><a href="{{ url_for('prep_resumes', col={'Mathématiques': 'maths', 'Français CM1': 'francais-cm1', 'Révision CEP': 'cep'}[r.collection], cours=r.cours) }}">← {{ r.collection }} — {{ PREP_COURS_LIB[r.cours] }}</a> · {{ prep_nom_matiere(r.matiere) }} · {{ r.domaine }}{% if r.etape %} · {{ r.etape }}{% endif %}</p>
+<div class="actions" style="margin:6px 0 10px">
+  {% if eleve %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id) }}">Version enseignant</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id, eleve=1) }}">Version élève</a>{% endif %}
+  <a class="btn petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1 if eleve else None) }}">PDF {{ 'élève' if eleve else 'enseignant' }}</a>
+  <button type="button" class="btn sec petit" onclick="window.print()">Imprimer</button>
+</div>
+<article class="carte resume" aria-labelledby="titre-resume">
+  <h2 id="titre-resume">{{ r.titre }}</h2>
+  <div class="resume-regle" style="background:#EEF4FB;border:1px solid #1F4E79;border-radius:6px;padding:8px 10px;margin:8px 0"><b>Je retiens</b><br>{{ r.regle }}</div>
+  <h3>Méthode</h3><p>{{ r.methode }}</p>
+  <h3>Exemple</h3><p>{{ r.exemple }}</p>
+  <h3>Exercices</h3>
+  <ol>{% for e in r.exercices %}<li>{{ e.q }}{% if eleve %}<div style="border-bottom:1px dotted #98A2B3;height:1.6em"></div>{% else %}<br><i style="color:#067647">Réponse : {{ e.r }}</i>{% endif %}</li>{% endfor %}</ol>
+  {% if not eleve %}<p class="aide">{{ r.mention }}</p>{% endif %}
+</article>
+<p class="aide noprint">{% if prec %}<a href="{{ url_for('prep_resume', rid=prec.id, eleve=1 if eleve else None) }}">← {{ prec.titre }}</a>{% endif %}{% if prec and suiv %} · {% endif %}{% if suiv %}<a href="{{ url_for('prep_resume', rid=suiv.id, eleve=1 if eleve else None) }}">{{ suiv.titre }} →</a>{% endif %}</p>
+{% endblock %}

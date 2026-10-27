@@ -77,6 +77,7 @@
       {{ lien('prep_fiches', 'Fiches de préparation (bibliothèque)', ep.startswith('prep_fiche')) }}
       {{ lien('prep_preparer', 'Préparer une fiche', ep=='prep_preparer') }}
       {{ lien('prep_mes_fiches', 'Mes fiches' if ENS else 'Fiches des enseignants', ep.startswith('prep_ma') or ep=='prep_mes_fiches') }}
+      {{ lien('prep_resumes', 'Résumés — l’essentiel à retenir', ep in ('prep_resumes', 'prep_resume')) }}
       {{ lien('prep_manquants', 'Fiches et guides manquants', ep=='prep_manquants') }}
     {% endcall %}{% endif %}
     {% if peut('cep') and (not ENS or (classes_enseignant_cm2 is defined and classes_enseignant_cm2())) %}

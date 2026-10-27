@@ -21,7 +21,11 @@ pédagogique » et ne sont jamais présentés comme officiels.
   bibliothèque), pour une de SES classes ; ``/preparation/mes-fiches`` : ses fiches (modifier, dupliquer, supprimer,
   PDF, Word). Le directeur consulte les fiches de son école.
 * ``/preparation/manquants`` : matrice cours × matière (fiches, guides, SA prévues par la planification sans fiche),
-  avant et après les fiches conçues.
+  avant et après les fiches conçues ; v1.19 : état de l'inventaire CM1 (séances de référence, présentes, conçues), lot 2
+  (fiches transmises par la CS importées, recueils de référence, guide officiel CP) et doublons fusionnés.
+* v1.19 — ``/preparation/resumes`` : « Résumés — l'essentiel à retenir » (Mathématiques CE1 → CM2, Français CM1,
+  révision CEP : règle, méthode, exemple, 3 exercices corrigés), version enseignant (corrigé) et version élève
+  imprimable (sans les réponses), PDF à l'unité ou par lot (collection / cours / matière).
 Droit « preparation » (app.DROITS) : enseignant, directeur, administrateur, conseillers et responsables (CS / DDEMP,
 lecture). L'enseignant n'écrit que pour ses classes (H.classes_autorisees()).
 """
@@ -143,7 +147,7 @@ def fiches_filtrees(cours=None, matiere=None, smat=None, sa=None, seance=None, t
         mots = [_sans_accent(m) for m in texte.split() if m.strip()]
 
         def ok(f):
-            h = _sans_accent(" ".join(str(f.get(k) or "") for k in ("titre", "intitule", "sous_matiere", "contenus", "unite")))
+            h = _sans_accent(" ".join(str(f.get(k) or "") for k in ("titre", "intitule", "sous_matiere", "contenus", "unite", "source")))
             return all(m in h for m in mots)
         out = [f for f in out if ok(f)]
     return sorted(out, key=lambda f: (COURS.index(f["cours"]) if f["cours"] in COURS else 9,
@@ -275,6 +279,77 @@ class _GuideVersPdf(HTMLParser):
             self.tampon.append(d)
 
 
+# ---------------------------------------------------------------- v1.19 : résumés (PDF enseignant / élève)
+COLLECTIONS_RES = [("maths", "Mathématiques CE1 → CM2"), ("francais-cm1", "Français CM1"), ("cep", "Révision CEP")]
+COLLECTION_DE = {"Mathématiques": "maths", "Français CM1": "francais-cm1", "Révision CEP": "cep"}
+_GLYPHES = {"→": "->", "−": "-", "ᵉ": "e", "ɔ": "o", "≈": "~", "≤": "<=", "≥": ">="}
+
+
+def _res_txt(t):
+    s = txt_pdf(t)
+    for a, b in _GLYPHES.items():
+        s = s.replace(a, b.replace("<", "&lt;").replace(">", "&gt;"))
+    return s
+
+
+def pdf_resumes(rs, eleve=False, titre_lot=None):
+    """Résumés -> PDF A4 : règle, méthode, exemple, exercices ; corrigé (enseignant) ou lignes de réponse (élève)."""
+    import pdfs
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    W, Hh = A4
+    marge = 15 * mm
+    larg = W - 2 * marge
+    P = lambda n, **k: ParagraphStyle(n, **{"fontName": "Helvetica", "fontSize": 9.5, "leading": 12.5, **k})  # noqa: E731
+    st = {"t": P("t", fontName="Helvetica-Bold", fontSize=12.5, leading=15, textColor=colors.white),
+          "s": P("s", fontSize=8, textColor=colors.HexColor("#475467")),
+          "h": P("h", fontName="Helvetica-Bold", fontSize=9.5, textColor=pdfs.BLEU, spaceBefore=4, spaceAfter=1),
+          "p": P("p"), "q": P("q", leftIndent=12, firstLineIndent=-12),
+          "r": P("r", fontName="Helvetica-Oblique", textColor=colors.HexColor("#067647"), leftIndent=12),
+          "l": P("l", textColor=colors.HexColor("#98A2B3"), leftIndent=12),
+          "m": P("m", fontName="Helvetica-Oblique", fontSize=7, textColor=colors.grey)}
+    histoire = []
+    if titre_lot:
+        histoire += [Paragraph(("FICHES DE RÉVISION — " if eleve else "RÉSUMÉS — L'ESSENTIEL À RETENIR — ") + _html.escape(titre_lot.upper()),
+                               P("lot", fontName="Helvetica-Bold", fontSize=13, alignment=1, textColor=pdfs.BLEU, leading=17)),
+                     Paragraph(f"{len(rs)} résumé(s)" + (" — version élève (sans les réponses)" if eleve else " — version enseignant (avec corrigé)"),
+                               P("lot2", fontSize=8.5, alignment=1)), Spacer(1, 6)]
+    for i, r in enumerate(rs):
+        bandeau = Table([[Paragraph(_res_txt(r["titre"]), st["t"])]], colWidths=[larg])
+        bandeau.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), pdfs.BLEU), ("TOPPADDING", (0, 0), (-1, -1), 4),
+                                     ("BOTTOMPADDING", (0, 0), (-1, -1), 5), ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
+        regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["regle"]), st["p"])]], colWidths=[larg])
+        regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
+                                   ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+        bloc = [bandeau, Paragraph(_html.escape(f"{r['collection']} · {r['cours']} · {r['domaine']}" + (f" · {r['etape']}" if r.get("etape") else "")), st["s"]),
+                Spacer(1, 3), regle, Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]),
+                Paragraph("Exemple", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices", st["h"])]
+        for j, e in enumerate(r["exercices"], 1):
+            bloc.append(Paragraph(f"{j}. " + _res_txt(e["q"]), st["q"]))
+            bloc += ([Paragraph("…" * 46, st["l"])] if eleve else [Paragraph("Réponse : " + _res_txt(e["r"]), st["r"])])
+        if not eleve:
+            bloc.append(Paragraph(_html.escape(r.get("mention", "")), st["m"]))
+        bloc.append(Spacer(1, 10))
+        histoire.append(KeepTogether(bloc))
+        if eleve and len(rs) > 1 and i % 2 == 1 and i + 1 < len(rs):
+            histoire.append(PageBreak())
+
+    def deco(c, doc):
+        pdfs._entete_primaire(c, W, Hh, marge, None, None)
+        c.setFont("Helvetica", 6.5)
+        c.setFillColor(colors.grey)
+        if eleve:
+            c.drawString(marge, 7 * mm, "Nom : ………………………………………   Classe : ……………   Date : ……………")
+        c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
+    buf = io.BytesIO()
+    SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
+                      title=titre_lot or rs[0]["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+    return buf.getvalue()
+
+
 def enregistrer(app, H):
     q, ex, config = H.q, H.ex, H.config
     H.schema(SCHEMA)
@@ -351,7 +426,7 @@ def enregistrer(app, H):
                 refs = refs_de_la_semaine(refs, m, auj)
             toutes = correspondances(cours, m, refs)
             mats.append({"matiere": m, "nom": nom_matiere(m), "annuel": ann, "semaine": sem, "refs": refs,
-                         "fiches": toutes[:PAR_MATIERE], "total": len(toutes)})
+                         "fiches": toutes[:PAR_MATIERE], "total": len(toutes), "ids": [f["id"] for f in toutes]})
         return {"classe": cl, "cours": cours, "mois": MOIS_FR[mc.month - 1], "bornes": bornes, "matieres": mats}
 
     def fiche_corpus(fid):
@@ -659,7 +734,7 @@ def enregistrer(app, H):
                 ids = []
                 for m in semaine["matieres"]:
                     if not mat or m["matiere"] == mat:
-                        ids += [f["id"] for f in m["fiches"]]
+                        ids += m.get("ids") or [f["id"] for f in m["fiches"]]   # v1.19 : toutes les fiches de la semaine
                 liste = [corpus()["fiche_par_id"][i] for i in ids]
             else:
                 liste = []
@@ -838,9 +913,68 @@ def enregistrer(app, H):
         concues = [f for f in C["fiches"] if f.get("statut") == "concue"]
         par = {}
         for f in concues:
-            par.setdefault((f["cours"], f["matiere"]), []).append(f)
+            if not f["id"].startswith(("cm1i-", "l2c-", "cp22-")):      # inventaires (CM1, lot 2, CP) : résumés dans leurs tableaux
+                par.setdefault((f["cours"], f["matiere"]), []).append(f)
         guides_c = [x for x in C["guides"] if x.get("statut") == "concu"]
         return render_template("prep_manquants.html", avant=m.get("avant", []), apres=m.get("apres", []), par=par,
-                               guides_c=guides_c, mention=m.get("mention", ""))
+                               guides_c=guides_c, mention=m.get("mention", ""), inv=C.get("inventaire_cm1"),
+                               nb_resumes=len(C.get("resumes") or []), lots=C.get("lots") or {}, doublons=C.get("doublons") or [])
+
+
+    # ------------------------------------------------------------ v1.19 : résumés « l'essentiel à retenir »
+    def resumes_filtres(col="", cours="", mat="", dom=""):
+        rs = corpus().get("resumes") or []
+        return [r for r in rs if (not col or COLLECTION_DE.get(r["collection"]) == col) and (not cours or r["cours"] == cours)
+                and (not mat or r["matiere"] == mat) and (not dom or r["domaine"] == dom)]
+
+    @app.route("/preparation/resumes")
+    @H.connexion_requise("preparation")
+    def prep_resumes():
+        a = request.args
+        col, cours, mat, dom = a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or ""
+        tous = corpus().get("resumes") or []
+        rs = resumes_filtres(col, cours, mat, dom)
+        groupes = {}
+        for r in rs:
+            groupes.setdefault((r["collection"], r["cours"]), {}).setdefault(r["domaine"], []).append(r)
+        ordre = sorted(groupes, key=lambda k: ([c for c, _l in COLLECTIONS_RES].index(COLLECTION_DE[k[0]]), COURS.index(k[1])))
+        return render_template("prep_resumes.html", groupes=groupes, ordre=ordre, col=col, cours=cours, mat=mat, dom=dom, n=len(rs),
+                               COLLECTIONS=COLLECTIONS_RES, COURS=[c for c in COURS if any(r["cours"] == c for r in tous)],
+                               MATS=[m for m in ORDRE_MAT if any(r["matiere"] == m for r in tous)],
+                               DOMS=sorted({r["domaine"] for r in tous}))
+
+    @app.route("/preparation/resumes/<rid>")
+    @H.connexion_requise("preparation")
+    def prep_resume(rid):
+        r = next((x for x in corpus().get("resumes") or [] if x["id"] == rid), None)
+        if not r:
+            abort(404)
+        meme = [x for x in resumes_filtres(COLLECTION_DE[r["collection"]], r["cours"], r["matiere"])]
+        i = meme.index(r)
+        return render_template("prep_resume.html", r=r, eleve=bool(request.args.get("eleve")),
+                               prec=meme[i - 1] if i > 0 else None, suiv=meme[i + 1] if i + 1 < len(meme) else None)
+
+    @app.route("/preparation/resumes/<rid>.pdf")
+    @H.connexion_requise("preparation")
+    def prep_resume_pdf(rid):
+        r = next((x for x in corpus().get("resumes") or [] if x["id"] == rid), None)
+        if not r:
+            abort(404)
+        eleve = bool(request.args.get("eleve"))
+        nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resume_") + r["titre"]))[:70] + ".pdf"
+        return H.pdf_reponse(pdf_resumes([r], eleve), nom)
+
+    @app.route("/preparation/resumes.pdf")
+    @H.connexion_requise("preparation")
+    def prep_resumes_pdf():
+        a = request.args
+        rs = resumes_filtres(a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or "")
+        if not rs:
+            abort(404)
+        eleve = bool(a.get("eleve"))
+        lib = " ".join(x for x in [dict(COLLECTIONS_RES).get(a.get("col") or "", ""), a.get("cours") or "",
+                                    nom_matiere(a["matiere"]) if a.get("matiere") else "", a.get("domaine") or ""] if x) or "tous"
+        nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resumes_") + lib))[:70] + ".pdf"
+        return H.pdf_reponse(pdf_resumes(rs, eleve, lib), nom)
 
     H.prep_cette_semaine = cette_semaine

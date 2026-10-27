@@ -1,0 +1,28 @@
+{# v1.19 — Résumés « l'essentiel à retenir » : liste filtrable, PDF enseignant / élève par lot #}
+{% extends "base.html" %}{% block titre %}Résumés — l'essentiel à retenir{% endblock %}
+{% block contenu %}{% set onglet = 'resumes' %}{% include "_prep_onglets.html" %}
+<h2>Résumés — l'essentiel à retenir</h2>
+<p class="aide">Pour chaque notion : la règle, la méthode, un exemple et trois exercices corrigés. Version <b>enseignant</b> (avec le corrigé) et version <b>élève</b> à imprimer (sans les réponses). Rédaction originale SCOLARIS, à valider par le conseiller pédagogique.</p>
+<form method="get" class="filtres" style="margin:10px 0" aria-label="Filtre des résumés">
+  <label>Collection <select name="col" onchange="this.form.submit()"><option value="">Toutes</option>{% for c, l in COLLECTIONS %}<option value="{{ c }}" {{ 'selected' if c == col }}>{{ l }}</option>{% endfor %}</select></label>
+  <label>Cours <select name="cours" onchange="this.form.submit()"><option value="">Tous</option>{% for c in COURS %}<option value="{{ c }}" {{ 'selected' if c == cours }}>{{ PREP_COURS_LIB[c] }}</option>{% endfor %}</select></label>
+  <label>Matière <select name="matiere" onchange="this.form.submit()"><option value="">Toutes</option>{% for m in MATS %}<option value="{{ m }}" {{ 'selected' if m == mat }}>{{ prep_nom_matiere(m) }}</option>{% endfor %}</select></label>
+  <label>Domaine <select name="domaine" onchange="this.form.submit()"><option value="">Tous</option>{% for d in DOMS %}<option value="{{ d }}" {{ 'selected' if d == dom }}>{{ d }}</option>{% endfor %}</select></label>
+  <noscript><button class="btn sec petit">Afficher</button></noscript>
+</form>
+{% if n %}
+<div class="actions" style="margin:6px 0 12px">
+  <a class="btn petit" href="{{ url_for('prep_resumes_pdf', col=col, cours=cours, matiere=mat, domaine=dom) }}">PDF enseignant ({{ n }})</a>
+  <a class="btn sec petit" href="{{ url_for('prep_resumes_pdf', col=col, cours=cours, matiere=mat, domaine=dom, eleve=1) }}">PDF élève à imprimer</a>
+</div>
+{% endif %}
+{% for k in ordre %}{% set collection, c = k %}
+<h3>{{ collection }} — {{ PREP_COURS_LIB[c] }}</h3>
+{% for d, rs in groupes[k].items() %}
+<div class="tw"><table class="t"><thead><tr><th>{{ d }}</th><th style="width:1%"></th></tr></thead><tbody>
+{% for r in rs %}<tr><td><a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a>{% if r.etape %} <span class="aide">· {{ r.etape }}</span>{% endif %}{% if collection == 'Révision CEP' %} <span class="aide">· {{ prep_nom_matiere(r.matiere) }}</span>{% endif %}</td>
+<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id) }}">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1) }}">Élève</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% endfor %}
+{% else %}<div class="carte"><p class="aide">Aucun résumé pour ce choix.</p></div>{% endfor %}
+{% endblock %}
