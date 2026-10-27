@@ -500,6 +500,112 @@
     } catch (_) {}
   }
 
+
+  /* ---------------------------------------------------------------- en-têtes fixes (v1.17)
+     Chaque tableau garde sa ligne de rubriques (thead, ou premières lignes faites de <th>) visible pendant le
+     défilement ; les lignes d'en-tête successives s'empilent. Dans un cadre .tw, l'en-tête se colle en haut du
+     cadre et la 1re colonne à gauche quand le tableau déborde ; hors cadre, sous la barre du haut.
+     data-entete="non" sur un tableau (ou un parent) : pas d'en-tête fixe. */
+  function barresHaut() {
+    var h = 0;
+    $$('.barre-haut, header.top, .barre-doc, .indicateurs').forEach(function (b) {
+      var cs = getComputedStyle(b);
+      if ((cs.position === 'sticky' || cs.position === 'fixed') && b.offsetHeight && cs.display !== 'none')
+        h = Math.max(h, (parseFloat(cs.top) || 0) + b.offsetHeight);
+    });
+    return h;
+  }
+  function lignesEntete(t) {
+    var rows = t.tHead ? Array.prototype.slice.call(t.tHead.rows) : [];
+    if (!rows.length) {
+      for (var i = 0; i < t.rows.length && i < 4; i++) {
+        var r = t.rows[i], cells = Array.prototype.slice.call(r.cells);
+        if (cells.length && cells.every(function (c) { return c.tagName === 'TH'; })) rows.push(r); else break;
+      }
+    }
+    return rows;
+  }
+  function fixerTableau(t) {
+    if (t.closest('[data-entete="non"]') || t.closest('.sig-pad')) return;
+    var rows = lignesEntete(t);
+    var cadre = t.closest('.tw');
+    var y = 0;
+    if (rows.length) t.classList.add('entete-fixe');
+    rows.forEach(function (r) {
+      Array.prototype.forEach.call(r.cells, function (c) {
+        c.classList.add('th-fixe'); c.dataset.haut = y;
+        var bg = getComputedStyle(c).backgroundColor;
+        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') c.style.backgroundColor = '#F9FAFB';
+      });
+      y += r.getBoundingClientRect().height;
+    });
+    // 1re colonne fixe quand le tableau déborde de son cadre sur les côtés
+    var deborde = cadre && cadre.scrollWidth > cadre.clientWidth + 4;
+    // le tableau a déjà sa propre colonne collée à gauche (registre, saisie des notes) : on la garde
+    var corps = t.tBodies[0] && t.tBodies[0].rows[0];
+    if (corps && Array.prototype.some.call(corps.cells, function (c) {
+      if (c.classList.contains('col-fixe')) return false;
+      var cs = getComputedStyle(c); return cs.position === 'sticky' && cs.left !== 'auto';
+    })) deborde = false;
+    Array.prototype.forEach.call(t.rows, function (r) {
+      var c = r.cells[0];
+      if (!c) return;
+      if (deborde && (c.colSpan || 1) <= 2 && r.cells.length > 2) {
+        c.classList.add('col-fixe');
+        var bg = getComputedStyle(c).backgroundColor;
+        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') c.style.backgroundColor = c.tagName === 'TH' ? '#F9FAFB' : '#fff';
+      } else c.classList.remove('col-fixe');
+    });
+  }
+  /* Position de l'en-tête : sous les barres collées en haut de la page (barre du haut, indicateurs, barre d'outils
+     du document). Dans un cadre .tw, l'en-tête descend d'autant que le haut du cadre passe sous ces barres. */
+  // titre de section collé (h2 / h3 d'un formulaire) qui précède le tableau dans la même section : l'en-tête se place dessous
+  function titreAuDessus(el) {
+    var a = el.parentElement;
+    for (var i = 0; a && i < 6 && a.tagName !== 'BODY'; i++, a = a.parentElement) {
+      var titres = Array.prototype.filter.call(a.children, function (c) {
+        return (c.tagName === 'H2' || c.tagName === 'H3' || c.classList.contains('titre-fixe'))
+          && (c.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) && getComputedStyle(c).position === 'sticky';
+      });
+      if (titres.length) return titres[titres.length - 1].offsetHeight;
+      if (a.tagName === 'FORM') break;
+    }
+    return 0;
+  }
+  function placerEntetes() {
+    var barres = barresHaut();
+    $$('main.travail form h2, main.travail form h3, .titre-fixe').forEach(function (h) { h.style.top = barres + 'px'; });
+    $$('table.entete-fixe').forEach(function (t) {
+      var cadre = t.closest('.tw'), base, haut = barres + titreAuDessus(cadre || t);
+      if (cadre) { var h = cadre.getBoundingClientRect().top; base = Math.max(0, haut - h); }
+      else base = haut;
+      $$('.th-fixe', t).forEach(function (c) { c.style.top = (base + (+c.dataset.haut || 0)) + 'px'; });
+    });
+  }
+  var placement = false;
+  window.addEventListener('scroll', function () {
+    if (placement) return; placement = true;
+    (window.requestAnimationFrame || setTimeout)(function () { placement = false; placerEntetes(); });
+  }, { passive: true });
+  function fixerEntetes(racine) { $$('table', racine || document).forEach(fixerTableau); placerEntetes(); }
+  var minuterieEntetes;
+  function refixer() { clearTimeout(minuterieEntetes); minuterieEntetes = setTimeout(function () { fixerEntetes(document); }, 120); }
+  window.SCOLARIS.fixerEntetes = fixerEntetes;
+  window.addEventListener('resize', refixer);
+  window.addEventListener('load', refixer);
+  document.addEventListener('toggle', refixer, true);       // <details> ouverts : tableaux devenus visibles
+  document.addEventListener('click', function (e) { if (e.target.closest('[role=tab], .onglet, .tab, summary, [data-onglet]')) refixer(); }, true);
+  // tableaux redimensionnés ou ajoutés plus tard par les scripts de la page (statistiques, résultats, onglets)
+  var obs = window.ResizeObserver ? new ResizeObserver(refixer) : null;
+  document.addEventListener('DOMContentLoaded', function () {
+    if (obs) $$('table').forEach(function (t) { obs.observe(t); });
+    if (window.MutationObserver) new MutationObserver(function (muts) {
+      var neuf = muts.some(function (m) { return Array.prototype.some.call(m.addedNodes, function (n) {
+        return n.nodeType === 1 && (n.tagName === 'TABLE' || (n.querySelector && n.querySelector('table'))); }); });
+      if (neuf) { if (obs) $$('table').forEach(function (t) { obs.observe(t); }); refixer(); }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+
   function init(racine) {
     $$('.sig-pad', racine).forEach(initSignature);
     $$('.photo-capture', racine).forEach(initPhoto);
@@ -509,6 +615,7 @@
     $$('[data-coches]', racine).forEach(initCoches);
     $$('input[type=password]', racine).forEach(initOeil);
     $$('form[data-hors-ligne]', racine).forEach(initHorsLigne);
+    fixerEntetes(racine);
     if (racine === document) { majFile(); viderFile(); initMaj();
       var fa = $('#file-attente'); if (fa) fa.addEventListener('click', function (e) { e.preventDefault(); toast('Envoi des saisies en attente…', true); viderFile(); }); }
   }

@@ -265,3 +265,17 @@ table.t.plan-m input[type=date]{font-size:11px;padding:2px 3px;width:118px}
 .cases-deps{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 12px;border:1px solid var(--bord);border-radius:6px;padding:8px 10px;background:#fff}
 .case-dep{display:flex;align-items:center;gap:6px;font-weight:400!important;margin:0!important;font-size:13.5px}
 .case-dep input{width:auto}
+/* ---- v1.17 : en-têtes fixes — la ligne des rubriques reste visible pendant le défilement ----
+   Les tableaux larges ou longs défilent dans leur propre cadre (.tw) : en-tête collé en haut du cadre,
+   première colonne collée à gauche quand le tableau déborde sur les côtés (téléphone). Hors cadre, l'en-tête
+   se colle sous la barre du haut. Les titres de section des longs formulaires restent visibles aussi. */
+.tw{overflow:auto;max-height:calc(100vh - 140px);max-height:calc(100dvh - 140px);overscroll-behavior:contain}
+.tw.tw-libre{max-height:none}
+table .th-fixe{position:sticky!important;z-index:4!important;background-clip:padding-box}
+table .th-fixe::after{content:"";position:absolute;left:0;right:0;bottom:-1px;border-bottom:1px solid var(--bord);pointer-events:none}
+table .col-fixe{position:sticky;left:0;z-index:2;background-clip:padding-box;box-shadow:1px 0 0 var(--bord)}
+table .th-fixe.col-fixe,table .th-fixe[style*=left]{z-index:5!important}
+main.travail form h2,main.travail form h3,main form .sec-titre,.titre-fixe{position:sticky;top:56px;z-index:6;background:var(--fond);padding-top:6px;padding-bottom:6px;margin-top:18px}
+main.travail .carte form h2,main.travail .carte form h3,main.travail form .carte h2,main.travail form .carte h3{background:var(--carte)}
+@media print{.tw{max-height:none!important;overflow:visible!important}table .th-fixe,table .col-fixe{position:static!important;box-shadow:none}
+  main.travail form h2,main.travail form h3,.titre-fixe{position:static}}
