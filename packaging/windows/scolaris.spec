@@ -28,10 +28,11 @@ a = Analysis(
                    "m_juridiction", "jur_format", "jur_calc", "a_transmission", "a_tableau", "a_cep", "a_personnel",
                    "a_structure", "a_visites", "a_fiches",
                    "m_synoptique", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up",
-                   "a_integration", "a_synoptique", "m_perimetre_enseignant", "waitress", "openpyxl", "pdfplumber"]
+                   "a_integration", "a_synoptique", "m_perimetre_enseignant", "waitress", "openpyxl", "pdfplumber", "pypdf"]
     + collect_submodules("reportlab.graphics.barcode")
     + collect_submodules("openpyxl")
     + collect_submodules("pdfplumber")
+    + collect_submodules("pypdf")
     + collect_submodules("pdfminer")
     + collect_submodules("waitress"),
     excludes=["pytest", "IPython", "matplotlib", "numpy"],

@@ -31,7 +31,7 @@ EXCLUS = {"scolaris_serveur.py", "demo.py", "wsgi.py"}
 LIBS = [("flask", "flask"), ("werkzeug", "werkzeug"), ("jinja2", "jinja2"), ("markupsafe", "markupsafe"),
         ("itsdangerous", "itsdangerous"), ("click", "click"), ("blinker", "blinker"),
         ("reportlab", "reportlab"), ("charset-normalizer", "charset_normalizer"),
-        ("openpyxl", "openpyxl"), ("et-xmlfile", "et_xmlfile")]
+        ("openpyxl", "openpyxl"), ("et-xmlfile", "et_xmlfile"), ("pypdf", "pypdf")]
 GARDER = {"scolaris_android.py"}
 
 
