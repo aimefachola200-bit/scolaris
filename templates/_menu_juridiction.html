@@ -12,6 +12,25 @@
   {{ lien('liaison_alertes', 'Alertes', ep=='liaison_alertes') }}
   <a href="{{ url_for('reg_page', gcle='communication', rcle='agenda') }}">Agenda partagé</a>
 {% endcall %}{% endif %}
+{% if ep_existe('inspection_suivi') and peut('inspection_ped') %}{% call groupe('jinspec', 'Inspection et formation', ep.startswith('inspection_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'inspection'), 'inspection') %}
+  <a href="{{ url_for('reg_page', gcle='inspection', rcle='visites') }}">Visites de classe (grille APC)</a>
+  <a href="{{ url_for('reg_page', gcle='inspection', rcle='recommandations') }}">Suivi des recommandations</a>
+  {{ lien('inspection_suivi', 'Bilan du suivi', ep=='inspection_suivi') }}
+  <a href="{{ url_for('reg_page', gcle='inspection', rcle='plans') }}">Plans de formation</a>
+  <a href="{{ url_for('reg_page', gcle='inspection', rcle='animations') }}">Animations pédagogiques</a>
+{% endcall %}{% endif %}
+{% if ep_existe('examens_session') and peut('examens_pvs') %}{% call groupe('jexam', 'Examens et concours', ep.startswith('examens_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens'), 'examen') %}
+  {{ lien('examens_session', 'Session CEP', ep=='examens_session') }}
+  <a href="{{ url_for('reg_page', gcle='examens', rcle='candidats') }}">Candidats</a>
+  {{ lien('examens_notes', 'Saisie des notes', ep=='examens_notes') }}
+  {{ lien('examens_deliberation', 'Délibération et résultats', ep=='examens_deliberation') }}
+  <a href="{{ url_for('reg_page', gcle='examens', rcle='concours') }}">Concours scolaires</a>
+{% endcall %}{% endif %}
+{% if peut('patrimoine_materiel') %}{% call groupe('jpat', 'Patrimoine et matériel', (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'patrimoine'), 'patrimoine') %}
+  <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='materiel') }}">Matériel didactique et sportif</a>
+  <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='besoins') }}">Besoins exprimés</a>
+  <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='dotations') }}">Dotations reçues</a>
+{% endcall %}{% endif %}
 {% if ep_existe('pilotage') %}{{ lien('pilotage', 'Tableau de bord du pilotage', ep.startswith('pilotage'), 'progression') }}{% endif %}
 {% if ep_existe('sport_accueil') %}{% call groupe('jsport', 'Sport scolaire (UASCEP)', ep.startswith('sport') or ep.startswith('uascep') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'sport'), 'trophee') %}
   {{ lien('sport_accueil', 'Accueil du sport scolaire', ep=='sport_accueil') }}

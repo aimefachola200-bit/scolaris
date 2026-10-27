@@ -98,6 +98,32 @@
       <a href="{{ url_for('reg_page', gcle='sante', rcle='filles') }}">Scolarisation des filles</a>
       {{ lien('sante_scolaire_absences', 'Absences et décrochage', ep=='sante_scolaire_absences') }}
     {% endcall %}{% endif %}
+    {% if peut('inspection_ped') and ep_existe('inspection_suivi') and not ENS %}{# v1.27 : inspection, patrimoine et matériel, examens #}
+    {% call groupe('inspec', 'Inspection et formation', ep.startswith('inspection_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'inspection'), 'inspection') %}
+      <a href="{{ url_for('reg_page', gcle='inspection', rcle='visites') }}">Visites de classe (grille APC)</a>
+      <a href="{{ url_for('reg_page', gcle='inspection', rcle='recommandations') }}">Suivi des recommandations</a>
+      {{ lien('inspection_suivi', 'Bilan du suivi', ep=='inspection_suivi') }}
+      <a href="{{ url_for('reg_page', gcle='inspection', rcle='plans') }}">Plans de formation</a>
+      <a href="{{ url_for('reg_page', gcle='inspection', rcle='animations') }}">Animations pédagogiques</a>
+    {% endcall %}{% endif %}
+    {% if peut('patrimoine_materiel') and ep_existe('patrimoine_pvs_reprendre') and not ENS %}
+    {% call groupe('patmat', 'Patrimoine et matériel', ep.startswith('patrimoine_pvs') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'patrimoine'), 'patrimoine') %}
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='batiments') }}">Bâtiments et salles</a>
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='tables') }}">Tables-bancs</a>
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='manuels') }}">Manuels scolaires</a>
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='materiel') }}">Matériel didactique et sportif</a>
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='besoins') }}">Besoins exprimés</a>
+      <a href="{{ url_for('reg_page', gcle='patrimoine', rcle='dotations') }}">Dotations reçues</a>
+      {{ lien('patrimoine_pvs_reprendre', "Reprendre l'inventaire", ep=='patrimoine_pvs_reprendre') }}
+    {% endcall %}{% endif %}
+    {% if peut('examens_pvs') and ep_existe('examens_session') and not ENS %}
+    {% call groupe('examc', 'Examens et concours', ep.startswith('examens_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens'), 'examen') %}
+      {{ lien('examens_session', 'Session CEP', ep=='examens_session') }}
+      <a href="{{ url_for('reg_page', gcle='examens', rcle='candidats') }}">Candidats</a>
+      {{ lien('examens_notes', 'Saisie des notes', ep=='examens_notes') }}
+      {{ lien('examens_deliberation', 'Délibération et résultats', ep=='examens_deliberation') }}
+      <a href="{{ url_for('reg_page', gcle='examens', rcle='concours') }}">Concours scolaires</a>
+    {% endcall %}{% endif %}
     {% if peut('pilotage') and ep_existe('pilotage') and not ENS %}{{ lien('pilotage', 'Tableau de bord du pilotage', ep.startswith('pilotage'), 'progression') }}{% endif %}
     {% if peut('preparation') and ep_existe('prep_accueil') %}{# v1.18 : préparation de classe (programmes, guides, fiches APC) #}
     {% call groupe('prep', 'Préparation de classe', ep.startswith('prep_'), 'note') %}
