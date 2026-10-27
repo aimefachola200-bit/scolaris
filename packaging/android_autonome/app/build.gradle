@@ -23,8 +23,8 @@ android {
         manifestPlaceholders = [appNom: System.getenv("SCOLARIS_APP_NOM") ?: "SCOLARIS Autonome"]
         minSdk 24
         targetSdk 34
-        versionCode 38
-        versionName "1.20.0"
+        versionCode 39
+        versionName "1.21.0"
         ndk {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86_64"
         }

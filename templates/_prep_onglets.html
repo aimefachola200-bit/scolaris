@@ -10,6 +10,8 @@
   <a class="{{ 'actif' if onglet == 'guides' }}" href="{{ url_for('prep_guides') }}">Guides pédagogiques</a>
   <a class="{{ 'actif' if onglet == 'fiches' }}" href="{{ url_for('prep_fiches') }}">Fiches de préparation</a>
   <a class="{{ 'actif' if onglet == 'resumes' }}" href="{{ url_for('prep_resumes') }}">Résumés</a>
+  <a class="{{ 'actif' if onglet == 'evaluations' }}" href="{{ url_for('prep_evaluations') }}">Évaluations et épreuves</a>
+  <a class="{{ 'actif' if onglet == 'planif' }}" href="{{ url_for('prep_planif') }}">Planification et classeurs</a>
   <a class="{{ 'actif' if onglet == 'mes' }}" href="{{ url_for('prep_mes_fiches') }}">{{ 'Mes fiches' if g.user.role == 'enseignant' else 'Fiches des enseignants' }}</a>
   <a class="{{ 'actif' if onglet == 'manquants' }}" href="{{ url_for('prep_manquants') }}">Fiches et guides manquants</a>
 </nav>

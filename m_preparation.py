@@ -978,3 +978,8 @@ def enregistrer(app, H):
         return H.pdf_reponse(pdf_resumes(rs, eleve, lib), nom)
 
     H.prep_cette_semaine = cette_semaine
+    H.prep_pdf_fiches = pdf_fiches          # v1.21 : classeurs de fiches (m_evalprep)
+    H.prep_doc_word = doc_word
+    H.prep_classes = classes
+    H.prep_plan_annuel = plan_annuel
+    H.prep_ma_fiche = ma_fiche

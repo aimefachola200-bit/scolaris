@@ -1,0 +1,41 @@
+{# v1.21 — Une épreuve : sujet, corrigé type, grille de correction #}
+{% extends "base.html" %}{% block titre %}{{ d.discipline }} — {{ d.cours }}{% endblock %}
+{% block contenu %}{% set onglet = 'evaluations' %}{% include "_prep_onglets.html" %}
+<p><a href="{{ url_for('prep_evaluations', cours=d.cours, periode=d.periode) }}">← Épreuves {{ d.cours }} — {{ d.periode_lib }}</a></p>
+<h2>Épreuve de {{ d.discipline }}</h2>
+<p><b>COURS :</b> {{ d.cours }} · <b>PÉRIODE :</b> {{ d.periode_lib }} · <b>DURÉE :</b> {{ d.duree }} · <b>Barème :</b> {{ d.bareme }} points · {{ d.type_lib }}</p>
+<div class="actions" style="margin:6px 0 10px">
+  <a class="btn petit" href="{{ url_for('prep_epreuve_pdf', cle=cle) }}">Sujet (PDF)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=cle, partie='corrige') }}">Corrigé type (PDF)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=cle, partie='grille') }}">Grille (PDF)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_epreuve_doc', cle=cle) }}">Sujet (Word)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_epreuve_doc', cle=cle, partie='corrige') }}">Corrigé (Word)</a>
+  {% if peut_mod %}<a class="btn sec petit" href="{{ url_for('prep_epreuve_modifier', cle=cle) }}">Modifier</a>
+  <form method="post" action="{{ url_for('prep_epreuve_regenerer', cle=cle) }}" style="display:inline"><button class="btn sec petit">Régénérer d'après la planification</button></form>
+  {% if d._origine != 'banque' %}<form method="post" action="{{ url_for('prep_epreuve_regenerer', cle=cle) }}" style="display:inline"><input type="hidden" name="banque" value="1"><button class="btn sec petit">Rétablir la banque</button></form>{% endif %}
+  {% for c in classes %}<form method="post" action="{{ url_for('prep_eval_creer') }}" style="display:inline"><input type="hidden" name="classe" value="{{ c.id }}"><input type="hidden" name="periode" value="{{ d.periode }}"><button class="btn petit">Créer l'évaluation — {{ c.nom }}</button></form>{% endfor %}{% endif %}
+</div>
+<div class="carte">
+<h3>Sujet</h3>
+{% if d.contexte %}<p><i>{{ d.contexte }}</i></p>{% endif %}
+{% if d.support and d.code != 'dictee' %}<p><b>{{ 'Support' if d.code in ('ea','eps') else 'Texte' }} : {{ d.support_titre }}</b></p><p>{{ d.support }}</p>{% endif %}
+<p><b>Tâche :</b> {{ d.tache }}</p>
+<p><b>Consigne :</b></p>
+{% for it in d.consignes %}{% if it.titre != 'Présentation' %}{% if it.titre != 'Consigne' %}<p><b>{{ it.titre }}</b></p>{% endif %}
+<ol type="a">{% for x in it.questions %}<li>{{ x.q }}{% if x.pts %} <span class="aide">({{ fnb(x.pts) }} pt{{ 's' if x.pts > 1 }})</span>{% endif %}</li>{% endfor %}</ol>{% endif %}{% endfor %}
+</div>
+<div class="carte">
+<h3>Corrigé type</h3>
+{% if d.code == 'dictee' %}<p><b>{{ d.support_titre }}</b> — {{ d.support }}</p>{% endif %}
+<div class="tw"><table class="t"><thead><tr><th>Item</th><th>Question</th><th>Réponse attendue</th><th>Pts</th></tr></thead><tbody>
+{% for it in d.consignes %}{% for x in it.questions %}{% if x.r %}<tr><td>{{ it.titre }}</td><td>{{ x.q }}</td><td>{{ x.r }}</td><td>{{ fnb(x.pts) if x.pts }}</td></tr>{% endif %}{% endfor %}{% endfor %}
+</tbody></table></div>
+{% if d.corrige_note %}<p>{{ d.corrige_note }}</p>{% endif %}
+<h3>Grille de correction</h3>
+<div class="tw"><table class="t"><thead><tr><th>Critère</th><th>Indicateurs</th><th>Points</th></tr></thead><tbody>
+{% for gr in d.grille %}<tr><td>{{ gr.critere }}</td><td>{{ gr.indicateurs|join(' ; ') }}</td><td>{{ fnb(gr.points) }}</td></tr>{% endfor %}
+</tbody></table></div>
+</div>
+{% if d.progression and d.progression|select|list %}<p class="aide"><b>Progression prise en compte :</b> {{ d.progression|select|join(' · ') }}</p>{% endif %}
+<p class="aide"><i>{{ d.mention }}</i> — {{ d.source }}{% if d._origine and d._origine != 'banque' %} · version {{ 'modifiée' if d._origine == 'modifiee' else 'régénérée' }} enregistrée le {{ d._maj }}{% endif %}</p>
+{% endblock %}
