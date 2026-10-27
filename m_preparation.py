@@ -321,6 +321,14 @@ DOMAINES_MA = ["Numération et arithmétique", "Mesures", "Géométrie", "Résol
 MOIS_SCO = ["Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin"]
 
 
+MATS_PROG = ("francais", "maths", "es", "est")     # v1.27.1 : matières placées dans la progression annuelle
+
+
+def table_es_est():
+    """v1.27.1 — couverture des SA d'Éducation sociale (dont morale et civisme) et d'EST par cours (lot v127-es-est du corpus)."""
+    return ((corpus().get("lots") or {}).get("v127-es-est") or {}).get("table") or {}
+
+
 def table_domaines(rs):
     """v1.25 — nombre de résumés par cours × matière × domaine (Français : outils de la langue ; Mathématiques : domaines)."""
     t = {}
@@ -348,6 +356,8 @@ def _cles_fiche(f):
             out.add(("lecon", n))
         elif n:
             out.add(("unite", n))
+    elif f.get("matiere") in ("es", "est") and str(f.get("sa") or "").isdigit():
+        out.add(("sa", int(f["sa"])))                 # v1.27.1 : SA d'Éducation sociale et d'EST
     elif f.get("matiere") == "maths":
         sa = f.get("sa") if isinstance(f.get("sa"), int) else None
         if "DOSSIER" in u.upper() and n:
@@ -419,7 +429,7 @@ def resumes_mois(cours, mois_lib):
     """v1.25 — résumés de Français et de Mathématiques placés dans un mois de la progression annuelle du cours."""
     out = {}
     for r in corpus().get("resumes") or []:
-        if r["cours"] == cours and r["matiere"] in ("francais", "maths") and _sans_accent(r.get("mois") or "").lower() == _sans_accent(mois_lib).lower():
+        if r["cours"] == cours and r["matiere"] in MATS_PROG and _sans_accent(r.get("mois") or "").lower() == _sans_accent(mois_lib).lower():
             out.setdefault(r["matiere"], []).append(r)
     return {m: sorted(v, key=ordre_resume) for m, v in out.items()}
 
@@ -479,13 +489,30 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
         regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["regle"]), st["p"])]], colWidths=[larg])
         regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
                                    ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
-        bloc = [bandeau, Paragraph(_html.escape(f"{r['collection']} · {r['cours']} · {r['domaine']}" + (f" · {r['etape']}" if r.get("etape") else "")), st["s"]),
-                Spacer(1, 3), regle, Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]),
-                Paragraph("Exemple", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices", st["h"])]
+        tete = [bandeau, Paragraph(_html.escape(f"{r['collection']} · {r['cours']} · {r['domaine']}" + (f" · {r['etape']}" if r.get("etape") else "")), st["s"]),
+                Spacer(1, 3)]
+        if r.get("je_retiens"):        # v1.27.1 : Éducation sociale (dont morale et civisme) et EST
+            regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["je_retiens"]), st["p"])]], colWidths=[larg])
+            regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
+                                       ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+            bloc = tete + ([Paragraph("Situation de la vie courante", st["h"]), Paragraph(_res_txt(r["situation"]), st["p"])] if r.get("situation") else []) + [
+                Paragraph("Valeur ou règle de vie" if r.get("emc") else "Notions essentielles", st["h"]), Paragraph(_res_txt(r["regle"]), st["p"])]
+            if r.get("vocabulaire"):
+                bloc += [Paragraph("Vocabulaire", st["h"])] + [Paragraph("– " + _res_txt(v), st["p"]) for v in r["vocabulaire"]]
+            bloc += [Spacer(1, 3), regle]
+            if r.get("engagement"):
+                bloc += [Paragraph("Je m'engage", st["h"]), Paragraph(_res_txt(r["engagement"]), st["p"])]
+            bloc += [Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]), Paragraph("Exemple", st["h"]),
+                     Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices — petite évaluation", st["h"])]
+        else:
+            bloc = tete + [regle, Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]),
+                           Paragraph("Exemple", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices", st["h"])]
         for j, e in enumerate(r["exercices"], 1):
             bloc.append(Paragraph(f"{j}. " + _res_txt(e["q"]), st["q"]))
             bloc += ([Paragraph("…" * 46, st["l"])] if eleve else [Paragraph("Réponse : " + _res_txt(e["r"]), st["r"])])
         if not eleve:
+            if r.get("sources"):
+                bloc.append(Paragraph(_html.escape("Sources : " + " ; ".join(r["sources"])), st["m"]))
             bloc.append(Paragraph(_html.escape(r.get("mention", "")), st["m"]))
         bloc.append(Spacer(1, 10))
         histoire.append(KeepTogether(bloc))
@@ -1079,8 +1106,9 @@ def enregistrer(app, H):
     # ------------------------------------------------------------ v1.19 : résumés « l'essentiel à retenir »
     def resumes_filtres(col="", cours="", mat="", dom=""):
         rs = corpus().get("resumes") or []
+        emc = mat == "emc"                          # v1.27.1 : Éducation morale et civique (sous-matière de l'Éducation sociale)
         return [r for r in rs if (not col or COLLECTION_DE.get(r["collection"]) == col) and (not cours or r["cours"] == cours)
-                and (not mat or r["matiere"] == mat) and (not dom or r["domaine"] == dom)]
+                and (not mat or r["matiere"] == mat or (emc and r["matiere"] == "es" and r.get("emc"))) and (not dom or r["domaine"] == dom)]
 
     @app.route("/preparation/resumes")
     @H.connexion_requise("preparation")
@@ -1092,13 +1120,14 @@ def enregistrer(app, H):
         groupes = {}
         for r in sorted(rs, key=ordre_resume):
             groupes.setdefault((r["collection"], r["cours"]), {}).setdefault(r["domaine"], []).append(r)
-        vue = a.get("vue") if a.get("vue") in ("progression", "domaines") else ("progression" if cours and mat in ("francais", "maths") else "domaines")
+        vue = a.get("vue") if a.get("vue") in ("progression", "domaines") else ("progression" if cours and mat in MATS_PROG + ("emc",) else "domaines")
         ordre = sorted(groupes, key=lambda k: ([c for c, _l in COLLECTIONS_RES].index(COLLECTION_DE[k[0]]), COURS.index(k[1])))
         return render_template("prep_resumes.html", groupes=groupes, ordre=ordre, col=col, cours=cours, mat=mat, dom=dom, n=len(rs),
                                table=table_resumes(tous), COURS_RES=COURS_RES, MATS_RES=MATS_RES, COLLECTIONS=COLLECTIONS_RES, COURS=[c for c in COURS if any(r["cours"] == c for r in tous)],
                                MATS=[m for m in ORDRE_MAT if any(r["matiere"] == m for r in tous)],
                                DOMS=sorted({r["domaine"] for r in tous}), vue=vue,
-                               progression=progression_resumes([r for r in rs if r["matiere"] in ("francais", "maths")]) if vue == "progression" else [],
+                               progression=progression_resumes([r for r in rs if r["matiere"] in MATS_PROG]) if vue == "progression" else [],
+                               tsa=table_es_est(),
                                tdom=table_domaines(tous), OUTILS_FR=OUTILS_FR, DOMAINES_MA=DOMAINES_MA)
 
     @app.route("/preparation/resumes/<rid>")

@@ -474,6 +474,38 @@ class TestResumesProgression(unittest.TestCase):
         for interdit in ("gmail", "SONDJO", "AFROMAUD", "MARIUS", "COPAS"):
             self.assertNotIn(interdit, brut)
 
+    def test_es_est_par_sa(self):
+        """v1.27.1 : chaque SA d'Éducation sociale (dont morale et civisme) et d'EST, du CI au CM2, a ses résumés placés dans la progression."""
+        lot = self.C["lots"]["v127-es-est"]
+        for cours in ("CI", "CP", "CE1", "CE2", "CM1", "CM2"):
+            for m in ("es", "est"):
+                t = lot["table"][cours][m]
+                self.assertTrue(t["sa"], (cours, m))
+                self.assertEqual(t["couvertes"], t["sa"], (cours, m))
+            self.assertGreater(lot["table"][cours]["es"]["emc"], 0, cours)
+        rs = [r for r in self.C["resumes"] if r["matiere"] in ("es", "est")]
+        self.assertEqual(len(rs), lot["resumes"])
+        for r in rs:
+            self.assertIn(r.get("trimestre"), ("I", "II", "III"), r["id"])
+            self.assertTrue(r.get("ancres") and r.get("mois"), r["id"])
+            self.assertGreaterEqual(len(r.get("vocabulaire") or []), 2, r["id"])
+            self.assertTrue(r.get("je_retiens"), r["id"])
+            self.assertEqual(len(r["exercices"]), 3, r["id"])
+            self.assertIn("valider", r["mention"], r["id"])
+            if r.get("emc"):
+                self.assertTrue(r.get("situation") and r.get("engagement"), r["id"])
+        par = {r["id"]: r for r in rs}
+        for rid in ("res-cm1-01", "res-cm1-02", "res-cm1-03", "res-cm1-04", "res-cm2-01", "res-cm2-02", "res-cm2-03"):
+            self.assertTrue(par[rid].get("sources") and par[rid].get("emc"), rid)
+        self.assertIn("Romuald Wadagni", par["res-cm1-02"]["regle"] + par["res-cm1-02"]["je_retiens"])
+        self.assertIn("sept ans", par["res-cm1-03"]["regle"])
+        self.assertEqual([a["sa"] for a in par["r123-ce2-es-03"]["ancres"]], [3])
+        sa1 = [a for a in par["res-cm1-02"]["ancres"] if a["type"] == "sa"][0]
+        self.assertTrue(sa1["libelle"].startswith("SA 1 — Le Bénin") and sa1["seances"], sa1)
+        brut = __import__("json").dumps([{k: r.get(k) for k in ("vocabulaire", "je_retiens", "situation", "engagement")} for r in rs], ensure_ascii=False)
+        for interdit in ("gmail", "SONDJO", "AFROMAUD", "COPAS", "PédaFiche"):
+            self.assertNotIn(interdit, brut)
+
     def test_semaine_et_pages(self):
         r = lancer_resumes()
         self.assertIn("OK-resumes", r.stdout, r.stdout[-3000:] + r.stderr[-5000:])
@@ -517,6 +549,24 @@ assert "Dossier 1 · SA 1" in t
 rid = next(r["id"] for r in C["resumes"] if r["id"].startswith("r125-ce1-francais"))
 t = html.unescape(c.get(f"/preparation/resumes/{rid}").data.decode())
 assert "Progression : trimestre" in t
+# v1.27.1 : Éducation sociale (dont morale et civisme) et EST dans la progression, la semaine et le mois
+fe = [f for f in C["fiches"] if f["cours"] == "CM1" and f["matiere"] == "es" and str(f.get("sa")) == "1"][:2]
+assert fe
+re_ = MP.resumes_semaine("CM1", {"es": fe})["es"]
+assert any(r["id"] == "res-cm1-02" for r in re_), [r["id"] for r in re_]
+fs = [f for f in C["fiches"] if f["cours"] == "CE2" and f["matiere"] == "est" and str(f.get("sa")) == "6"][:1]
+assert any("cycle de l'eau" in r["titre"] for r in MP.resumes_semaine("CE2", {"est": fs})["est"])
+assert "es" in MP.resumes_mois("CM1", "Septembre") and "est" in MP.resumes_mois("CM1", "Septembre")
+t = html.unescape(c.get("/preparation/resumes?cours=CM1&matiere=es").data.decode())
+assert "Trimestre I" in t and "SA 1 — Le Bénin" in t and "SA couvertes par cours" in t, t[-2500:]
+t = html.unescape(c.get("/preparation/resumes?cours=CP&matiere=emc").data.decode())
+assert "Je sais saluer" in t and "activités des gens" not in t
+t = html.unescape(c.get("/preparation/resumes/r123-cp-es-01").data.decode())
+assert "Situation de la vie courante" in t and "Je m'engage" in t and "Valeur ou règle de vie" in t and "Vocabulaire" in t
+t = html.unescape(c.get("/preparation/resumes/res-cm2-02").data.decode())
+assert "Sources :" in t and "petite évaluation" in t
+r = c.get("/preparation/resumes/res-cm2-02.pdf")
+assert r.status_code == 200 and r.mimetype == "application/pdf"
 print("OK-resumes")
 '''
 
