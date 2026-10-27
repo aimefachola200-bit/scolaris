@@ -1106,13 +1106,21 @@ def enregistrer(app, H):
         flash(f"{n} licence(s) créée(s).", "success" if n else "warning")
         return redirect(url_for("reg_page", gcle="sport", rcle="licences", annee=saison))
 
-    def aptitude_depuis_sante(nom, prenoms, aptitude, date_v, medecin=""):
-        """Appelé par le module Santé : reporte l'aptitude sportive sur la licence de l'élève (même nom et prénoms)."""
+    def aptitude_depuis_sante(nom, prenoms, aptitude, date_v, medecin="", ecole="", saison=""):
+        """Appelé par le module Santé : reporte l'aptitude sportive sur la licence de l'élève (même école, même saison,
+        mêmes nom et prénoms sans accents ni casse)."""
         if aptitude not in APTITUDES:
             return 0
         n = 0
-        for x in q("SELECT id FROM reg_sport_licences WHERE portee=? AND lower(nom)=lower(?) AND lower(COALESCE(prenoms,''))=lower(?)",
-                   (portee(), nom or "", prenoms or "")):
+        sql, args = "SELECT id, nom, prenoms, ecole FROM reg_sport_licences WHERE portee=?", [portee()]
+        if saison:
+            sql += " AND annee=?"
+            args.append(saison)
+        for x in q(sql, tuple(args)):
+            if R._norm(x["nom"]).strip() != R._norm(nom).strip() or R._norm(x["prenoms"]).strip() != R._norm(prenoms).strip():
+                continue
+            if ecole and R.juridiction() and x["ecole"] and R._norm(x["ecole"]).strip() != R._norm(ecole).strip():
+                continue
             ex("UPDATE reg_sport_licences SET aptitude=?, date_visite=?, medecin=COALESCE(NULLIF(?, ''), medecin), maj=? WHERE id=?",
                (aptitude, date_v or "", medecin or "", H.maintenant(), x["id"]))
             n += 1

@@ -4,6 +4,14 @@
 {% if ep_existe('jur_alertes') and (peut('jur_ecoles') or peut('jur_visites') or peut('jur_cp_bilan') or peut('jur_transmission')) %}{{ lien('jur_alertes', 'Alertes de pilotage', ep=='jur_alertes', 'alerte') }}{% endif %}
 {% if ep_existe('groupes_whatsapp') and groupes_whatsapp_autorise() %}{{ lien('groupes_whatsapp', 'Groupes WhatsApp (directeurs, enseignants)', ep.startswith('groupes_whatsapp'), 'message') }}{% endif %}
 {{ lien('jur_synoptique', 'Tableau synoptique de la ' ~ ('CS' if CS_ else 'DDEMP'), ep.startswith('jur_synoptique'), 'tableau') }}
+{% if ep_existe('liaison_boite') and peut('notes_service') %}{% call groupe('jliaison', 'Communication et alertes', ep.startswith('liaison_') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'communication'), 'annonce') %}
+  {{ lien('liaison_boite', 'Boîte de réception', ep=='liaison_boite') }}
+  <a href="{{ url_for('reg_page', gcle='communication', rcle='notes') }}">Notes, circulaires et convocations</a>
+  <a href="{{ url_for('reg_page', gcle='communication', rcle='lectures') }}">Accusés de réception</a>
+  <a href="{{ url_for('reg_page', gcle='communication', rcle='echeances') }}">Échéances et rappels</a>
+  {{ lien('liaison_alertes', 'Alertes', ep=='liaison_alertes') }}
+  <a href="{{ url_for('reg_page', gcle='communication', rcle='agenda') }}">Agenda partagé</a>
+{% endcall %}{% endif %}
 {% if ep_existe('pilotage') %}{{ lien('pilotage', 'Tableau de bord du pilotage', ep.startswith('pilotage'), 'progression') }}{% endif %}
 {% if ep_existe('sport_accueil') %}{% call groupe('jsport', 'Sport scolaire (UASCEP)', ep.startswith('sport') or ep.startswith('uascep') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'sport'), 'trophee') %}
   {{ lien('sport_accueil', 'Accueil du sport scolaire', ep=='sport_accueil') }}

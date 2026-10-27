@@ -21,6 +21,9 @@ from datetime import date
 from flask import abort, flash, g, redirect, render_template, request, url_for
 
 TYPES_NUM = ("entier", "decimal", "montant")
+NIVEAUX = ["ECOLE", "UP", "ZONE", "CS", "DDEMP"]
+NIVEAUX_LIB = {"ECOLE": "École", "UP": "Unité pédagogique", "ZONE": "Zone pédagogique", "CS": "Circonscription scolaire",
+               "DDEMP": "Direction départementale"}
 GROUPES = {}          # cle -> Groupe
 _H = None
 
@@ -66,6 +69,29 @@ def annees_proposees(extra=()):
 
 def juridiction():
     return _H.config.EDITION in ("cs", "ddemp")
+
+
+def niveau_code(v):
+    """Niveau saisi (code ou libellé) -> code commun."""
+    n = _norm(v).strip()
+    for k, l in NIVEAUX_LIB.items():
+        if n in (k.lower(), _norm(l)) or (n and _norm(l).startswith(n)):
+            return k
+    return "ECOLE" if n.startswith("ecole") else (str(v or "").strip().upper() or "")
+
+
+def entite_courante():
+    """(niveau, libellé) de l'entité du compte : l'école (ou l'école ouverte depuis la structure), sinon la CS / la DDEMP."""
+    E = _H.config.ECOLE or {}
+    if not juridiction():
+        return "ECOLE", E.get("nom") or ""
+    if g.get("ecole"):
+        try:
+            x = _H.q("SELECT nom FROM ecoles WHERE id=?", (_H.eco(),), un=True)
+            return "ECOLE", (x["nom"] if x else "") or ""
+        except Exception:  # noqa: BLE001
+            return "ECOLE", ""
+    return ("DDEMP" if _H.config.EDITION == "ddemp" else "CS"), E.get("nom") or ""
 
 
 def portee_ecole():
@@ -257,7 +283,7 @@ def eleves_ecole():
     return [(r["id"], f"{r['nom']} {r['prenoms'] or ''}".strip() + (f" ({r['classe']})" if r["classe"] else "")) for r in rows]
 
 
-LISTES_COMMUNES = {"classes": liste_classes, "ecoles": liste_ecoles, "zones": liste_zones, "up": liste_up,
+LISTES_COMMUNES = {"niveaux": NIVEAUX, "classes": liste_classes, "ecoles": liste_ecoles, "zones": liste_zones, "up": liste_up,
                    "oui_non": ["Oui", "Non"], "sexe": ["M", "F"],
                    "niveaux_cours": ["CI", "CP", "CE1", "CE2", "CM1", "CM2", "Maternelle 1", "Maternelle 2"]}
 
@@ -266,9 +292,19 @@ LISTES_COMMUNES = {"classes": liste_classes, "ecoles": liste_ecoles, "zones": li
 class Registre:
     def __init__(self, groupe, cle, titre, champs, unite="ligne", oblig=None, ordre="id DESC", portee="ecole", feuille=None,
                  doc=None, signataires=None, paysage=True, colonnes=None, par_annee=True, aide="", fiche=None, apres_enregistrer=None,
-                 ecriture=None, calcul=None, filtres=(), onglet=None, totaux=(), prefixe=None, defauts=None):
+                 ecriture=None, calcul=None, filtres=(), onglet=None, totaux=(), prefixe=None, defauts=None, fiches=None, actions=None,
+                 unique=(), entite=False, niveaux=None, annee_lib=None):
         self.groupe, self.cle, self.titre, self.unite = groupe, cle, titre, unite
+        champs = list(champs)
+        self.entite = entite                    # v1.26 : rubriques « niveau » et « entite » (colonnes Niveau · Entité de l'Excel commun)
+        if entite:
+            champs = [("niveau", "Niveau", "choix:niveaux"), ("entite", "Entité", "texte")] + champs
         self.champs = [tuple(c) + (None,) * (3 - len(c)) if len(c) < 3 else tuple(c) for c in champs]
+        self.fiches = dict(fiches or {})        # v1.26 : {code: (libellé du bouton, icône, fonction(ligne) -> (titre, flowables, sigs[, paysage]))}
+        self.actions = actions                  # v1.26 : fonction(ligne) -> [(url, libellé, icône)] : boutons de ligne
+        self.unique = tuple(unique)             # v1.26 : clé d'unicité (import : mise à jour au lieu d'ajout)
+        self.niveaux = list(niveaux or NIVEAUX)
+        self.annee_lib = annee_lib or ("Année scolaire" if cle in ("indicateurs", "filles") else "Saison")
         self.oblig = oblig or self.champs[0][0]
         self.ordre, self.portee, self.paysage = ordre, portee, paysage
         self.feuille = (feuille or titre)[:31]
@@ -287,6 +323,13 @@ class Registre:
         self.defauts = defauts                  # fonction() -> {rubrique: valeur} proposées dans le formulaire d'ajout
         self.prefixe = prefixe                  # fonction(ligne) -> (niveau, entité) : colonnes « Niveau · Entité · Saison » de l'Excel commun
         self.table = f"reg_{groupe.cle}_{cle}"
+        if entite and prefixe is None:
+            self.prefixe = lambda x: (x.get("niveau") or entite_courante()[0], x.get("entite") or entite_courante()[1])
+        if entite and defauts is None:
+            self.defauts = lambda: {"niveau": entite_courante()[0], "entite": entite_courante()[1]}
+
+    def champs_excel(self):
+        return [c for c in self.champs if not (self.entite and c[0] in ("niveau", "entite"))]
 
     @property
     def lib(self):
@@ -319,6 +362,7 @@ class Groupe:
         self.ecriture_roles = set(ecriture_roles or {"admin", "fondateur", "directeur", "secretaire", "responsable", "chef_service", "cp"})
         self.registres = {}
         self.bandeau = None                     # fonction() -> (niveau, entité, libellé) : bandeau « logo UASCEP » des PDF
+        self.alertes = None                     # v1.26 : fonction() -> (nombre, url) : bandeau d'alertes en tête des onglets
         self.pages = list(onglets_avant)        # [(endpoint, titre, kwargs)] : pages propres (avant les registres)
         self.pages_apres = []
         self.listes = dict(LISTES_COMMUNES)
@@ -350,6 +394,15 @@ class Groupe:
 
     def page(self, endpoint, titre, apres=True, **kw):
         (self.pages_apres if apres else self.pages).append((endpoint, titre, kw))
+
+    def bandeau_alertes(self):
+        if not self.alertes:
+            return None
+        try:
+            n, u = self.alertes()
+            return (n, u) if n else None
+        except Exception:  # noqa: BLE001
+            return None
 
     def onglets(self):
         out = [(url_for(e, **kw), t, e) for e, t, kw in self.pages]
@@ -448,6 +501,7 @@ def _installer_routes(app, H):
     if _ROUTES[0]:
         return
     _ROUTES[0] = True
+    _route_fiches(app, H)
 
     def groupe_reg(gcle, rcle):
         G = GROUPES.get(gcle)
@@ -555,12 +609,12 @@ def _installer_routes(app, H):
         return redirect(url_for("reg_page", gcle=gcle, rcle=rcle, annee=annee))
 
     def lignes_excel(G, r, lignes):
-        ent = (["Niveau", "Entité", "Année scolaire" if r.cle == "indicateurs" else "Saison"] if r.prefixe else []) + [l for _k, l, _t in r.champs]
+        ent = (["Niveau", "Entité", r.annee_lib] if r.prefixe else []) + [l for _k, l, _t in r.champs_excel()]
         calc_ent = list(r.calcul(lignes[0]).keys()) if (r.calcul and lignes) else []
         rows = []
         for x in lignes:
             ligne = (list(r.prefixe(x)) + [x.get("annee") or ""]) if r.prefixe else []
-            for k, _l, t in r.champs:
+            for k, _l, t in r.champs_excel():
                 v = x.get(k)
                 ligne.append(jjmmaaaa(v) if t == "date" else G.nom_eleve(v) if (t == "eleve" and v) else ("" if v is None else v))
             if calc_ent:
@@ -583,7 +637,7 @@ def _installer_routes(app, H):
     @H.connexion_requise()
     def reg_modele(gcle, rcle):
         G, r = groupe_reg(gcle, rcle)
-        ent = (["Niveau", "Entité", "Année scolaire" if r.cle == "indicateurs" else "Saison"] if r.prefixe else []) + [l for _k, l, _t in r.champs]
+        ent = (["Niveau", "Entité", r.annee_lib] if r.prefixe else []) + [l for _k, l, _t in r.champs_excel()]
         return H.xlsx.reponse_classeur(f"modele_{r.cle}.xlsx", [(r.feuille, ent, [], {})])
 
     @app.route("/reg/<gcle>/<rcle>/import", methods=["POST"])
@@ -604,7 +658,7 @@ def _installer_routes(app, H):
             return redirect(url_for("reg_page", gcle=gcle, rcle=rcle, annee=annee))
         ws = next((w for w in wb.worksheets if X.normaliser(w.title) == X.normaliser(r.feuille)), wb.worksheets[0])
         rows = [list(x) for x in ws.iter_rows(values_only=True)]
-        libs = {X.normaliser(l): k for k, l, _t in r.champs}
+        libs = {X.normaliser(l): k for k, l, _t in r.champs_excel()}
         i0 = next((i for i, x in enumerate(rows[:15]) if x and sum(1 for v in x if X.normaliser(v) in libs) >= 2), None)
         if i0 is None:
             flash("En-têtes introuvables : utilisez le modèle Excel du registre.", "danger")
@@ -612,6 +666,8 @@ def _installer_routes(app, H):
         idx = {libs[X.normaliser(v)]: j for j, v in enumerate(rows[i0]) if X.normaliser(v) in libs}
         j_annee = next((j for j, v in enumerate(rows[i0]) if X.normaliser(v) in ("annee scolaire", "saison")), None)
         j_entite = next((j for j, v in enumerate(rows[i0]) if X.normaliser(v) == "entite"), None)
+        j_niveau = next((j for j, v in enumerate(rows[i0]) if X.normaliser(v) == "niveau"), None)
+        maj_n = 0
         eleves = {_norm(lib.split(" (")[0]): eid for eid, lib in eleves_ecole()} if "eleve" in r.typ.values() else {}
         n, refus = 0, 0
         for x in rows[i0 + 1:]:
@@ -628,18 +684,40 @@ def _installer_routes(app, H):
                 brut[k] = v
             if r.prefixe and "ecole" in r.typ and not brut.get("ecole") and j_entite is not None:
                 brut["ecole"] = X.valeur(x, j_entite)
+            if r.entite:
+                brut["niveau"] = niveau_code(X.valeur(x, j_niveau)) if j_niveau is not None else ""
+                brut["entite"] = X.valeur(x, j_entite) if j_entite is not None else ""
+                if not brut["niveau"] and not brut["entite"]:
+                    brut["niveau"], brut["entite"] = entite_courante()
             d = G.lire_formulaire(r, brut)
             if d.get(r.oblig) in (None, ""):
                 refus += 1
                 continue
             a = X.valeur(x, j_annee) if j_annee is not None else ""
+            a = a if re.fullmatch(r"\d{4}-\d{4}", a or "") else annee
             ks = list(d)
+            if r.unique:
+                w = " AND ".join(f"COALESCE({k},'')=COALESCE(?,'')" for k in r.unique)
+                old = H.q(f"SELECT id FROM {r.table} WHERE portee=? AND annee=? AND {w}", (cle_portee(r.portee), a) + tuple(d.get(k) for k in r.unique), un=True)
+                if old:
+                    H.ex(f"UPDATE {r.table} SET " + ", ".join(f"{k}=?" for k in ks) + ", maj=? WHERE id=?", tuple(d[k] for k in ks) + (H.maintenant(), old["id"]))
+                    if r.apres_enregistrer:
+                        try:
+                            r.apres_enregistrer(old["id"])
+                        except Exception:  # noqa: BLE001
+                            pass
+                    maj_n += 1
+                    continue
             H.ex(f"INSERT INTO {r.table} (portee, annee, " + ", ".join(ks) + ", cree_le, cree_par, maj) VALUES (?,?," + ",".join("?" * len(ks)) + ",?,?,?)",
-                 (cle_portee(r.portee), a if re.fullmatch(r"\d{4}-\d{4}", a or "") else annee) + tuple(d[k] for k in ks)
-                 + (H.maintenant(), g.user["id"], H.maintenant()))
+                 (cle_portee(r.portee), a) + tuple(d[k] for k in ks) + (H.maintenant(), g.user["id"], H.maintenant()))
+            if r.apres_enregistrer:
+                try:
+                    r.apres_enregistrer(H.q(f"SELECT MAX(id) m FROM {r.table}", un=True)["m"])
+                except Exception:  # noqa: BLE001
+                    pass
             n += 1
         H.journal(r.table + "_import", f"{n} ligne(s), {refus} refus")
-        flash(f"Import : {n} ligne(s) ajoutée(s)" + (f", {refus} refusée(s) (rubrique obligatoire vide)" if refus else "") + ".",
+        flash(f"Import : {n} ligne(s) ajoutée(s)" + (f", {maj_n} mise(s) à jour" if maj_n else "") + (f", {refus} refusée(s) (rubrique obligatoire vide)" if refus else "") + ".",
               "success" if not refus else "warning")
         return redirect(url_for("reg_page", gcle=gcle, rcle=rcle, annee=annee))
 
@@ -679,6 +757,22 @@ def _installer_routes(app, H):
         titre, corps, sigs, paysage = (list(r.fiche(x)) + [False])[:4]
         code = code_document(r.table + "_fiche", f"{titre} — {r.titre} n° {rid}", f"reg:{r.cle}:fiche:{rid}:{x.get('maj') or ''}")
         return H.pdf_reponse(pdf_document(titre.upper(), corps, sigs, code, paysage, bandeau=G.bandeau() if G.bandeau else None), f"{r.cle}_{rid}.pdf")
+
+
+def _route_fiches(app, H):
+    @app.route("/reg/<gcle>/<rcle>/<int:rid>/<doc>.pdf")
+    @H.connexion_requise()
+    def reg_doc_pdf(gcle, rcle, rid, doc):
+        G = GROUPES.get(gcle)
+        if not G or rcle not in G.registres or not H.peut(G.droit):
+            abort(404)
+        r = G.registres[rcle]
+        if doc not in r.fiches:
+            abort(404)
+        x = G.ligne(r, rid)
+        titre, corps, sigs, paysage = (list(r.fiches[doc][2](x)) + [False])[:4]
+        code = code_document(r.table + "_" + doc, f"{titre} — {r.titre} n° {rid}", f"reg:{r.cle}:{doc}:{rid}:{x.get('maj') or ''}")
+        return H.pdf_reponse(pdf_document(titre.upper(), corps, sigs, code, paysage, bandeau=G.bandeau() if G.bandeau else None), f"{r.cle}_{doc}_{rid}.pdf")
 
 
 def fiche_simple(G, r, x, titre=None, sigs=None, exclure=()):

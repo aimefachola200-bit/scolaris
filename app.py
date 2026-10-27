@@ -428,6 +428,8 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_enseignant",
            # v1.25 : sport scolaire (licences, compétitions, classements, records, palmarès, diplômes), tableau de bord du pilotage
            "m_sport", "m_pilotage",
+           # v1.26 : communication et alertes (notes, convocations, accusés, échéances, agenda, messages aux parents) ; santé, cantine, inclusion
+           "m_communication", "m_sante_scolaire",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 

@@ -3,3 +3,4 @@
 <nav class="onglets" aria-label="{{ G.titre }}">
 {% for u, t, e in G.onglets() %}<a class="{{ 'actif' if e == _actif }}" href="{{ u }}">{{ t }}</a>{% endfor %}
 </nav>
+{% set _al = G.bandeau_alertes() if G.bandeau_alertes is defined else none %}{% if _al %}<div class="flash warning">{{ icone('alerte') }} {{ _al[0] }} alerte(s) à traiter — <a href="{{ _al[1] }}">voir les alertes</a></div>{% endif %}
