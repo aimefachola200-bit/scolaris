@@ -547,9 +547,12 @@
       if (c.classList.contains('col-fixe')) return false;
       var cs = getComputedStyle(c); return cs.position === 'sticky' && cs.left !== 'auto';
     })) deborde = false;
+    var couvert = 0;   // lignes dont la 1re colonne est prise par une cellule fusionnée (rowspan) d'au-dessus
     Array.prototype.forEach.call(t.rows, function (r) {
       var c = r.cells[0];
       if (!c) return;
+      if (couvert > 0) { couvert--; c.classList.remove('col-fixe'); return; }
+      couvert = (c.rowSpan || 1) - 1;
       if (deborde && (c.colSpan || 1) <= 2 && r.cells.length > 2) {
         c.classList.add('col-fixe');
         var bg = getComputedStyle(c).backgroundColor;
@@ -567,16 +570,18 @@
         return (c.tagName === 'H2' || c.tagName === 'H3' || c.classList.contains('titre-fixe'))
           && (c.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) && getComputedStyle(c).position === 'sticky';
       });
-      if (titres.length) return titres[titres.length - 1].offsetHeight;
+      if (titres.length) return titres[titres.length - 1];
       if (a.tagName === 'FORM') break;
     }
-    return 0;
+    return null;
   }
   function placerEntetes() {
     var barres = barresHaut();
     $$('main.travail form h2, main.travail form h3, .titre-fixe').forEach(function (h) { h.style.top = barres + 'px'; });
     $$('table.entete-fixe').forEach(function (t) {
-      var cadre = t.closest('.tw'), base, haut = barres + titreAuDessus(cadre || t);
+      var cadre = t.closest('.tw'), base, titre = titreAuDessus(cadre || t);
+      // ligne sous laquelle l'en-tête reste : bas des barres collées, ou bas du titre de section collé
+      var haut = titre ? Math.max(barres, titre.getBoundingClientRect().bottom) : barres;
       if (cadre) { var h = cadre.getBoundingClientRect().top; base = Math.max(0, haut - h); }
       else base = haut;
       $$('.th-fixe', t).forEach(function (c) { c.style.top = (base + (+c.dataset.haut || 0)) + 'px'; });
