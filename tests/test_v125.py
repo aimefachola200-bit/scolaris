@@ -469,7 +469,7 @@ class TestResumesProgression(unittest.TestCase):
         self.assertGreaterEqual(len(n), 300)
         self.assertTrue(all("à valider par le conseiller pédagogique" in r["mention"] for r in n))
         lot = self.C["lots"]["v125-resumes"]
-        self.assertEqual(lot["total"], len(self.C["resumes"]))
+        self.assertEqual(lot["total"], len([r for r in self.C["resumes"] if not r.get("seance_resume")]))   # v1.29 : hors résumés de séance
         brut = __import__("json").dumps(n, ensure_ascii=False)
         for interdit in ("gmail", "SONDJO", "AFROMAUD", "MARIUS", "COPAS"):
             self.assertNotIn(interdit, brut)
@@ -483,7 +483,7 @@ class TestResumesProgression(unittest.TestCase):
                 self.assertTrue(t["sa"], (cours, m))
                 self.assertEqual(t["couvertes"], t["sa"], (cours, m))
             self.assertGreater(lot["table"][cours]["es"]["emc"], 0, cours)
-        rs = [r for r in self.C["resumes"] if r["matiere"] in ("es", "est")]
+        rs = [r for r in self.C["resumes"] if r["matiere"] in ("es", "est") and not r.get("seance_resume")]
         self.assertEqual(len(rs), lot["resumes"])
         for r in rs:
             self.assertIn(r.get("trimestre"), ("I", "II", "III"), r["id"])

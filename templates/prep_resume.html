@@ -2,6 +2,7 @@
 {% extends "base.html" %}{% block titre %}{{ r.titre }}{% endblock %}
 {% block contenu %}{% set onglet = 'resumes' %}{% include "_prep_onglets.html" %}
 <p class="aide"><a href="{{ url_for('prep_resumes', cours=r.cours, matiere=r.matiere) }}">← {{ prep_nom_matiere(r.matiere) }} — {{ PREP_COURS_LIB[r.cours] }}</a> · {{ r.domaine }}{% if r.sous_domaine %} ({{ r.sous_domaine }}){% endif %}{% if r.etape %} · {{ r.etape }}{% endif %}</p>
+{% if r.a_verifier %}<div class="flash warning">Titre de séance / de SA à vérifier avec le programme officiel (séance ajoutée faute de programme détaillé dans le corpus).</div>{% endif %}
 {% if r.ancres %}<p class="aide">Progression : {% if r.trimestre %}trimestre {{ r.trimestre }} · {{ r.mois }} · {% endif %}{% for a in r.ancres %}{{ a.libelle }}{% if a.seance_titre and a.seance_titre != r.titre %} (« {{ a.seance_titre }} »){% endif %}{% if not loop.last %} ; {% endif %}{% endfor %}</p>{% endif %}
 <div class="actions" style="margin:6px 0 10px">
   {% if eleve %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id) }}">Version enseignant</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id, eleve=1) }}">Version élève</a>{% endif %}
@@ -22,13 +23,16 @@
   <h3>Exercices — petite évaluation</h3>
   {% else %}
   <div class="resume-regle" style="background:#EEF4FB;border:1px solid #1F4E79;border-radius:6px;padding:8px 10px;margin:8px 0"><b>Je retiens</b><br>{{ r.regle }}</div>
-  <h3>Méthode</h3><p>{{ r.methode }}</p>
+  {% if r.methode %}<h3>Méthode</h3><p>{{ r.methode }}</p>{% endif %}
   <h3>Exemple</h3><p>{{ r.exemple }}</p>
+  {% if r.vocabulaire %}<h3>Vocabulaire</h3><p>{{ r.vocabulaire|join(' — ') }}</p>{% endif %}
   <h3>Exercices</h3>
   {% endif %}
   <ol>{% for e in r.exercices %}<li>{{ e.q }}{% if eleve %}<div style="border-bottom:1px dotted #98A2B3;height:1.6em"></div>{% else %}<br><i style="color:#067647">Réponse : {{ e.r }}</i>{% endif %}</li>{% endfor %}</ol>
   {% if r.sources and not eleve %}<p class="aide"><b>Sources :</b> {{ r.sources|join(' ; ') }}</p>{% endif %}
   {% if not eleve %}<p class="aide">{{ r.mention }}</p>{% endif %}
 </article>
+{% set sr = (r.ancres if r.seance_resume else []) + (r.seances_rattachees or []) %}
+{% if sr and not eleve %}<p class="aide noprint"><b>Séance(s) de la progression :</b> {% for a in sr %}{% if a.fiche %}<a href="{{ url_for('prep_fiche', fid=a.fiche) }}">{{ a.libelle }}{% if a.seance_titre and a.seance_titre != r.titre %} — « {{ a.seance_titre }} »{% endif %}</a>{% else %}{{ a.libelle }}{% endif %}{% if not loop.last %} ; {% endif %}{% endfor %}</p>{% endif %}
 <p class="aide noprint">{% if prec %}<a href="{{ url_for('prep_resume', rid=prec.id, eleve=1 if eleve else None) }}">← {{ prec.titre }}</a>{% endif %}{% if prec and suiv %} · {% endif %}{% if suiv %}<a href="{{ url_for('prep_resume', rid=suiv.id, eleve=1 if eleve else None) }}">{{ suiv.titre }} →</a>{% endif %}</p>
 {% endblock %}

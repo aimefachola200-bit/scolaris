@@ -99,6 +99,11 @@ def corpus():
         c["guide_par_id"] = {x["id"]: x for x in c["guides"]}
         c["prog_par_id"] = {x["id"]: x for x in c["programmes"]}
         c["modele_par_id"] = {x["id"]: x for x in c["modeles"]}
+        rpf = {}                                    # v1.29 : résumé(s) de chaque séance (fiche) de la progression
+        for r in c.get("resumes") or []:
+            for fid in r.get("fiches") or []:
+                rpf.setdefault(fid, []).append(r)
+        c["resumes_par_fiche"] = rpf
         _CORPUS.update(c)
     return _CORPUS
 
@@ -321,7 +326,17 @@ DOMAINES_MA = ["Numération et arithmétique", "Mesures", "Géométrie", "Résol
 MOIS_SCO = ["Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin"]
 
 
-MATS_PROG = ("francais", "maths", "es", "est")     # v1.27.1 : matières placées dans la progression annuelle
+MATS_PROG = ("francais", "maths", "es", "est", "eps", "ea")     # v1.27.1 / v1.29 : matières placées dans la progression annuelle
+
+
+def table_seances():
+    """v1.29 — couverture des séances de la progression par un résumé de séance (cours -> matière -> {résumés, séances, couvertes})."""
+    return ((corpus().get("lots") or {}).get("v129-resumes-seances") or {}).get("table") or {}
+
+
+def resumes_de_fiche(fid):
+    """v1.29 — résumés rattachés à une séance (fiche) : résumé de la séance d'abord, puis résumés de SA rattachés."""
+    return sorted(corpus().get("resumes_par_fiche", {}).get(fid) or [], key=lambda r: (not r.get("seance_resume"), r["titre"]))
 
 
 def table_es_est():
@@ -400,12 +415,19 @@ def resumes_semaine(cours, fiches_par_mat):
         if not fiches:
             continue
         cles = set()
+        fids = set()
         for f in fiches:
             cles |= _cles_fiche(f)
+            fids.add(f.get("id") or f.get("source_id"))
         sous = " | ".join((f.get("sous_matiere") or "").lower() for f in fiches).strip(" |")
         liste = []
         for r in rs:
             if r["matiere"] != mat:
+                continue
+            if r.get("fiches") and fids & set(r["fiches"]):       # v1.29 : résumé de la séance même
+                liste.append(r)
+                continue
+            if r.get("seance_resume"):
                 continue
             rc = _cles_resume(r)
             if not rc:
@@ -489,8 +511,14 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
         regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["regle"]), st["p"])]], colWidths=[larg])
         regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
                                    ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
-        tete = [bandeau, Paragraph(_html.escape(f"{r['collection']} · {r['cours']} · {r['domaine']}" + (f" · {r['etape']}" if r.get("etape") else "")), st["s"]),
-                Spacer(1, 3)]
+        seances = r.get("ancres") if r.get("seance_resume") else []
+        tete = [bandeau, Paragraph(_html.escape(f"{r['collection']} · {r['cours']} · {r['domaine']}" + (f" · {r['etape']}" if r.get("etape") else "")
+                                                + (f" · trimestre {r['trimestre']} · {r['mois']}" if r.get("seance_resume") and r.get("trimestre") else "")), st["s"])]
+        if seances:
+            tete.append(Paragraph(_html.escape("Séance(s) : " + " ; ".join(a["libelle"] + (f" — « {a['seance_titre']} »" if a.get("seance_titre") and a["seance_titre"] != r["titre"] else "") for a in seances)), st["s"]))
+        if r.get("a_verifier"):
+            tete.append(Paragraph("Titre de séance / de SA à vérifier avec le programme officiel.", st["s"]))
+        tete.append(Spacer(1, 3))
         if r.get("je_retiens"):        # v1.27.1 : Éducation sociale (dont morale et civisme) et EST
             regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["je_retiens"]), st["p"])]], colWidths=[larg])
             regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
@@ -505,8 +533,11 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
             bloc += [Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]), Paragraph("Exemple", st["h"]),
                      Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices — petite évaluation", st["h"])]
         else:
-            bloc = tete + [regle, Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"]),
-                           Paragraph("Exemple", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"]), Paragraph("Exercices", st["h"])]
+            bloc = tete + [regle] + ([Paragraph("Méthode", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"])] if r.get("methode") else []) + [
+                Paragraph("Exemple", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"])]
+            if r.get("vocabulaire"):
+                bloc += [Paragraph("Vocabulaire", st["h"]), Paragraph(_res_txt(" — ".join(r["vocabulaire"])), st["p"])]
+            bloc.append(Paragraph("Exercices", st["h"]))
         for j, e in enumerate(r["exercices"], 1):
             bloc.append(Paragraph(f"{j}. " + _res_txt(e["q"]), st["q"]))
             bloc += ([Paragraph("…" * 46, st["l"])] if eleve else [Paragraph("Réponse : " + _res_txt(e["r"]), st["r"])])
@@ -933,7 +964,7 @@ def enregistrer(app, H):
     @H.connexion_requise("preparation")
     def prep_fiche(fid):
         f = fiche_corpus(fid)
-        return render_template("prep_fiche.html", f=f, classes=classes(), propre=False, CHAMPS=CHAMPS)
+        return render_template("prep_fiche.html", f=f, classes=classes(), propre=False, CHAMPS=CHAMPS, resumes=resumes_de_fiche(fid))
 
     @app.route("/preparation/fiches/<fid>.pdf")
     @H.connexion_requise("preparation")
@@ -1104,8 +1135,10 @@ def enregistrer(app, H):
 
 
     # ------------------------------------------------------------ v1.19 : résumés « l'essentiel à retenir »
-    def resumes_filtres(col="", cours="", mat="", dom=""):
+    def resumes_filtres(col="", cours="", mat="", dom="", sa=None):
         rs = corpus().get("resumes") or []
+        if sa:                                      # v1.29 : livret d'une SA
+            rs = [r for r in rs if sa in (r.get("sa") or [])]
         emc = mat == "emc"                          # v1.27.1 : Éducation morale et civique (sous-matière de l'Éducation sociale)
         return [r for r in rs if (not col or COLLECTION_DE.get(r["collection"]) == col) and (not cours or r["cours"] == cours)
                 and (not mat or r["matiere"] == mat or (emc and r["matiere"] == "es" and r.get("emc"))) and (not dom or r["domaine"] == dom)]
@@ -1117,6 +1150,9 @@ def enregistrer(app, H):
         col, cours, mat, dom = a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or ""
         tous = corpus().get("resumes") or []
         rs = resumes_filtres(col, cours, mat, dom)
+        seul = bool(a.get("seances"))
+        if seul:                                    # v1.29 : uniquement les résumés de séance
+            rs = [r for r in rs if r.get("seance_resume")]
         groupes = {}
         for r in sorted(rs, key=ordre_resume):
             groupes.setdefault((r["collection"], r["cours"]), {}).setdefault(r["domaine"], []).append(r)
@@ -1127,7 +1163,8 @@ def enregistrer(app, H):
                                MATS=[m for m in ORDRE_MAT if any(r["matiere"] == m for r in tous)],
                                DOMS=sorted({r["domaine"] for r in tous}), vue=vue,
                                progression=progression_resumes([r for r in rs if r["matiere"] in MATS_PROG]) if vue == "progression" else [],
-                               tsa=table_es_est(),
+                               tsa=table_es_est(), tse=table_seances(), seul=seul,
+                               sas=sorted({n for r in rs for n in (r.get("sa") or [])}) if cours and mat else [],
                                tdom=table_domaines(tous), OUTILS_FR=OUTILS_FR, DOMAINES_MA=DOMAINES_MA)
 
     @app.route("/preparation/resumes/<rid>")
@@ -1155,12 +1192,21 @@ def enregistrer(app, H):
     @H.connexion_requise("preparation")
     def prep_resumes_pdf():
         a = request.args
-        rs = resumes_filtres(a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or "")
+        sa = a.get("sa", type=int)
+        rs = resumes_filtres(a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or "", sa)
+        if a.get("seances"):                        # v1.29 : uniquement les résumés de séance (cahier de résumés)
+            rs = [r for r in rs if r.get("seance_resume")]
         if not rs:
             abort(404)
+        rs = sorted(rs, key=ordre_resume)
         eleve = bool(a.get("eleve"))
         lib = " ".join(x for x in [dict(COLLECTIONS_RES).get(a.get("col") or "", ""), a.get("cours") or "",
-                                    nom_matiere(a["matiere"]) if a.get("matiere") else "", a.get("domaine") or ""] if x) or "tous"
+                                    nom_matiere(a["matiere"]) if a.get("matiere") else "", a.get("domaine") or "",
+                                    f"SA {sa}" if sa else ""] if x) or "tous"
+        if sa:
+            lib = "Livret de la " + lib
+        elif a.get("cours") and a.get("matiere") and not a.get("domaine"):
+            lib = "Cahier de résumés " + lib
         nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resumes_") + lib))[:70] + ".pdf"
         return H.pdf_reponse(pdf_resumes(rs, eleve, lib), nom)
 

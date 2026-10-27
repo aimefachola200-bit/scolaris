@@ -42,7 +42,7 @@ MATS = ["francais", "maths", "es", "est", "eps", "ea"]
 T = MP.table_resumes(R)
 manque = [(c, m) for c in COURS for m in MATS if T[(c, m)] < 1]
 assert not manque, manque
-assert all(T[(c, "francais")] >= 7 for c in COURS) and T[("CI", "est")] == 7 and T[("CP", "est")] == 7
+assert all(T[(c, "francais")] >= 7 for c in COURS) and T[("CI", "est")] >= 7 and T[("CP", "est")] >= 7
 N = [r for r in R if r["id"].startswith("r123-")]
 assert len(N) >= 150 and all(len(r["exercices"]) == 3 and r["regle"] and r["methode"] and r["exemple"] for r in N)
 assert all(r["mention"].startswith("Résumé original conçu selon le programme — à valider par le conseiller pédagogique") for r in N)
@@ -56,13 +56,13 @@ for c in ("CE1", "CE2", "CM2"):
     doms = {r["domaine"] for r in R if r["cours"] == c and r["matiere"] == "francais"}
     assert doms >= {"Grammaire", "Conjugaison", "Orthographe", "Vocabulaire", "Lecture", "Expression écrite"}, (c, doms)
 # ES : faits vérifiés (sources) sur tous les résumés de la collection, CI → CM2
-ES = [r for r in R if r["collection"] == "Éducation sociale"]
+ES = [r for r in R if r["collection"] == "Éducation sociale" and not r.get("seance_resume")]   # v1.29 : résumés de séance testés à part
 assert {r["cours"] for r in ES} == set(COURS) and all("Sources vérifiées le 27/10/2026" in r["mention"] for r in ES)
 # rattachement à la semaine
 fi = [f for f in C["fiches"] if f["cours"] == "CE1" and f["matiere"] == "francais" and f.get("sous_matiere") == "Grammaire" and MP._num_fiche(f) == 5]
 if fi:
     rs = MP.resumes_semaine("CE1", {"francais": fi})["francais"]
-    assert any("adjectif" in r["titre"] for r in rs) and all(r["domaine"] == "Grammaire" for r in rs), [r["titre"] for r in rs]
+    assert any("adjectif" in r["titre"] for r in rs) and all(r["domaine"] == "Grammaire" for r in rs if not r.get("seance_resume")), [r["titre"] for r in rs]
 est = [f for f in C["fiches"] if f["cours"] == "CE2" and f["matiere"] == "est" and f.get("sa") == 8]
 assert est, "fiches EST CE2 SA8"
 assert [r["titre"] for r in MP.resumes_semaine("CE2", {"est": est})["est"]] == ["Jouons avec les aimants"]
