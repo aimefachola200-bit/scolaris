@@ -106,6 +106,9 @@ ENDPOINTS_COMMUNS = {
     "groupes_whatsapp_suivant", "groupes_whatsapp_raz", "groupes_whatsapp_vcf",
     # v1.9 : codes d'accès personnels
     "acces_page", "acces_comptes",
+    # v1.22 : bureaux de l'UASCEP (école, UP, zone, CS, DDEMP) — page de la structure en édition juridiction
+    "uascep", "uascep_bureau", "uascep_membre", "uascep_membre_supprimer", "uascep_reinitialiser", "uascep_reinitialiser_tous",
+    "uascep_renouveler", "uascep_xlsx", "uascep_modele", "uascep_import", "uascep_pdf",
 }
 # adresses accessibles sans école ouverte (structure, administration, connexion, fichiers, espaces publics et API) :
 # toute autre adresse est une page de module d'école et demande une école ouverte (page « Choisissez une école »)
@@ -114,7 +117,7 @@ PREFIXES_STRUCTURE = (
     "/administration", "/ecoles", "/sauvegarde", "/mon-compte", "/demandes-ecoles", "/communication/reglages",
     "/paiements/en-ligne/reglages", "/paie/parametres", "/manifest.webmanifest", "/sw.js", "/hors-ligne",
     "/installer", "/referentiel.js", "/rejoindre", "/sante", "/signatures", "/cachet.svg",
-    "/groupes-whatsapp", "/acces",
+    "/groupes-whatsapp", "/acces", "/uascep",
     # espaces publics (élèves, parents), API de transmission et de notification, retours de paiement en ligne
     "/eleve", "/parent", "/api", "/webhooks", "/paiement",
 )

@@ -106,6 +106,8 @@ DROITS = {
     # (subventions, cotisations de cantine, dépenses, bilan et budget : /juridiction/financement)
     "jur_comptes": {"admin", "responsable", "chef_service"},
     "jur_financement": {"admin", "responsable", "chef_service", "agent"},
+    # v1.22 : bureaux de l'UASCEP (écriture contrôlée par m_uascep selon l'édition et le rôle ; enseignant : lecture)
+    "uascep": {"admin", "directeur", "secretaire", "enseignant", "responsable", "chef_service", "cp", "agent"},
 }
 # v1.14 : droits supplémentaires de l'enseignant dans SON application personnelle (SCOLARIS Enseignant)
 DROITS_ENSEIGNANT_AUTONOME = {"synoptique"}
@@ -409,7 +411,7 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_preparation", "m_evalprep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           "m_synoptique", "m_preparation", "m_evalprep", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)
