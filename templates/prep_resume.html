@@ -11,7 +11,15 @@
 </div>
 <article class="carte resume" aria-labelledby="titre-resume">
   <h2 id="titre-resume">{{ r.titre }}</h2>
-  {% if r.je_retiens %}{# v1.27.1 : Éducation sociale (dont morale et civisme) et EST #}
+  {% if r.lecture %}{# v1.31 : texte de lecture du manuel officiel #}
+  {% if r.manuel_note %}<p class="aide">{{ r.manuel_note }}</p>{% endif %}
+  <div class="resume-regle" style="background:#EEF4FB;border:1px solid #1F4E79;border-radius:6px;padding:8px 10px;margin:8px 0"><b>Ce que dit le texte</b><br>{{ r.regle }}</div>
+  <h3>Personnages et informations clés</h3><p>{{ r.methode }}</p>
+  {% if r.vocabulaire %}<h3>Vocabulaire</h3><p>{{ r.vocabulaire|join(' — ') }}</p>{% endif %}
+  <h3>Le message du texte</h3><p>{{ r.exemple }}</p>
+  {% if r.actualisation %}<h3>Et aujourd'hui ?</h3><p>{{ r.actualisation }}</p>{% endif %}
+  <h3>Questions de compréhension</h3>
+  {% elif r.je_retiens %}{# v1.27.1 : Éducation sociale (dont morale et civisme) et EST #}
   {% if r.situation %}<h3>Situation de la vie courante</h3><p>{{ r.situation }}</p>{% endif %}
   <h3>{{ 'Valeur ou règle de vie' if r.emc else 'Notions essentielles' }}</h3><p>{{ r.regle }}</p>
   {% if r.vocabulaire %}<h3>Vocabulaire</h3><ul>{% for v in r.vocabulaire %}<li>{{ v }}</li>{% endfor %}</ul>{% endif %}

@@ -20,6 +20,10 @@
     </div></div>
   {% if f.mention %}<div class="flash warning">{{ f.mention }}</div>{% endif %}
   {% if f.intitule and f.intitule != f.titre %}<p><b>Intitulé :</b> {{ f.intitule }}</p>{% endif %}
+  {% if f.manuel %}<p class="aide"><b>Manuel officiel :</b> {{ f.manuel.titre }} — {% if f.manuel.texte %}texte n° {{ f.manuel.texte }} « {{ f.manuel.texte_titre }} »{% if f.manuel.page %}, p. {{ f.manuel.page }}{% endif %}{% else %}dossier {{ f.manuel.dossier }}{% if f.manuel.dossier_titre %} « {{ f.manuel.dossier_titre }} »{% endif %}{% if f.manuel.sa %}, SA {{ f.manuel.dossier }}.{{ f.manuel.sa }}{% if f.manuel.sa_titre %} « {{ f.manuel.sa_titre }} »{% endif %}{% endif %}{% if f.manuel.pages %} — pages {{ f.manuel.pages }}{% endif %}{% endif %}</p>{% endif %}
+  {% if f.manuel_unite %}<p class="aide"><b>Textes du manuel pour l'unité {{ f.manuel_unite.unite }} :</b> {% for t in f.manuel_unite.textes %}n° {{ t.n }} « {{ t.titre }} »{% if t.page %} (p. {{ t.page }}){% endif %}{% if not loop.last %} ; {% endif %}{% endfor %}</p>{% endif %}
+  {% if f.activite_preliminaire %}<p class="aide"><b>{{ f.activite_preliminaire }}</b></p>{% endif %}
+  {% if f.mesure_corrective %}<div class="flash">{{ f.mesure_corrective }}</div>{% endif %}
   <dl class="prep-dl">{% for k, lib in CHAMPS %}{% if k in ('cd','ct','contenus','objectifs','strategies','materiel') and f[k] %}<dt>{{ lib }}</dt><dd>{{ f[k]|prep_txt }}</dd>{% endif %}{% endfor %}</dl>
   <h3>Déroulement</h3>
   <div class="tw"><table class="t prep-deroul"><thead><tr><th>Phases / étapes</th><th>Activités de l'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus</th></tr></thead>

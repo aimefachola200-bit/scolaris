@@ -104,6 +104,8 @@ def corpus():
             for fid in r.get("fiches") or []:
                 rpf.setdefault(fid, []).append(r)
         c["resumes_par_fiche"] = rpf
+        c["manuel_par_id"] = {x["id"]: x for x in c.get("manuels") or []}             # v1.31
+        c["revision_par_id"] = {x["id"]: x for x in c.get("revisions") or []}
         _CORPUS.update(c)
     return _CORPUS
 
@@ -519,7 +521,19 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
         if r.get("a_verifier"):
             tete.append(Paragraph("Titre de séance / de SA à vérifier avec le programme officiel.", st["s"]))
         tete.append(Spacer(1, 3))
-        if r.get("je_retiens"):        # v1.27.1 : Éducation sociale (dont morale et civisme) et EST
+        if r.get("lecture"):           # v1.31 : résumé d'un texte de lecture du manuel officiel
+            idee = Table([[Paragraph("<b>Ce que dit le texte</b><br/>" + _res_txt(r["regle"]), st["p"])]], colWidths=[larg])
+            idee.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
+                                      ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+            bloc = tete + ([Paragraph(_html.escape(r["manuel_note"]), st["s"])] if r.get("manuel_note") else []) + [idee,
+                Paragraph("Personnages et informations clés", st["h"]), Paragraph(_res_txt(r["methode"]), st["p"])]
+            if r.get("vocabulaire"):
+                bloc += [Paragraph("Vocabulaire", st["h"]), Paragraph(_res_txt(" — ".join(r["vocabulaire"])), st["p"])]
+            bloc += [Paragraph("Le message du texte", st["h"]), Paragraph(_res_txt(r["exemple"]), st["p"])]
+            if r.get("actualisation"):
+                bloc += [Paragraph("Et aujourd'hui ?", st["h"]), Paragraph(_res_txt(r["actualisation"]), st["p"])]
+            bloc.append(Paragraph("Questions de compréhension", st["h"]))
+        elif r.get("je_retiens"):      # v1.27.1 : Éducation sociale (dont morale et civisme) et EST
             regle = Table([[Paragraph("<b>Je retiens</b><br/>" + _res_txt(r["je_retiens"]), st["p"])]], colWidths=[larg])
             regle.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
                                        ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
@@ -563,6 +577,105 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
     return buf.getvalue()
 
 
+def pdf_revision(rv, eleve=False, partie=None, sujet=None):
+    """v1.31 — Cahier de révision des disciplines d'éveil (CM1 / CM2) -> PDF A4 en Times New Roman 14 pt (Liberation Serif
+    incorporée), mise en page compacte : sections de la progression (je retiens, questions-réponses, schéma, exercices) puis
+    sujets type CEP (consignes, barème, corrigé). eleve=True : réponses masquées (lignes à compléter).
+    partie : None (tout), "es" ou "est" ; sujet : indice d'un seul sujet (1…n)."""
+    import pdfs
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import CondPageBreak, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    ps = pdfs.police_serif()
+    FN, FB, FI = ps["normal"], ps["gras"], ps["italique"]
+    W, Hh = A4
+    marge = 14 * mm
+    larg = W - 2 * marge
+    P = lambda n, **k: ParagraphStyle(n, **{"fontName": FN, "fontSize": 14, "leading": 17, **k})  # noqa: E731
+    st = {"titre": P("ti", fontName=FB, fontSize=16, leading=19, alignment=1, textColor=pdfs.BLEU),
+          "s": P("s", fontSize=11, leading=13.5, textColor=colors.HexColor("#475467")),
+          "h": P("h", fontName=FB, fontSize=15, leading=18, textColor=colors.white),
+          "h2": P("h2", fontName=FB, spaceBefore=4, spaceAfter=1, textColor=pdfs.BLEU),
+          "p": P("p"), "q": P("q", leftIndent=14, firstLineIndent=-14),
+          "r": P("r", fontName=FI, textColor=colors.HexColor("#067647"), leftIndent=14),
+          "l": P("l", textColor=colors.HexColor("#98A2B3"), leftIndent=14),
+          "m": P("m", fontName=FI, fontSize=10, leading=12, textColor=colors.grey)}
+    e = lambda t: _html.escape(str(t or ""))  # noqa: E731
+    LIB = {"es": "Éducation sociale", "est": "Éducation scientifique et technologique"}
+
+    def bandeau(t):
+        b = Table([[Paragraph(e(t), st["h"])]], colWidths=[larg])
+        b.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), pdfs.BLEU), ("TOPPADDING", (0, 0), (-1, -1), 3),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 5), ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
+        return b
+
+    def encadre(titre, t):
+        b = Table([[Paragraph(f"<b>{e(titre)}</b><br/>" + e(t), st["p"])]], colWidths=[larg])
+        b.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF4FB")), ("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU),
+                               ("LEFTPADDING", (0, 0), (-1, -1), 6), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+        return b
+
+    H_ = []
+    if sujet is None:
+        H_ += [Paragraph(e(rv["titre"]), st["titre"]), Spacer(1, 3),
+               Paragraph(e(rv["intro"]) + (" — Version élève (sans les réponses)." if eleve else " — Version enseignant (avec corrigé)."), st["s"]), Spacer(1, 6)]
+        for m in ("es", "est"):
+            if partie and m != partie:
+                continue
+            secs = [x for x in rv["sections"] if x["matiere"] == m]
+            if not secs:
+                continue
+            H_.append(Paragraph(e(LIB[m]).upper(), P("part", fontName=FB, fontSize=15, leading=18, textColor=pdfs.BLEU, spaceBefore=6)))
+            for x in secs:
+                bloc = [bandeau(f"SA {x['sa']} — {x['titre']}"), Spacer(1, 3), encadre("Je retiens", x["je_retiens"]),
+                        Paragraph("Questions-réponses du type CEP", st["h2"])]
+                for j, qr in enumerate(x["qr"], 1):
+                    bloc.append(Paragraph(f"{j}. " + e(qr["q"]), st["q"]))
+                    bloc.append(Paragraph("…" * 38, st["l"]) if eleve else Paragraph("→ " + e(qr["r"]), st["r"]))
+                bloc += [Paragraph("Schéma à savoir reproduire", st["h2"]), Paragraph(e(x["schema"]), st["p"]), Paragraph("Exercices", st["h2"])]
+                for j, ex_ in enumerate(x["exercices"], 1):
+                    bloc.append(Paragraph(f"{j}. " + e(ex_["q"]), st["q"]))
+                    bloc.append(Paragraph("…" * 38, st["l"]) if eleve else Paragraph("Corrigé : " + e(ex_["r"]), st["r"]))
+                bloc.append(Spacer(1, 8))
+                H_ += [CondPageBreak(60 * mm)] + bloc        # sections courtes regroupées sur une même page
+    sujets = rv["sujets"] if sujet is None else [rv["sujets"][sujet - 1]]
+    for k, sj in enumerate(sujets, 1):
+        if partie and sj["matiere"] != partie:
+            continue
+        H_ += [PageBreak()] if (H_ or k > 1) else []
+        H_ += [bandeau(sj["titre"] + f" — /{sj['total']}"), Spacer(1, 4), Paragraph("<b>Contexte.</b> " + e(sj["contexte"]), st["p"]),
+               Paragraph("<b>Tâche.</b> " + e(sj["tache"]), st["p"]), Spacer(1, 4)]
+        for c in sj["consignes"]:
+            pts = sum(q_["pts"] for q_ in c["questions"])
+            if c["titre"] == "Présentation":
+                H_.append(Paragraph(f"<b>Présentation de la copie ({pts} pts)</b> : soin, lisibilité, propreté.", st["p"]))
+                continue
+            bloc = [Paragraph(f"{e(c['titre'])} ({pts} pts)", st["h2"])]
+            for j, q_ in enumerate(c["questions"], 1):
+                bloc.append(Paragraph(f"{j}. " + e(q_["q"]) + f" <i>({q_['pts']} pt{'s' if q_['pts'] > 1 else ''})</i>", st["q"]))
+                bloc.append(Paragraph("…" * 38, st["l"]) if eleve else Paragraph("Corrigé : " + e(q_["r"]), st["r"]))
+            H_.append(KeepTogether(bloc))
+        if not eleve:
+            H_.append(Paragraph("Barème : " + " ; ".join(f"{c['titre']} = {sum(q_['pts'] for q_ in c['questions'])} pts" for c in sj["consignes"])
+                                + f" — total {sj['total']} points.", st["m"]))
+    if not eleve:
+        H_ += [Spacer(1, 6), Paragraph(e("Sources : " + " ; ".join(rv.get("sources") or [])), st["m"]), Paragraph(e(rv.get("mention", "")), st["m"])]
+
+    def deco(c, doc):
+        pdfs._entete_primaire(c, W, Hh, marge, None, None)
+        c.setFont(FN, 9)
+        c.setFillColor(colors.grey)
+        if eleve:
+            c.drawString(marge, 7 * mm, "Nom : ………………………………   Classe : …………   Date : …………")
+        c.drawRightString(W - marge, 7 * mm, f"{rv['cours']} — révision d'éveil — page {doc.page}")
+    buf = io.BytesIO()
+    SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
+                      title=rv["titre"], author="SCOLARIS").build(H_, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+    return buf.getvalue()
+
+
 def enregistrer(app, H):
     q, ex, config = H.q, H.ex, H.config
     H.schema(SCHEMA)
@@ -574,7 +687,7 @@ def enregistrer(app, H):
 
     @app.context_processor
     def _ctx():
-        return {"PREP_COURS_LIB": COURS_LIB, "prep_nom_matiere": nom_matiere}
+        return {"PREP_COURS_LIB": COURS_LIB, "prep_nom_matiere": nom_matiere, "PREP_REVISIONS": True}
 
     # ------------------------------------------------------------ outils
     def classes():
@@ -1117,6 +1230,47 @@ def enregistrer(app, H):
     def prep_ma_fiche_doc(mid):
         d = ma_fiche(mid)
         return reponse_doc(doc_word([d]), nom_fichier(d, "doc"))
+
+    # ------------------------------------------------------------ v1.31 : révisions d'éveil, manuels, mesures correctives
+    @app.route("/preparation/revisions")
+    @H.connexion_requise("preparation")
+    def prep_revisions():
+        return render_template("prep_revisions.html", revisions=corpus().get("revisions") or [], rv=None)
+
+    @app.route("/preparation/revisions/<rid>")
+    @H.connexion_requise("preparation")
+    def prep_revision(rid):
+        rv = corpus()["revision_par_id"].get(rid) or abort(404)
+        return render_template("prep_revisions.html", revisions=corpus().get("revisions") or [], rv=rv, eleve=bool(request.args.get("eleve")))
+
+    @app.route("/preparation/revisions/<rid>.pdf")
+    @H.connexion_requise("preparation")
+    def prep_revision_pdf(rid):
+        rv = corpus()["revision_par_id"].get(rid) or abort(404)
+        a = request.args
+        partie = a.get("partie") if a.get("partie") in ("es", "est") else None
+        sujet = a.get("sujet", type=int)
+        if sujet is not None and not 1 <= sujet <= len(rv["sujets"]):
+            abort(404)
+        eleve = bool(a.get("eleve"))
+        nom = f"revision_eveil_{rv['cours']}" + (f"_{partie}" if partie else "") + (f"_sujet{sujet}" if sujet else "") + ("_eleve" if eleve else "") + ".pdf"
+        return H.pdf_reponse(pdf_revision(rv, eleve, partie, sujet), nom)
+
+    @app.route("/preparation/manuels")
+    @H.connexion_requise("preparation")
+    def prep_manuels():
+        C = corpus()
+        lect = {}
+        for r in C.get("resumes") or []:
+            if r.get("lecture") and r.get("manuel"):
+                lect[(r["manuel"]["id"], r["manuel"]["texte"])] = r
+        seances = {}
+        for f in C["fiches"]:
+            m = f.get("manuel")
+            if m and m.get("texte"):
+                seances.setdefault((m["id"], m["texte"]), []).append(f)
+        return render_template("prep_manuels.html", manuels=C.get("manuels") or [], lect=lect, seances=seances,
+                               mesures=C.get("mesures_correctives") or [])
 
     @app.route("/preparation/manquants")
     @H.connexion_requise("preparation")

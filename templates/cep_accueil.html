@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block titre %}Fiches d'inscription au CEP{% endblock %}
 {% import "_macros.html" as M with context %}
-{% block contenu %}
+{% block contenu %}{% if PREP_REVISIONS %}<p class="aide noprint" style="margin:4px 0">Réviser l'éveil : <a href="{{ url_for('prep_revision', rid='rev-eveil-cm2') }}">cahier de révision ES / EST du CM2 et sujets type CEP</a> · <a href="{{ url_for('prep_revision_pdf', rid='rev-eveil-cm2', eleve=1) }}">version élève (PDF)</a></p>{% endif %}
 <style>
 .btn.vert{color:#fff} /* .vert (couleur de texte) l'emporte sinon sur .btn */
 .cep-photo{width:34px;height:42px;object-fit:cover;border-radius:4px;border:1px solid #D0D5DD;background:#F2F4F7;display:block}
