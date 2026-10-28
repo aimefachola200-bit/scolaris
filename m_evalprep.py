@@ -6,8 +6,11 @@ journalière / hebdomadaire / mensuelle des classes et classeurs de fiches.
 * /preparation/evaluations/organigramme           prep_organigramme         organigramme des épreuves (INFRE) par cours
 * /preparation/evaluations/e/<cle>                prep_epreuve              sujet, corrigé type, grille ; actions
 * /preparation/evaluations/e/<cle>/modifier       prep_epreuve_modifier     GET/POST : modification (enregistrée pour l'école)
-* /preparation/evaluations/e/<cle>/regenerer      prep_epreuve_regenerer    POST : régénérée d'après la planification actuelle
-* /preparation/evaluations/e/<cle>.pdf|.doc       prep_epreuve_pdf / _doc   ?partie=sujet|corrige|grille
+* /preparation/evaluations/e/<cle>/regenerer      prep_epreuve_regenerer    POST : régénérée d'après la planification actuelle ;
+                                                                            banque=1 : revenir à l'original (une copie est supprimée)
+* /preparation/evaluations/e/<cle>/dupliquer      prep_epreuve_dupliquer    POST : copie locale « <clé>~N » (v1.30)
+* /preparation/evaluations/e/<cle>.pdf|.doc       prep_epreuve_pdf / _doc   ?partie=sujet|corrige|grille ; PDF : par_page=auto|1|2,
+                                                                            original=1 (Times New Roman 14 pt, v1.30)
 * /preparation/evaluations/jeu.pdf                prep_jeu_pdf              toutes les épreuves d'un cours et d'une période
 * /preparation/evaluations/creer                  prep_eval_creer           POST : crée l'évaluation (saisie des notes)
 * /preparation/planification                      prep_planif               vue jour / semaine / mois d'une classe
@@ -144,25 +147,40 @@ def enregistrer(app, H):
 
     # ------------------------------------------------------------------ épreuves (générées / enregistrées)
     def cle_valide(cle):
-        m = re.fullmatch(r"(CI|CP|CE1|CE2|CM1|CM2)-([A-Z]\d|FA)-(comp|expr|math|est|es|ea|eps|dictee)", cle or "")
+        """« CM1-T1-comp » ou une copie locale « CM1-T1-comp~2 » (v1.30)."""
+        m = re.fullmatch(r"(CI|CP|CE1|CE2|CM1|CM2)-([A-Z]\d|FA)-(comp|expr|math|est|es|ea|eps|dictee)(?:~([2-9]|[1-9]\d))?", cle or "")
         if not m or m.group(2) not in B.PER:
             abort(404)
-        cours, per, code = m.groups()
+        cours, per, code = m.group(1), m.group(2), m.group(3)
         if per not in [p[0] for p in B.periodes_du_cours(cours)] or code not in [e["code"] for e in B.organigramme(cours, B.PER[per][2])]:
             abort(404)
         return cours, per, code
 
-    def epreuve(cle):
+    def base_cle(cle):
+        return cle.split("~")[0]
+
+    def originale(cle):
         cours, per, code = cle_valide(cle)
-        r = q("SELECT * FROM prep_epreuves WHERE ecole_id=? AND annee=? AND cle=?", (H.eco(), config.ANNEE_ACTIVE, cle), un=True)
-        if r:
-            d = json.loads(r["donnees"])
-            d["_origine"], d["_maj"] = r["origine"], r["maj"]
-            return d
         e = next(x for x in B.organigramme(cours, B.PER[per][2]) if x["code"] == code)
         d = B.generer(cours, per, e, progression(cours, per))
         d["_origine"] = "banque"
         return d
+
+    def epreuve(cle, original=False):
+        cle_valide(cle)
+        if not original:
+            r = q("SELECT * FROM prep_epreuves WHERE ecole_id=? AND annee=? AND cle=?", (H.eco(), config.ANNEE_ACTIVE, cle), un=True)
+            if r:
+                d = json.loads(r["donnees"])
+                d["_origine"], d["_maj"] = r["origine"], r["maj"]
+                return d
+        if "~" in cle and not original:
+            abort(404)                                    # copie supprimée ou inexistante
+        return originale(base_cle(cle))
+
+    def copies(cle):
+        b = base_cle(cle)
+        return [r["cle"] for r in q("SELECT cle FROM prep_epreuves WHERE ecole_id=? AND annee=? AND cle LIKE ? ORDER BY id", (H.eco(), config.ANNEE_ACTIVE, b + "~%"))]
 
     def sauver(cle, d, origine):
         d = {k: v for k, v in d.items() if not k.startswith("_")}
@@ -171,91 +189,216 @@ def enregistrer(app, H):
            (H.eco(), config.ANNEE_ACTIVE, cle, json.dumps(d, ensure_ascii=False), origine, H.maintenant(), g.user["id"]))
 
     # ------------------------------------------------------------------ PDF / Word des épreuves
-    def pdf_epreuves(liste, partie):
+    def pdf_epreuves(liste, partie, par_page="auto"):
+        """v1.30 : Times New Roman 14 pt (Liberation Serif incorporée, sinon Times-Roman) pour l'énoncé et le corrigé
+        (titres en gras 16 pt) ; chaque item reste d'un seul tenant (KeepTogether) ; sujet court -> deux exemplaires sur
+        une feuille A4 (paysage, deux colonnes, trait de coupe), « 2 par page » automatique quand il tient, sinon un par
+        page. par_page : "auto" | "1" | "2"."""
         import pdfs
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import mm
-        from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+        from reportlab.platypus import (BaseDocTemplate, Frame, FrameBreak, KeepTogether, NextPageTemplate, PageBreak, PageTemplate,
+                                        Paragraph, Spacer, Table, TableStyle)
+        F = pdfs.police_serif()
         W, Hh = A4
+        WL, HL = landscape(A4)
         marge = 15 * mm
-        utile = W - 2 * marge
+        m2 = 10 * mm                                        # marges de la feuille « 2 par page »
+        gout = 12 * mm                                      # gouttière (trait de coupe au milieu)
+        col_w = (WL - 2 * m2 - gout) / 2
+        haut_entete = 31 * mm
+        col_h = HL - 2 * m2 - haut_entete
+        port_h = Hh - (marge + 30 * mm) - 13 * mm
         t = MP.txt_pdf
-        st = ParagraphStyle("p", fontName="Helvetica", fontSize=10, leading=13.5, spaceAfter=3)
-        stb = ParagraphStyle("b", parent=st, fontName="Helvetica-Bold")
-        sti = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=13, leading=16, alignment=1, textColor=pdfs.BLEU, spaceAfter=4)
-        stc = ParagraphStyle("c", parent=st, fontName="Helvetica-Oblique", leftIndent=8, rightIndent=8)
-        stm = ParagraphStyle("m", parent=st, fontSize=8, fontName="Helvetica-Oblique", textColor=colors.HexColor("#B54708"))
-        sts = ParagraphStyle("s", parent=st, fontSize=7.5, textColor=colors.grey)
-        std = ParagraphStyle("d", parent=st, fontSize=8.5, leading=10.5)
-        h = []
-        for n, d in enumerate(liste):
-            if n:
-                h.append(PageBreak())
+        st = ParagraphStyle("p", fontName=F["normal"], fontSize=14, leading=17.5, spaceAfter=3)
+        stb = ParagraphStyle("b", parent=st, fontName=F["gras"])
+        sti = ParagraphStyle("t", fontName=F["gras"], fontSize=16, leading=19, alignment=1, textColor=pdfs.BLEU, spaceAfter=4)
+        stc = ParagraphStyle("c", parent=st, fontName=F["italique"], leftIndent=8, rightIndent=8)
+        stq = ParagraphStyle("q", parent=st, leftIndent=12)
+        stm = ParagraphStyle("m", parent=st, fontSize=9, leading=11, fontName=F["italique"], textColor=colors.HexColor("#B54708"))
+        sts = ParagraphStyle("s", parent=st, fontSize=8.5, leading=10.5, textColor=colors.grey)
+        std = ParagraphStyle("d", parent=st, fontSize=14, leading=17)
+        stf = ParagraphStyle("f", parent=st, fontSize=10.5, leading=12.5)
+        grille_ts = [("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#98A2B3")), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E4ECF5")),
+                     ("VALIGN", (0, 0), (-1, -1), "TOP")]
+
+        def tableau(data, larg, style=std, rep=1):
+            tb = Table([[c if not isinstance(c, str) else Paragraph(c, style) for c in l] for l in data], colWidths=larg, repeatRows=rep)
+            tb.setStyle(TableStyle(grille_ts))
+            return tb
+
+        def baremes_eps(d, utile):
+            out = []
+            for bm in d.get("baremes") or []:
+                if bm.get("observation"):
+                    data = [["<b>Critère observé</b>", "<b>Points</b>"]] + [[l[0], l[1]] for l in bm["lignes"]]
+                    out.append(KeepTogether([Paragraph(f"<b>{t(bm['titre'])}</b>", st), tableau(data, [utile * 0.8, utile * 0.2])]))
+                    continue
+                age = d.get("age_normal") or ""
+                data = [["<b>Note</b>", f"<b>Garçons {age} ans</b>", f"<b>Garçons {age + 2 if age else ''} ans et +</b>",
+                         f"<b>Filles {age} ans</b>", f"<b>Filles {age + 2 if age else ''} ans et +</b>"]]
+                data += [[B.nb(l[0])] + l[1:] for l in bm["lignes"]]
+                out.append(KeepTogether([Paragraph(f"<b>Barème — {t(bm['titre'])}</b>", st), tableau(data, [utile * 0.12] + [utile * 0.22] * 4)]))
+            return out
+
+        def fiche_notation(d, utile):
+            fn = d.get("fiche_notation")
+            if not fn:
+                return []
+            cols = fn["colonnes"]
+            larg = [0.05, 0.27, 0.07, 0.06, 0.12, 0.09, 0.13, 0.09, 0.12]
+            data = [[f"<b>{t(c)}</b>" for c in cols]] + [[str(i)] + [""] * (len(cols) - 1) for i in range(1, fn["lignes"] + 1)]
+            tb = Table([[Paragraph(c, stf) for c in l] for l in data], colWidths=[utile * x for x in larg], repeatRows=1,
+                       rowHeights=[None] + [8.5 * mm] * fn["lignes"])
+            tb.setStyle(TableStyle(grille_ts + [("VALIGN", (0, 1), (-1, -1), "MIDDLE")]))
+            return [PageBreak(), Paragraph(f"FICHE DE NOTATION — {t(d['discipline'].upper())} — {d['cours']}", sti),
+                    Paragraph(f"École : {t(ent(d)['ecole'])} · Classe : {t(ent(d)['classe'])} · Date : {t(ent(d)['date'])}", st), Spacer(1, 4), tb]
+
+        def ent(d):
+            e = dict(d.get("entete") or {})
+            return {"ecole": e.get("ecole") or config.ECOLE.get("nom", "") or "……………………", "classe": e.get("classe") or d["cours"],
+                    "date": e.get("date") or "……………………"}
+
+        def corps(d, utile, compact=False):
+            """Flowables d'une épreuve pour une largeur donnée."""
+            h = []
             titre = {"sujet": "", "corrige": "CORRIGÉ TYPE — ", "grille": "GRILLE DE CORRECTION — "}[partie]
+            if compact:
+                h.append(Paragraph(f"<b>ÉCOLE :</b> {t(ent(d)['ecole'])}", ParagraphStyle("e", parent=st, fontSize=11, leading=13)))
             h.append(Paragraph(f"{titre}ÉPREUVE DE {t(d['discipline'].upper())}", sti))
-            ent = Table([[Paragraph(f"<b>COURS :</b> {d['cours']}", st), Paragraph(f"<b>PÉRIODE :</b> {t(d['periode_lib'])}", st),
-                          Paragraph(f"<b>DURÉE :</b> {t(d['duree'])}", st), Paragraph(f"<b>Barème :</b> {d.get('bareme', 20)} points", st)]],
-                        colWidths=[utile * 0.16, utile * 0.44, utile * 0.2, utile * 0.2])
-            ent.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU), ("BACKGROUND", (0, 0), (-1, -1), pdfs.GRIS)]))
-            h += [ent, Spacer(1, 6)]
+            e = ent(d)
+            if compact:
+                info = [[Paragraph(f"<b>COURS :</b> {d['cours']} · <b>Classe :</b> {t(e['classe'])} · <b>Date :</b> {t(e['date'])}", st)],
+                        [Paragraph(f"<b>PÉRIODE :</b> {t(d['periode_lib'])} · <b>DURÉE :</b> {t(d['duree'])} · <b>Barème :</b> {d.get('bareme', 20)} pts", st)]]
+                ent_t = Table(info, colWidths=[utile])
+            else:
+                info = [[Paragraph(f"<b>École :</b> {t(e['ecole'])}", st), Paragraph(f"<b>Classe :</b> {t(e['classe'])}", st), Paragraph(f"<b>Date :</b> {t(e['date'])}", st)],
+                        [Paragraph(f"<b>COURS :</b> {d['cours']}", st), Paragraph(f"<b>PÉRIODE :</b> {t(d['periode_lib'])}", st),
+                         Paragraph(f"<b>DURÉE :</b> {t(d['duree'])} · <b>Barème :</b> {d.get('bareme', 20)} pts", st)]]
+                ent_t = Table(info, colWidths=[utile * 0.36, utile * 0.34, utile * 0.30])
+            ent_t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU), ("BACKGROUND", (0, 0), (-1, -1), pdfs.GRIS), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+            h += [ent_t, Spacer(1, 5)]
             if partie == "sujet":
-                h.append(Paragraph("<b>Nom et prénoms :</b> ……………………………………………………   <b>Classe :</b> ………………", st))
-                h.append(Spacer(1, 4))
+                h.append(Paragraph("<b>Nom et prénoms :</b> ……………………………………………", st))
                 if d.get("contexte"):
                     h.append(Paragraph(t(d["contexte"]), stc))
                 if d.get("support") and d["code"] != "dictee":
-                    h += [Spacer(1, 3), Paragraph(f"<b>{'Support' if d['code'] in ('ea', 'eps') else 'Texte'} :</b> {t(d.get('support_titre') or '')}", stb),
-                          Paragraph(t(d["support"]), st)]
+                    h.append(KeepTogether([Spacer(1, 3), Paragraph(f"<b>{'Support' if d['code'] in ('ea', 'eps') else 'Texte'} :</b> {t(d.get('support_titre') or '')}", stb),
+                                           Paragraph(t(d["support"]), st)]))
                 h += [Spacer(1, 3), Paragraph(f"<b>Tâche :</b> {t(d.get('tache') or '')}", st), Paragraph("<b>Consigne :</b>", stb)]
                 for it in d.get("consignes") or []:
-                    if it["titre"] not in ("Consigne", "Présentation"):
-                        h.append(Paragraph(f"<b>{t(it['titre'])}</b>", st))
                     if it["titre"] == "Présentation":
                         continue
+                    bloc = []
+                    if it["titre"] not in ("Consigne", "Dictée"):
+                        bloc.append(Paragraph(f"<b>{t(it['titre'])}</b>", st))
                     for i, x in enumerate(it["questions"]):
-                        lettre = "" if it["titre"] == "Consigne" else f"{'abcdefgh'[i]}- "
-                        h.append(Paragraph(f"{lettre}{t(x['q'])}" + (f" <font size=8 color='#667085'>({B.nb(x['pts'])} pt{'s' if (x['pts'] or 0) > 1 else ''})</font>" if x.get("pts") else ""), ParagraphStyle("q", parent=st, leftIndent=10)))
+                        lettre = "" if it["titre"] in ("Consigne", "Dictée") or it["titre"].startswith("Partie ") else f"{'abcdefgh'[i]}- "
+                        pts = f" <font size=10 color='#667085'>({B.nb(x['pts'])} pt{'s' if (x['pts'] or 0) > 1 else ''})</font>" if x.get("pts") else ""
+                        bloc.append(Paragraph(f"{lettre}{t(x['q'])}{pts}", stq))
+                    h.append(KeepTogether(bloc))
             elif partie == "corrige":
                 if d["code"] == "dictee":
-                    h += [Paragraph(f"<b>Texte de la dictée :</b> {t(d.get('support_titre'))}", stb), Paragraph(t(d["support"]), st)]
+                    h.append(KeepTogether([Paragraph(f"<b>Texte de la dictée :</b> {t(d.get('support_titre'))}" +
+                                                     (f" ({d['mots']} mots)" if d.get("mots") else ""), stb), Paragraph(t(d["support"]), st)]))
                 for it in d.get("consignes") or []:
-                    if not any(x.get("r") for x in it["questions"]):
+                    if not any(x.get("r") for x in it["questions"]) or (d["code"] == "dictee" and it["titre"] == "Dictée"):
                         continue
-                    h.append(Paragraph(f"<b>{t(it['titre'])}</b>", st))
-                    data = [[Paragraph("<b>Question</b>", std), Paragraph("<b>Réponse attendue</b>", std), Paragraph("<b>Pts</b>", std)]]
-                    for x in it["questions"]:
-                        data.append([Paragraph(t(x["q"]), std), Paragraph(t(x.get("r") or ""), std), Paragraph(B.nb(x["pts"]) if x.get("pts") else "", std)])
-                    tb = Table(data, colWidths=[utile * 0.42, utile * 0.5, utile * 0.08], repeatRows=1)
-                    tb.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#98A2B3")), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E4ECF5")),
-                                            ("VALIGN", (0, 0), (-1, -1), "TOP")]))
-                    h += [tb, Spacer(1, 4)]
+                    data = [["<b>Question</b>", "<b>Réponse attendue</b>", "<b>Pts</b>"]]
+                    data += [[t(x["q"]), t(x.get("r") or ""), B.nb(x["pts"]) if x.get("pts") else ""] for x in it["questions"]]
+                    h += [KeepTogether([Paragraph(f"<b>{t(it['titre'])}</b>", st), tableau(data, [utile * 0.42, utile * 0.48, utile * 0.10])]), Spacer(1, 4)]
+                if d.get("parties_ea"):
+                    for pa in d["parties_ea"]:
+                        h.append(Paragraph(f"<b>Partie {pa['partie']} — {t(pa['titre'])} :</b> matériel : {t(pa['materiel'])}.", st))
                 if d.get("corrige_note"):
                     h.append(Paragraph(t(d["corrige_note"]), st))
+                h += baremes_eps(d, utile)
                 h.append(Paragraph("<i>RP : réponse personnelle, à accepter si elle respecte l'indicateur.</i>", sts))
+            if partie == "grille":
+                h += baremes_eps(d, utile)
             if partie in ("corrige", "grille"):
-                h += [Spacer(1, 4), Paragraph("<b>Grille de correction (critères, indicateurs, barème)</b>", stb)]
-                data = [[Paragraph("<b>Critère</b>", std), Paragraph("<b>Indicateurs</b>", std), Paragraph("<b>Points</b>", std)]]
-                for gr in d.get("grille") or []:
-                    data.append([Paragraph(t(gr["critere"]), std), Paragraph("<br/>".join("• " + t(i) for i in gr.get("indicateurs") or []), std),
-                                 Paragraph(B.nb(gr["points"]), std)])
-                data.append([Paragraph("<b>Total</b>", std), "", Paragraph(f"<b>{B.nb(sum(gr['points'] for gr in d.get('grille') or []))}</b>", std)])
-                tb = Table(data, colWidths=[utile * 0.3, utile * 0.58, utile * 0.12], repeatRows=1)
-                tb.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#98A2B3")), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E4ECF5")),
-                                        ("VALIGN", (0, 0), (-1, -1), "TOP")]))
-                h.append(tb)
+                data = [["<b>Critère</b>", "<b>Indicateurs</b>", "<b>Points</b>"]]
+                data += [[t(gr["critere"]), "<br/>".join("• " + t(i) for i in gr.get("indicateurs") or []), B.nb(gr["points"])] for gr in d.get("grille") or []]
+                data.append(["<b>Total</b>", "", f"<b>{B.nb(sum(gr['points'] for gr in d.get('grille') or []))}</b>"])
+                h += [Spacer(1, 4), Paragraph("<b>Grille de correction (critères, indicateurs, barème)</b>", stb),
+                      tableau(data, [utile * 0.30, utile * 0.56, utile * 0.14])]
             h += [Spacer(1, 6), Paragraph(t(d.get("mention") or B.MENTION), stm), Paragraph(t(d.get("source") or ""), sts)]
+            if partie == "sujet" and not compact:
+                h += fiche_notation(d, utile)
+            return h
+
+        def hauteur(fl, w):
+            tot = 0
+            for f in fl:
+                if isinstance(f, PageBreak):
+                    return 10 ** 6
+                if isinstance(f, KeepTogether):
+                    tot += hauteur(f._content, w)
+                    continue
+                _w, hh = f.wrap(w, 10 ** 6)
+                tot += hh + f.getSpaceBefore() + f.getSpaceAfter()
+            return tot
+
+        def mode(d):
+            if partie != "sujet" or d.get("fiche_notation"):
+                return "portrait"
+            if par_page == "1":
+                return "portrait"
+            if par_page == "2":
+                return "duo"
+            return "duo" if hauteur(corps(d, col_w, True), col_w) <= col_h - 4 else "portrait"
+
+        modes = [mode(d) for d in liste]
+        h = []
+        for n, (d, md) in enumerate(zip(liste, modes)):
+            if n:
+                h += [NextPageTemplate(md), PageBreak()]
+            elif md != modes[0]:
+                h.append(NextPageTemplate(md))
+            if md == "duo":
+                h += corps(d, col_w, True) + [FrameBreak()] + corps(d, col_w, True)
+            else:
+                h += corps(d, W - 2 * marge)
 
         def deco(c, doc):
             pdfs._entete_primaire(c, W, Hh, marge, None, None)
-            c.setFont("Helvetica", 6.5)
+            c.setFont(F["normal"], 7)
             c.setFillColor(colors.grey)
             c.drawString(marge, 7 * mm, f"SCOLARIS · {config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
             c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
+
+        def deco_duo(c, doc):
+            for x0 in (m2, m2 + col_w + gout):
+                c.saveState()
+                c.translate(x0 - 4 * mm, HL - m2 - Hh + 4 * mm)
+                pdfs._entete_primaire(c, col_w + 8 * mm, Hh, 4 * mm, [("CS", config.ECOLE.get("cs"))], None)
+                c.restoreState()
+            c.saveState()
+            c.setDash(4, 3)
+            c.setStrokeColor(colors.grey)
+            c.line(WL / 2, 6 * mm, WL / 2, HL - 6 * mm)
+            c.setFont(F["italique"], 7)
+            c.setFillColor(colors.grey)
+            c.translate(WL / 2 - 1.5 * mm, HL / 2)
+            c.rotate(90)
+            c.drawCentredString(0, 0, "- - - découper ici - - -")
+            c.restoreState()
+            c.setFont(F["normal"], 7)
+            c.setFillColor(colors.grey)
+            c.drawRightString(WL - m2, 5 * mm, f"SCOLARIS · {config.ANNEE_ACTIVE} · page {doc.page} · 2 exemplaires")
+
+        portrait = PageTemplate("portrait", [Frame(marge, 13 * mm, W - 2 * marge, port_h, id="p", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)],
+                                onPage=deco, pagesize=A4)
+        duo = PageTemplate("duo", [Frame(m2, m2, col_w, col_h, id="g", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0),
+                                   Frame(m2 + col_w + gout, m2, col_w, col_h, id="d", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)],
+                           onPage=deco_duo, pagesize=landscape(A4))
+        modeles = [duo, portrait] if modes and modes[0] == "duo" else [portrait, duo]
         buf = io.BytesIO()
-        SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                          title="Épreuves", author="SCOLARIS").build(h, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+        doc = BaseDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
+                              title="Épreuves", author="SCOLARIS", pageTemplates=modeles)
+        doc.build(h, canvasmaker=pdfs.GCanvas)
         return buf.getvalue()
 
     def doc_epreuves(liste, partie):
@@ -279,13 +422,15 @@ def enregistrer(app, H):
                     s.append(f"<p><b>{e(it['titre'])}</b></p><table><tr><th>Question</th><th>Réponse attendue</th><th>Pts</th></tr>" +
                              "".join(f"<tr><td>{e(x['q'])}</td><td>{e(x.get('r') or '')}</td><td>{B.nb(x['pts']) if x.get('pts') else ''}</td></tr>" for x in it["questions"]) + "</table>")
             if partie in ("corrige", "grille"):
+                for bm in d.get("baremes") or []:
+                    s.append(f"<p><b>{e(bm['titre'])}</b></p><table>" + "".join("<tr>" + "".join(f"<td>{e(str(c))}</td>" for c in l) + "</tr>" for l in bm["lignes"]) + "</table>")
                 s.append("<p><b>Grille de correction</b></p><table><tr><th>Critère</th><th>Indicateurs</th><th>Points</th></tr>" +
                          "".join(f"<tr><td>{e(gr['critere'])}</td><td>{'<br>'.join(e(i) for i in gr.get('indicateurs') or [])}</td><td>{B.nb(gr['points'])}</td></tr>" for gr in d.get("grille") or []) + "</table>")
             s.append(f"<p><i>{e(d.get('mention') or B.MENTION)}</i><br><small>{e(d.get('source') or '')}</small></p>")
             parts.append("".join(s))
         corps = "<br style='page-break-before:always'>".join(parts)
-        return ("<html><head><meta charset='utf-8'><style>body{font-family:Calibri,Arial;font-size:11pt}table{border-collapse:collapse;width:100%}"
-                "td,th{border:1px solid #666;padding:4px;vertical-align:top}th{background:#E4ECF5}h1{text-align:center;color:#1F4E79;font-size:15pt}</style></head>"
+        return ("<html><head><meta charset='utf-8'><style>body{font-family:'Times New Roman',Times,serif;font-size:14pt}table{border-collapse:collapse;width:100%}"
+                "td,th{border:1px solid #666;padding:4px;vertical-align:top}th{background:#E4ECF5}h1{text-align:center;color:#1F4E79;font-size:16pt}</style></head>"
                 f"<body>{corps}</body></html>")
 
     def nom(base, ext):
@@ -324,9 +469,12 @@ def enregistrer(app, H):
     def prep_epreuve(cle):
         cours, per, code = cle_valide(cle)
         exiger_cours(cours)
-        d = epreuve(cle)
+        original = bool(request.args.get("original"))
+        d = epreuve(cle, original)
         classes = [c for c in mes_classes() if c["niveau"] == cours]
-        return render_template("prep_epreuve.html", d=d, cle=cle, classes=classes, peut_mod=peut_modifier(), fnb=B.nb)
+        vue = request.args.get("onglet") if request.args.get("onglet") in ("sujet", "corrige", "grille") else "tout"
+        return render_template("prep_epreuve.html", d=d, cle=cle, base=base_cle(cle), copies=copies(cle), original=original, vue=vue,
+                               classes=classes, peut_mod=peut_modifier(), fnb=B.nb)
 
     @app.route("/preparation/evaluations/e/<cle>/modifier", methods=["GET", "POST"])
     @H.connexion_requise("preparation")
@@ -341,6 +489,8 @@ def enregistrer(app, H):
             for k in ("contexte", "tache", "support_titre", "support", "duree", "corrige_note"):
                 if k in f:
                     d[k] = (f.get(k) or "").strip()[:6000]
+            if any(f"entete_{k}" in f for k in ("ecole", "date", "classe")):
+                d["entete"] = {k: (f.get(f"entete_{k}") or "").strip()[:120] for k in ("ecole", "date", "classe")}
             for i, it in enumerate(d.get("consignes") or []):
                 for j, x in enumerate(it["questions"]):
                     if f"q_{i}_{j}" in f:
@@ -362,11 +512,32 @@ def enregistrer(app, H):
                         gr["points"] = float((f.get(f"gp_{i}") or "0").replace(",", "."))
                     except ValueError:
                         gr["points"] = 0
-            sauver(cle, d, "modifiee")
+            sauver(cle, d, "modifiee" if "~" not in cle else "copie")
             H.journal("prep_epreuve_modifiee", cle)
-            flash("Épreuve enregistrée pour l'école (elle remplace la version de la banque).", "success")
+            flash("Version locale enregistrée pour l'école (l'original de la banque est conservé : « Revenir à l'original »).", "success")
             return redirect(url_for("prep_epreuve", cle=cle))
-        return render_template("prep_epreuve_form.html", d=d, cle=cle)
+        return render_template("prep_epreuve_form.html", d=d, cle=cle, base=base_cle(cle), copies=copies(cle))
+
+    @app.route("/preparation/evaluations/e/<cle>/dupliquer", methods=["POST"])
+    @H.connexion_requise("preparation")
+    def prep_epreuve_dupliquer(cle):
+        """v1.30 : copie locale de l'épreuve (version affichée) -> « <clé>~N », modifiable séparément (autre groupe, autre date)."""
+        cours, per, code = cle_valide(cle)
+        exiger_cours(cours)
+        if not peut_modifier():
+            abort(403)
+        d = epreuve(cle)
+        nums = [int(c.split("~")[1]) for c in copies(cle)]
+        n = max(nums + [1]) + 1
+        if n > 99:
+            abort(400)
+        nv = f"{base_cle(cle)}~{n}"
+        d["copie_de"] = cle
+        d["copie_num"] = n
+        sauver(nv, d, "copie")
+        H.journal("prep_epreuve_dupliquee", f"{cle} -> {nv}")
+        flash(f"Copie n° {n} créée : modifiez-la librement, l'épreuve d'origine reste inchangée.", "success")
+        return redirect(url_for("prep_epreuve_modifier", cle=nv))
 
     @app.route("/preparation/evaluations/e/<cle>/regenerer", methods=["POST"])
     @H.connexion_requise("preparation")
@@ -378,7 +549,11 @@ def enregistrer(app, H):
         e = next(x for x in B.organigramme(cours, B.PER[per][2]) if x["code"] == code)
         if request.form.get("banque"):
             ex("DELETE FROM prep_epreuves WHERE ecole_id=? AND annee=? AND cle=?", (H.eco(), config.ANNEE_ACTIVE, cle))
-            flash("Version de la banque rétablie.", "success")
+            H.journal("prep_epreuve_regeneree", cle)
+            if "~" in cle:
+                flash("Copie supprimée.", "success")
+                return redirect(url_for("prep_epreuve", cle=base_cle(cle)))
+            flash("Original de la banque rétabli (la version locale est supprimée).", "success")
         else:
             d = B.generer(cours, per, e, progression(cours, per))
             sauver(cle, d, "regeneree")
@@ -392,14 +567,18 @@ def enregistrer(app, H):
             abort(404)
         return p
 
+    def par_page():
+        v = request.args.get("par_page") or "auto"
+        return v if v in ("auto", "1", "2") else "auto"
+
     @app.route("/preparation/evaluations/e/<cle>.pdf")
     @H.connexion_requise("preparation")
     def prep_epreuve_pdf(cle):
         cours, per, code = cle_valide(cle)
         exiger_cours(cours)
         p = partie()
-        d = epreuve(cle)
-        return H.pdf_reponse(pdf_epreuves([d], p), nom(f"epreuve_{cle}_{p}", "pdf"))
+        d = epreuve(cle, bool(request.args.get("original")))
+        return H.pdf_reponse(pdf_epreuves([d], p, par_page()), nom(f"epreuve_{cle}_{p}", "pdf"))
 
     @app.route("/preparation/evaluations/e/<cle>.doc")
     @H.connexion_requise("preparation")
@@ -419,7 +598,7 @@ def enregistrer(app, H):
             abort(404)
         p = partie()
         liste = [epreuve(f"{cours}-{per}-{e['code']}") for e in B.organigramme(cours, B.PER[per][2])]
-        return H.pdf_reponse(pdf_epreuves(liste, p), nom(f"epreuves_{cours}_{per}_{p}", "pdf"))
+        return H.pdf_reponse(pdf_epreuves(liste, p, par_page()), nom(f"epreuves_{cours}_{per}_{p}", "pdf"))
 
     @app.route("/preparation/evaluations/creer", methods=["POST"])
     @H.connexion_requise("preparation")

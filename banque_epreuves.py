@@ -15,6 +15,8 @@ import hashlib
 import random
 import re
 
+import banque_dictees as BD
+import banque_ea_eps as BE
 import banque_taches as BT
 import banque_textes as BX
 
@@ -43,28 +45,32 @@ def periodes_du_cours(cours):
 
 # ------------------------------------------------------------------------------------------------ organigramme
 def _dur(cours, code):
-    if cours in ("CI", "CP"):
-        return {"comp": "30 min", "expr": "30 min", "math": "45 min"}.get(code, "30 min")
+    if cours in ("CI", "CP") and code != "dictee":
+        return {"comp": "30 min", "expr": "30 min", "math": "45 min", "eps": "selon le guide d'administration"}.get(code, "30 min")
     if cours == "CE2" and code in ("comp", "expr"):
         return "45 minutes"
     if code == "dictee":
-        return "30 min"
+        return "20 min" if cours in ("CI", "CP") else "30 min" if cours in ("CE1", "CE2") else "45 min"
+    if code == "eps":
+        return "selon le guide d'administration"
     return "01 heure"
 
 
 def organigramme(cours, type_=None):
-    """Liste ordonnée des épreuves d'un cours (et d'un type d'évaluation)."""
+    """Liste ordonnée des épreuves d'un cours (et d'un type d'évaluation). v1.30 : dictée, EA et EPS à toutes les
+    évaluations (mensuelles comprises) ; CEP blanc dans l'ordre du procès-verbal du CEP (dictée, communication écrite,
+    compréhension de l'écrit, mathématique, EST, ES, EA, EPS)."""
     fr = [("comp", "Français — Compréhension de l'écrit", "COMP.EC", "francais"), ("expr", "Français — Expression écrite", "EXP.EC", "francais")]
     if cours in ("CM1", "CM2"):
         fr = fr[::-1]                                    # au CM, l'INFRE place l'expression écrite en tête
-    base = fr + [("math", "Mathématique", "MATH", "maths"), ("est", "Éducation scientifique et technologique", "ED.SCI", "est"),
-                 ("es", "Éducation sociale", "ED.SOC", "es"), ("ea", "Éducation artistique", "ART.P", "ea"),
-                 ("eps", "Éducation physique et sportive", "EPS", "eps")]
-    if type_ == "mensuelle":
-        base = [b for b in base if b[0] not in ("ea", "eps")]
+    dic = ("dictee", "Français — Dictée" + (" et questions" if cours in ("CE2", "CM1", "CM2") else ""), "DIC", "francais")
+    reste = [("math", "Mathématique", "MATH", "maths"), ("est", "Éducation scientifique et technologique", "ED.SCI", "est"),
+             ("es", "Éducation sociale", "ED.SOC", "es"), ("ea", "Éducation artistique", "ART.P", "ea"),
+             ("eps", "Éducation physique et sportive", "EPS", "eps")]
     if type_ == "cep_blanc":
-        base = [b for b in base if b[0] in ("expr", "comp")] + [("dictee", "Français — Dictée", "DIC", "francais")] + \
-            [b for b in base if b[0] in ("math", "est", "es")]
+        base = [dic, fr[0] if fr[0][0] == "expr" else fr[1], fr[1] if fr[0][0] == "expr" else fr[0]] + reste
+    else:
+        base = fr + [dic] + reste
     return [{"code": c, "discipline": d, "matiere_code": mc, "matiere": m, "duree": _dur(cours, c), "ordre": i + 1}
             for i, (c, d, mc, m) in enumerate(base)]
 
@@ -75,12 +81,14 @@ def organigramme_tableau():
               "expr": "contexte · tâche « Tu es invité à … » · consignes numérotées · grille (pertinence, cohérence, correction, perfectionnement)",
               "math": "situation-problème · tâche · Items 1 à 3 (numération / calcul, géométrie / mesure, résolution)",
               "est": "support · tâche · Items 1 à 3", "es": "support · tâche · Items 1 à 3",
-              "ea": "texte · tâche · consignes de réalisation", "eps": "guide d'administration · performances filles / garçons",
-              "dictee": "texte dicté · barème des fautes"}
+              "ea": "A : dessin / arts plastiques · B : couture / travaux manuels · matériel · consignes · grille critériée",
+              "eps": "guide d'administration · course + saut, lancer ou jeu · barèmes filles / garçons par âge · fiche de notation",
+              "dictee": "texte dicté · barème des fautes{q}"}
     out = {}
     for c in COURS:
         n = 4 if c in ("CE2", "CM1", "CM2") else 3
-        out[c] = [(e["discipline"], e["duree"], struct[e["code"]].format(n=n, x=", prolongement" if n == 4 else "")) for e in organigramme(c)]
+        out[c] = [(e["discipline"], e["duree"], struct[e["code"]].format(n=n, x=", prolongement" if n == 4 else "",
+                                                                        q=" · questions (vocabulaire, grammaire, conjugaison)" if n == 4 else "")) for e in organigramme(c)]
     return out
 
 
@@ -275,32 +283,53 @@ def generer(cours, per, e, prog):
         d.update(contexte=ctx, tache=tache, consignes=cons, progression=choix)
         d["grille"] = grille_items(cons, "Exactitude et pertinence des réponses")
     elif c == "ea":
-        j = {"T1": 0, "T2": 1, "T3": 2, "FA": 3}.get(per, 0)
-        titre, ctx, tache, cons = BT.EA[cours][j]
-        d.update(contexte=ctx, tache=tache, support_titre=titre, consignes=[{"titre": "Consigne", "questions": [{"q": f"- {x}", "r": "", "pts": None} for x in cons]}])
-        d["grille"] = [{"critere": "Respect des consignes", "indicateurs": cons, "points": 8},
-                       {"critere": "Qualité de la réalisation", "indicateurs": ["formes, proportions, justesse ou expression", "maîtrise de la technique"], "points": 8},
-                       {"critere": "Propreté et originalité", "indicateurs": ["travail propre", "touche personnelle"], "points": 4}]
-        d["corrige_note"] = "Épreuve pratique : le correcteur observe la réalisation et applique la grille."
+        pa, pb = BE.ea(cours, k)
+        d.update(contexte=f"Partie A — {pa[1]} Partie B — {pb[1]}", tache=f"Tu es invité à réaliser les deux travaux : A. {pa[2][len('Tu es invité à '):]} B. {pb[2][len('Tu es invité à '):]}",
+                 support_titre=f"A. {pa[0]} · B. {pb[0]}", support=f"Matériel — A : {pa[3]}. B : {pb[3]}.",
+                 parties_ea=[{"partie": "A", "titre": pa[0], "contexte": pa[1], "tache": pa[2], "materiel": pa[3]},
+                             {"partie": "B", "titre": pb[0], "contexte": pb[1], "tache": pb[2], "materiel": pb[3]}],
+                 consignes=[{"titre": f"Partie A — {pa[0]}", "questions": [{"q": f"{i}- {x}", "r": "", "pts": None} for i, x in enumerate(pa[4], 1)]},
+                            {"titre": f"Partie B — {pb[0]}", "questions": [{"q": f"{i}- {x}", "r": "", "pts": None} for i, x in enumerate(pb[4], 1)]}])
+        d["grille"] = BE.grille_ea("A", pa) + BE.grille_ea("B", pb)
+        d["corrige_note"] = ("Épreuve pratique en deux parties notées chacune sur 10 : le correcteur observe la réalisation et applique la grille "
+                             "critériée (respect des consignes, maîtrise de la technique, propreté et finition, créativité).")
     elif c == "eps":
-        titre, dist, perf = BT.EPS[cours]
-        d.update(contexte="Ton école prépare la journée sportive de fin de trimestre. Le maître veut connaître le niveau de chacun.",
-                 tache=f"Tu es invité à réaliser l'épreuve : {titre.lower()}.", support_titre="Guide d'administration",
-                 support=("Avant : nettoyer et tracer le terrain, vérifier le matériel, préparer les fiches individuelles. Pendant : appel, mise en "
-                          "confiance, échauffement de cinq minutes, rappel des consignes de sécurité (ne pas quitter son couloir, ne pas ralentir à "
-                          "l'arrivée ; gymnastique sur tapis ou sol meuble). Après : traduire les performances en notes sur la fiche récapitulative."),
-                 consignes=[{"titre": "Consigne", "questions": [{"q": f"1- Cours le {dist} le plus vite possible dans ton couloir.", "r": "", "pts": 10},
-                                                                {"q": "2- Exécute l'enchaînement demandé par le maître.", "r": "", "pts": 10}]}])
-        d["grille"] = [{"critere": f"Performance sur {dist} (barème indicatif, à adapter filles / garçons)", "indicateurs": [f"{a} : {p} pts" for a, p in perf], "points": 10},
-                       {"critere": "Exécution technique", "indicateurs": ["départ et course rectiligne", "enchaînement exécuté sans arrêt", "réception équilibrée"], "points": 10}]
-        d["corrige_note"] = "Épreuve pratique : performances notées sur la fiche individuelle, puis reportées sur la fiche récapitulative."
+        x = BE.eps(cours, k)
+        (t1, r1), (t2, r2) = x["course"], x["deux"]
+        d.update(contexte="Ton école organise une séance d'évaluation en éducation physique et sportive. Le maître veut connaître le niveau de chacun.",
+                 tache=f"Tu es invité à réaliser deux épreuves : {t1.lower()} et {t2[0].lower() + t2[1:]}.", support_titre="Guide d'administration",
+                 support=("Avant : nettoyer et tracer le terrain (couloirs, aire de saut ou de lancer), vérifier le matériel (chronomètre, décamètre, balles, "
+                          "sifflet), préparer la fiche de notation. Pendant : appel, échauffement de dix minutes, rappel des consignes de sécurité "
+                          f"(rester dans son couloir, ne pas lancer quand un camarade est dans l'aire). {t1} : {r1} {t2} : {r2} Après : traduire chaque "
+                          "performance en note avec le barème du sexe et de l'âge de l'élève, puis reporter sur la fiche de notation."),
+                 consignes=[{"titre": "Consigne", "questions": [{"q": f"1- {t1} : cours le plus vite possible dans ton couloir jusqu'à la ligne d'arrivée.", "r": "", "pts": 10},
+                                                                {"q": f"2- {t2} : réalise l'épreuve selon les règles données par le maître.", "r": "", "pts": 10}]}],
+                 baremes=x["baremes"], fiche_notation={"colonnes": BE.FICHE_COLONNES, "lignes": 22}, age_normal=x["age"])
+        d["grille"] = [{"critere": f"Épreuve 1 — {t1} : performance traduite par le barème (sexe, âge)", "indicateurs": [x["baremes"][0]["titre"]], "points": 10},
+                       {"critere": f"Épreuve 2 — {t2} : " + ("grille d'observation" if x["type2"] == "jeu" else "performance traduite par le barème (sexe, âge)"),
+                        "indicateurs": [x["baremes"][1]["titre"]], "points": 10}]
+        d["corrige_note"] = (f"Épreuve pratique. Âge normal au {cours} : {x['age']} ans ; la colonne « âge + 2 » s'applique aux élèves de deux ans de plus "
+                             "ou davantage. Un élève dispensé (certificat médical) n'est pas noté. Barèmes indicatifs, à adapter par le conseil des maîtres.")
     elif c == "dictee":
-        titre, texte = BX.DICTEES[per]
-        d.update(contexte="Le maître dicte le texte trois fois : une lecture d'ensemble, la dictée par groupes de mots, une relecture.",
-                 tache="Tu es invité à écrire le texte sous la dictée.", support_titre=titre, support=texte,
-                 consignes=[{"titre": "Consigne", "questions": [{"q": "Écris le texte dicté.", "r": texte, "pts": 20}]}])
-        d["grille"] = [{"critere": "Fautes", "indicateurs": ["faute grave (accord, conjugaison, mot outil) : −1 point", "faute d'usage : −½ point",
-                                                             "accents et ponctuation : −¼ point", "barème indicatif, à ajuster aux instructions du CEP"], "points": 20}]
+        titre, texte, qs = BD.dictee(cours, per)
+        if cours == "CI":
+            elems = [x.strip() for x in texte.split("/") if x.strip()]
+            d.update(contexte="Le maître dit chaque élément deux fois, en articulant bien ; l'élève l'écrit sur la ligne.",
+                     tache="Tu es invité à écrire ce que le maître dicte.", support_titre=titre, support=" / ".join(elems),
+                     consignes=[{"titre": "Consigne", "questions": [{"q": f"Écris l'élément n° {i} dicté par le maître.", "r": x, "pts": p}
+                                                                    for i, (x, p) in enumerate(zip(elems, repartir(20, len(elems))), 1)]}])
+            d["grille"] = [{"critere": "Exactitude de l'écriture", "indicateurs": BD.BAREME_CI, "points": 20}]
+        else:
+            pd = 20 if not qs else 14
+            cons = [{"titre": "Dictée", "questions": [{"q": "Écris le texte dicté.", "r": texte, "pts": pd}]}]
+            if qs:
+                cons.append({"titre": "Questions", "questions": [{"q": q_, "r": r_, "pts": 2} for q_, r_ in qs]})
+            d.update(contexte="Le maître lit d'abord tout le texte, puis le dicte par groupes de mots, enfin le relit ; l'élève se relit avant de rendre sa copie.",
+                     tache="Tu es invité à écrire le texte sous la dictée" + (" puis à répondre aux questions." if qs else "."), support_titre=titre, support=texte,
+                     consignes=cons, mots=len(texte.split()))
+            d["grille"] = [{"critere": f"Dictée (sur {pd})", "indicateurs": BD.BAREME_FAUTES, "points": pd}]
+            if qs:
+                d["grille"].append({"critere": "Questions (3 × 2 points)", "indicateurs": [r_ for _q, r_ in qs], "points": 6})
         d["progression"] = [prog.get("francais", {}).get("refs", "")]
     if d.get("infre"):
         d["source"] = f"D'après les épreuves standardisées INFRE ({d['infre']}) — reformulée (contexte et support nouveaux)"

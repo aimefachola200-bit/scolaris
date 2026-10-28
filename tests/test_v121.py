@@ -44,15 +44,15 @@ for c in B.COURS:
             assert abs(B.total_bareme(d) - 20) < 0.01, d["cle"]
             assert d["mention"] == "Épreuve conçue selon l'APC — à valider par le conseiller pédagogique"
             assert d["tache"].startswith("Tu es invité") and d["grille"] and d["consignes"], d["cle"]
-assert n >= 350, n
-assert {c for c, t in par if t == "passage"} == {"CI", "CP", "CE1", "CE2", "CM1"} and par[("CM2", "cep_blanc")] == 18
-assert all(par[(c, "mensuelle")] == 30 for c in B.COURS) and all(par[(c, "trimestrielle")] == 21 for c in B.COURS)
+assert n >= 490, n
+assert {c for c, t in par if t == "passage"} == {"CI", "CP", "CE1", "CE2", "CM1"} and par[("CM2", "cep_blanc")] == 24   # v1.30 : dictée, EA, EPS
+assert all(par[(c, "mensuelle")] == 48 for c in B.COURS) and all(par[(c, "trimestrielle")] == 24 for c in B.COURS)
 assert [e["code"] for e in B.organigramme("CM1")][:2] == ["expr", "comp"] and [e["code"] for e in B.organigramme("CE1")][:2] == ["comp", "expr"]
 assert B.organigramme("CE2")[0]["duree"] == "45 minutes" and B.organigramme("CI")[0]["duree"] == "30 min"
 infre = [d for c in ("CE1", "CE2", "CM1", "CM2") for p in ("T1", "T2", "T3", "FA") for d in B.jeu_complet(c, p, {}) if d.get("infre")]
 assert len(infre) == 32 and all(d["source"].startswith("D'après les épreuves standardisées INFRE") for d in infre)
 d = B.jeu_complet("CM2", "C1", {})
-assert [x["code"] for x in d] == ["expr", "comp", "dictee", "math", "est", "es"]
+assert [x["code"] for x in d] == ["dictee", "expr", "comp", "math", "est", "es", "ea", "eps"]   # ordre du PV du CEP (v1.30)
 with app.app_context():
     ex("UPDATE utilisateurs SET mdp_hash=?, doit_changer_mdp=0 WHERE identifiant='admin'", (generate_password_hash("admin123"),))
     cm1 = ex("INSERT INTO classes (nom, niveau, frais_scolarite, ecole_id) VALUES ('CM1 A','CM1',0,1)")

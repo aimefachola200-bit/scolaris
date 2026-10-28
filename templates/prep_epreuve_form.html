@@ -2,9 +2,24 @@
 {% extends "base.html" %}{% block titre %}Modifier l'épreuve{% endblock %}
 {% block contenu %}{% set onglet = 'evaluations' %}{% include "_prep_onglets.html" %}
 <p><a href="{{ url_for('prep_epreuve', cle=cle) }}">← Retour à l'épreuve</a></p>
-<h2>Modifier — {{ d.discipline }} · {{ d.cours }} · {{ d.periode_lib }}</h2>
+<h2>Modifier — {{ d.discipline }} · {{ d.cours }} · {{ d.periode_lib }}{% if d.copie_num %} · copie n° {{ d.copie_num }}{% endif %}</h2>
+<nav class="onglets" style="margin:6px 0">
+  <a href="{{ url_for('prep_epreuve', cle=cle, onglet='sujet') }}">Sujet</a>
+  <a href="{{ url_for('prep_epreuve', cle=cle, onglet='corrige') }}">Corrigé</a>
+  <a href="{{ url_for('prep_epreuve', cle=cle, onglet='grille') }}">Grille</a>
+  <a href="{{ url_for('prep_epreuve_modifier', cle=cle) }}" class="actif">Modifier</a>
+</nav>
+<p class="aide">Les modifications sont enregistrées comme <b>version locale</b> de l'école : l'original de la banque est conservé
+(« Revenir à l'original » sur la page de l'épreuve). « Dupliquer » crée une copie indépendante (autre groupe, autre date).</p>
 <form method="post" class="carte">
+<h3>En-tête</h3>
+<div class="grille2">
+<label>École <input name="entete_ecole" value="{{ (d.entete or {}).ecole or '' }}" placeholder="nom de l'école"></label>
+<label>Classe <input name="entete_classe" value="{{ (d.entete or {}).classe or '' }}" placeholder="{{ d.cours }}"></label>
+<label>Date <input name="entete_date" value="{{ (d.entete or {}).date or '' }}" placeholder="ex. 12 décembre 2026"></label>
 <label>Durée <input name="duree" value="{{ d.duree }}"></label>
+</div>
+<h3>Énoncé</h3>
 <label>Mise en contexte <textarea name="contexte" rows="3">{{ d.contexte }}</textarea></label>
 <label>Titre du support <input name="support_titre" value="{{ d.support_titre }}"></label>
 <label>Support / texte <textarea name="support" rows="6">{{ d.support }}</textarea></label>
@@ -20,6 +35,6 @@
 <label>Critère <input name="gc_{{ i }}" value="{{ gr.critere }}"></label>
 <label>Indicateurs (un par ligne) <textarea name="gi_{{ i }}" rows="3">{{ gr.indicateurs|join('\n') }}</textarea></label>
 <label>Points <input name="gp_{{ i }}" value="{{ gr.points }}" size="4"></label></div>{% endfor %}
-<p><button class="btn">Enregistrer</button></p>
+<p><button class="btn">Enregistrer la version locale</button></p>
 </form>
 {% endblock %}

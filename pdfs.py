@@ -175,6 +175,35 @@ def fichier_static(nom):
 _OFFICIELLES = {}
 
 
+
+_SERIF = {}
+
+
+def police_serif():
+    """v1.30 — Police des épreuves (« Times New Roman 14 pt ») : Liberation Serif (métriquement compatible avec Times New
+    Roman, licence SIL OFL, fichiers static/fonts/LiberationSerif-*.ttf) enregistrée et incorporée au PDF ; à défaut, la
+    Times-Roman intégrée à reportlab (codage WinAnsi : accents français, œ et Œ compris).
+    Renvoie {"normal", "gras", "italique", "gras_italique", "nom"}."""
+    if _SERIF:
+        return _SERIF
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    try:
+        noms = {}
+        for cle, suffixe in (("normal", "Regular"), ("gras", "Bold"), ("italique", "Italic"), ("gras_italique", "BoldItalic")):
+            f = fichier_static(f"fonts/LiberationSerif-{suffixe}.ttf")
+            if not f:
+                raise FileNotFoundError(suffixe)
+            nom = f"LiberationSerif-{suffixe}"
+            if nom not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont(nom, f))
+            noms[cle] = nom
+        pdfmetrics.registerFontFamily("LiberationSerif", normal=noms["normal"], bold=noms["gras"], italic=noms["italique"], boldItalic=noms["gras_italique"])
+        _SERIF.update(noms, nom="Liberation Serif (compatible Times New Roman)")
+    except Exception:  # noqa: BLE001 — police absente : Times intégrée
+        _SERIF.update(normal="Times-Roman", gras="Times-Bold", italique="Times-Italic", gras_italique="Times-BoldItalic", nom="Times-Roman")
+    return _SERIF
+
 def image_officielle(nom):
     """« armoiries » ou « memp » (static/docs_enseignant_<nom>.png), mise en cache (seulement si trouvée)."""
     if _OFFICIELLES.get(nom) is None:
@@ -1003,14 +1032,15 @@ def code_tableau(titre, sous_titre, infos, lignes, total, verif=None):
 
 def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, largeurs=None, paysage=False,
                      signatures=None, notes_bas=None, infos_haut=None, total=None, taille=7.5, avant=None, apres=None,
-                     alignements=None, surlignes=None, cycle=None, code=None, verif=None, qr_bloc=True):
+                     alignements=None, surlignes=None, cycle=None, code=None, verif=None, qr_bloc=True, police=None):
     """PDF d'un tableau (répété sur chaque page) avec en-tête officiel, bloc d'infos, signatures.
     colonnes : liste d'intitulés (ou liste de listes pour un en-tête sur plusieurs lignes)
     lignes : liste de listes ; total : ligne de total mise en gras
     infos : [(libellé, valeur)] affichés en grille sous le titre
     signatures : [(titre, nom, image_reader_ou_None, cachet_bool)]
     avant/apres : liste de flowables (Paragraph, Table) insérés avant/après le tableau
-    surlignes : {indice_ligne: couleur_hex} pour colorer des lignes."""
+    surlignes : {indice_ligne: couleur_hex} pour colorer des lignes.
+    police : None (Helvetica) ou "serif" (v1.30, épreuves : Times New Roman — Liberation Serif incorporée)."""
     from reportlab.lib.pagesizes import landscape
     from reportlab.platypus import SimpleDocTemplate, Spacer, KeepTogether
     from reportlab.platypus.flowables import Flowable
@@ -1019,8 +1049,13 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
     W, Hh = taille_page
     marge = 12 * mm
     buf = io.BytesIO()
-    st_c = ParagraphStyle("c", fontName="Helvetica", fontSize=taille, leading=taille + 1.6)
-    st_h = ParagraphStyle("h", fontName="Helvetica-Bold", fontSize=taille, leading=taille + 1.6, alignment=1,
+    if police == "serif":
+        _ps = police_serif()
+        FN, FB = _ps["normal"], _ps["gras"]
+    else:
+        FN, FB = "Helvetica", "Helvetica-Bold"
+    st_c = ParagraphStyle("c", fontName=FN, fontSize=taille, leading=taille + 1.6)
+    st_h = ParagraphStyle("h", fontName=FB, fontSize=taille, leading=taille + 1.6, alignment=1,
                           textColor=colors.white)
 
     def cell(v, style=st_c):
@@ -1033,7 +1068,7 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
     data = [[cell(h, st_h) if h is not None else "" for h in row] for row in entetes]
     data += [[cell(v) for v in l] for l in lignes]
     if total:
-        st_t = ParagraphStyle("t", parent=st_c, fontName="Helvetica-Bold")
+        st_t = ParagraphStyle("t", parent=st_c, fontName=FB)
         data.append([cell(v, st_t) for v in total])
     utile = W - 2 * marge
     if not largeurs:
@@ -1070,9 +1105,9 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
     t.setStyle(TableStyle(style))
 
     histoire = []
-    st_titre = ParagraphStyle("ti", fontName="Helvetica-Bold", fontSize=13, leading=16, alignment=1, textColor=BLEU,
+    st_titre = ParagraphStyle("ti", fontName=FB, fontSize=13, leading=16, alignment=1, textColor=BLEU,
                               spaceAfter=2)
-    st_st = ParagraphStyle("st", fontName="Helvetica", fontSize=9.5, leading=12, alignment=1, spaceAfter=4)
+    st_st = ParagraphStyle("st", fontName=FN, fontSize=9.5, leading=12, alignment=1, spaceAfter=4)
     histoire.append(Paragraph(titre, st_titre))
     if sous_titre:
         histoire.append(Paragraph(sous_titre, st_st))
@@ -1097,7 +1132,7 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
     if notes_bas:
         histoire.append(Spacer(1, 4))
         for n in notes_bas:
-            histoire.append(Paragraph(n, ParagraphStyle("nb", fontName="Helvetica", fontSize=7.5, leading=9.5)))
+            histoire.append(Paragraph(n, ParagraphStyle("nb", fontName=FN, fontSize=7.5, leading=9.5)))
     # v1.15 : document signé = document vérifiable (code + QR, page /verifier)
     if code is None and (signatures or verif):
         code = code_tableau(titre, sous_titre, infos, lignes, total, verif)
@@ -1189,8 +1224,13 @@ class _BlocSignatures(_Flowable):
                 c.drawCentredString(x, y - 30.5 * mm, nom)
 
 
-def paragraphe(texte, taille=8.5, gras=False, align=0, espace=3):
-    return Paragraph(texte, ParagraphStyle("p", fontName="Helvetica-Bold" if gras else "Helvetica", fontSize=taille,
+def paragraphe(texte, taille=8.5, gras=False, align=0, espace=3, police=None):
+    if police == "serif":
+        ps = police_serif()
+        fn = ps["gras"] if gras else ps["normal"]
+    else:
+        fn = "Helvetica-Bold" if gras else "Helvetica"
+    return Paragraph(texte, ParagraphStyle("p", fontName=fn, fontSize=taille,
                                            leading=taille * 1.3, alignment=align, spaceBefore=espace, spaceAfter=espace))
 
 

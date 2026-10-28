@@ -458,10 +458,11 @@ def enregistrer(app, H):
         from reportlab.platypus import Spacer
         avant = []
         if e["situation"]:
-            avant += [P.paragraphe("SITUATION / TEXTE D'AMORCE", 9.5, True), P.paragraphe(esc(e["situation"]).replace("\n", "<br/>"), 9), Spacer(1, 4)]
+            avant += [P.paragraphe("SITUATION / TEXTE D'AMORCE", 14, True, police="serif"),
+                      P.paragraphe(esc(e["situation"]).replace("\n", "<br/>"), 14, police="serif"), Spacer(1, 4)]
         if e["consignes"]:
-            avant += [P.paragraphe("CONSIGNES", 9.5, True), P.paragraphe(esc(e["consignes"]).replace("\n", "<br/>"), 9), Spacer(1, 4)]
-        avant.append(P.paragraphe("ITEMS / TÂCHES", 9.5, True))
+            avant += [P.paragraphe("CONSIGNES", 14, True, police="serif"), P.paragraphe(esc(e["consignes"]).replace("\n", "<br/>"), 14, police="serif"), Spacer(1, 4)]
+        avant.append(P.paragraphe("ITEMS / TÂCHES", 14, True, police="serif"))
         if corrige:
             cols = ["N°", "Consigne / question", "Critère", "Barème", "Réponse attendue"]
             lignes = [[i["ordre"], esc(i["intitule"]), esc(i["critere"] or ""), num(i["bareme"]) if i["bareme"] is not None else "",
@@ -478,7 +479,7 @@ def enregistrer(app, H):
             sous_titre=f"{TYPES_EVAL.get(e['type_evaluation'], '')} n° {e['numero'] or 1} — {e['niveau'] or ''} — {e['matiere'] or ''}",
             infos=entete_epreuve(e, v, items, corrige),
             infos_haut=[("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))],
-            largeurs=largeurs, taille=8.5, avant=avant, signatures=signatures(v, e["auteur"], e.get("cree_par")),
+            largeurs=largeurs, taille=14, avant=avant, signatures=signatures(v, e["auteur"], e.get("cree_par")), police="serif",
             notes_bas=None if corrige else ["Nom et prénoms de l'élève : ………………………………………………………………  Classe : ……………  Note : ……… / " + num(e["bareme_total"] if e["bareme_total"] is not None else total_items(items))])
         H.journal("epreuve_pdf", f"#{eid} {'corrigé' if corrige else 'sujet'}")
         return H.pdf_reponse(pdf, f"epreuve_{eid}{'_corrige' if corrige else ''}.pdf")
