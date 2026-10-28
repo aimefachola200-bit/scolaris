@@ -22,7 +22,7 @@ COURS_LOT = ("CE2", "CM1", "CM2")
 class TestCorpusSeances(unittest.TestCase):
     def test_chaque_seance_a_son_resume(self):
         import test_v129 as T
-        T.verifier_cours(self, T.corpus(), COURS_LOT)
+        T.verifier_cours(self, T.corpus(), COURS_LOT, minimum=800)
 
 
 class TestBanqueEpreuves(unittest.TestCase):
@@ -149,6 +149,27 @@ r = ok(c.post(f"/preparation/evaluations/e/{cle}~2/regenerer", data={"banque": "
 assert r.headers["Location"].endswith(f"/e/{cle}")
 ok(c.get(f"/preparation/evaluations/e/{cle}~2"), 404)
 ok(c.get("/preparation/evaluations/e/CE2-M2-dictee~1"), 404)
+# ---- résumés par séance CE2 → CM2 : onglet, fiche de séance, fiche conçue, PDF (résumé, livret de SA, cahier)
+import m_preparation as MP
+CC = MP.corpus()
+RS = [r for r in CC["resumes"] if r.get("seance_resume") and r["cours"] in ("CE2", "CM1", "CM2")]
+for cours, mat in (("CE2", "maths"), ("CM1", "francais"), ("CM2", "es")):
+    t = txt(ok(c.get(f"/preparation/resumes?cours={cours}&matiere={mat}&seances=1&vue=progression")))
+    r0 = next(r for r in RS if r["cours"] == cours and r["matiere"] == mat)
+    assert r0["titre"] in t and "Cahier de résumés (séances)" in t, (cours, mat)
+    t = txt(ok(c.get(f"/preparation/fiches/{r0['fiches'][0]}")))
+    assert "Résumé de la séance" in t, (cours, mat)
+    d, s = pdf(ok(c.get(f"/preparation/resumes/{r0['id']}.pdf")))
+    assert "Séance(s)" in s
+    d, s = pdf(ok(c.get(f"/preparation/resumes.pdf?cours={cours}&matiere={mat}&seances=1")))
+    assert "CAHIER DE RÉSUMÉS" in s.upper() and len(d.pages) >= 2
+fc = next(f for f in CC["fiches"] if f.get("v129") and f["cours"] == "CM1" and f["matiere"] == "francais")
+t = txt(ok(c.get(f"/preparation/fiches/{fc['id']}")))
+assert "Résumé de la séance" in t and "Conçue selon l'APC" in t
+ok(c.get(f"/preparation/fiches/{fc['id']}.pdf"))
+rs_sa = next(r for r in RS if r["cours"] == "CM2" and r["matiere"] == "est" and r["sa"])
+d, s = pdf(ok(c.get(f"/preparation/resumes.pdf?cours=CM2&matiere=est&sa={rs_sa['sa'][0]}")))
+assert "LIVRET DE LA" in s.upper()
 print("OK-" + config.EDITION)
 '''
 

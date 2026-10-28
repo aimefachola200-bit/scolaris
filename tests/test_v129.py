@@ -27,7 +27,7 @@ def corpus():
         return json.load(f)
 
 
-def verifier_cours(test, C, cours_liste):
+def verifier_cours(test, C, cours_liste, minimum=900):
     rpf = {}
     for r in C["resumes"]:
         for fid in r.get("fiches") or []:
@@ -41,7 +41,7 @@ def verifier_cours(test, C, cours_liste):
             test.assertEqual(t["couvertes"], t["seances"], (c, m))
             test.assertGreater(t["resumes"], 0, (c, m))
     rs = [r for r in C["resumes"] if r.get("seance_resume") and r["cours"] in cours_liste]
-    test.assertGreater(len(rs), 900)
+    test.assertGreater(len(rs), minimum)
     ids = set()
     for r in rs:
         test.assertNotIn(r["id"], ids)
