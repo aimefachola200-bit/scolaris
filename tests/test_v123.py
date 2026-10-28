@@ -65,7 +65,7 @@ if fi:
     assert any("adjectif" in r["titre"] for r in rs) and all(r["domaine"] == "Grammaire" for r in rs if not r.get("seance_resume")), [r["titre"] for r in rs]
 est = [f for f in C["fiches"] if f["cours"] == "CE2" and f["matiere"] == "est" and f.get("sa") == 8]
 assert est, "fiches EST CE2 SA8"
-assert [r["titre"] for r in MP.resumes_semaine("CE2", {"est": est})["est"]] == ["Jouons avec les aimants"]
+assert [r["titre"] for r in MP.resumes_semaine("CE2", {"est": est})["est"] if not r.get("seance_resume")] == ["Jouons avec les aimants"]   # v1.30 : résumés de séance à part
 assert MP.resumes_semaine("CM2", {"maths": []}) == {}
 with app.app_context():
     ex("UPDATE utilisateurs SET mdp_hash=?, doit_changer_mdp=0 WHERE identifiant='admin'", (generate_password_hash("admin123"),))

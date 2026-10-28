@@ -524,7 +524,7 @@ C = MP.corpus()
 fi = [f for f in C["fiches"] if f["cours"] == "CE2" and f["matiere"] == "maths" and "DOSSIER N°1" in str(f.get("unite")) and f.get("sa") == 2]
 assert fi, "fiches CE2 D1 SA2"
 rs = MP.resumes_semaine("CE2", {"maths": fi})["maths"]
-assert rs and all(any(a.get("dossier") == 1 and a.get("sa") == 2 for a in r["ancres"]) for r in rs), [r["titre"] for r in rs]
+assert rs and all(any(a.get("dossier") == 1 and a.get("sa") == 2 for a in r["ancres"]) for r in rs if not r.get("seance_resume")), [r["titre"] for r in rs]   # v1.30 : + résumés des séances
 # leçon 5 du CI : son « p »
 fl = [f for f in C["fiches"] if f["cours"] == "CI" and f["matiere"] == "francais" and str(f.get("unite")) == "Leçon 5"]
 assert fl
@@ -532,7 +532,7 @@ assert any("« p – P »" in r["titre"] for r in MP.resumes_semaine("CI", {"fra
 # grammaire de l'unité 6 du CE2
 fg = [{"cours": "CE2", "matiere": "francais", "unite": "UNITE N°6", "sous_matiere": "Grammaire"}]
 rg = MP.resumes_semaine("CE2", {"francais": fg})["francais"]
-assert rg and all(r["domaine"] == "Grammaire" for r in rg), [r["titre"] for r in rg]
+assert rg and all(r["domaine"] == "Grammaire" for r in rg if not r.get("seance_resume")), [r["titre"] for r in rg]
 m = MP.resumes_mois("CM1", "Septembre")
 assert m["francais"] and m["maths"]
 with app.app_context():
