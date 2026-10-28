@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block titre %}{{ f.titre }}{% endblock %}
 {% block contenu %}{% set onglet = 'mes' if propre else 'fiches' %}{% include "_prep_onglets.html" %}
-{% set cid = request.args.get('classe', type=int) %}
+{% set cid = ((request.args.get('classe') or '')|int) or none %}
 <section class="carte prep-fiche">
   <div class="entete"><div><h2 style="margin:0">{{ f.titre }}</h2>
     <p class="sous">{{ prep_nom_matiere(f.matiere) }} · {{ PREP_COURS_LIB.get(f.cours, f.cours) }}{% if f.sous_matiere %} · {{ f.sous_matiere }}{% endif %}{% if f.unite %} · {{ f.unite }}{% endif %}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · séance {{ f.seance }}{% endif %}{% if f.duree %} · {{ f.duree }}{% endif %}{% if propre and f.date_seance %} · séance du {{ f.date_seance }}{% endif %}</p></div>

@@ -36,7 +36,9 @@ import gzip
 import html as _html
 import io
 import json
+import os
 import re
+import threading
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 
@@ -81,10 +83,19 @@ CREATE INDEX IF NOT EXISTS idx_prep_fiches ON prep_fiches (ecole_id, user_id, cl
 """
 
 _CORPUS = {}
+_VERROU_CORPUS = threading.Lock()
 
 
 def corpus():
-    """Corpus pédagogique (chargé une fois) + index."""
+    """Corpus pédagogique (chargé une fois) + index. v1.31.1 : un seul chargement même si plusieurs pages le demandent
+    en même temps (serveur à plusieurs fils) ; préchargé en arrière-plan au démarrage de l'application autonome."""
+    if _CORPUS:
+        return _CORPUS
+    with _VERROU_CORPUS:
+        return _charger_corpus()
+
+
+def _charger_corpus():
     if not _CORPUS:
         import pdfs
         p = pdfs.fichier_static("pedafiche_corpus.json.gz")
@@ -214,6 +225,34 @@ def txt_pdf(t):
     return s.replace("\n", "<br/>")
 
 
+def _equilibrer(t):
+    """v1.31.1 — balises en ligne (<b> <i> <u>) équilibrées : une balise ouverte dans un bloc et refermée dans le suivant
+    (HTML des guides extraits) faisait échouer le PDF (« Parse error: saw </b> instead of expected </para> »)."""
+    pile, out = [], []
+    for m in re.split(r"(</?(?:b|i|u)>)", t):
+        g = re.fullmatch(r"<(/?)(b|i|u)>", m)
+        if not g:
+            out.append(m)
+        elif not g.group(1):
+            pile.append(g.group(2)); out.append(m)
+        elif g.group(2) in pile:
+            while pile:
+                x = pile.pop(); out.append(f"</{x}>")
+                if x == g.group(2):
+                    break
+    out += [f"</{x}>" for x in reversed(pile)]
+    return "".join(out)
+
+
+def _paragraphe_sur(t, style):
+    """Paragraph reportlab ; en cas de balisage invalide, le texte brut (jamais d'erreur 500)."""
+    from reportlab.platypus import Paragraph
+    try:
+        return Paragraph(_equilibrer(t), style)
+    except ValueError:
+        return Paragraph(_html.escape(re.sub(r"<[^>]+>", " ", t)), style)
+
+
 class _GuideVersPdf(HTMLParser):
     """HTML nettoyé d'un guide -> flowables reportlab (titres, paragraphes, listes, tableaux)."""
 
@@ -230,9 +269,9 @@ class _GuideVersPdf(HTMLParser):
         from reportlab.platypus import Paragraph
         st = {"h2": self.st["h2"], "h3": self.st["h3"], "h4": self.st["h4"]}.get(self.bloc, self.st["p"])
         if self.liste and self.bloc == "li":
-            self.out.append(Paragraph("• " + t, self.st["li"]))
+            self.out.append(_paragraphe_sur("• " + t, self.st["li"]))
         else:
-            self.out.append(Paragraph(t, st))
+            self.out.append(_paragraphe_sur(t, st))
 
     def handle_starttag(self, tag, attrs):
         if tag in ("b", "strong", "i", "em", "u"):
@@ -268,7 +307,7 @@ class _GuideVersPdf(HTMLParser):
             from reportlab.platypus import Paragraph, Table, TableStyle
             n = max((len(r) for r in self.table), default=0)
             if n:
-                data = [[Paragraph(c, self.st["td"]) for c in r] + [""] * (n - len(r)) for r in self.table]
+                data = [[_paragraphe_sur(c, self.st["td"]) for c in r] + [""] * (n - len(r)) for r in self.table]
                 t = Table(data, colWidths=[self.largeur / n] * n, repeatRows=1)
                 t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#667085")),
                                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E4ECF5")), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -679,6 +718,8 @@ def pdf_revision(rv, eleve=False, partie=None, sujet=None):
 def enregistrer(app, H):
     q, ex, config = H.q, H.ex, H.config
     H.schema(SCHEMA)
+    if config.AUTONOME:   # v1.31.1 : téléphone / tablette
+        threading.Thread(target=corpus, name="corpus-pedagogique", daemon=True).start()
 
     @app.template_filter("prep_txt")
     def _f_txt(t):
@@ -958,7 +999,8 @@ def enregistrer(app, H):
         progs = [p for p in C["programmes"] if (not cours or p["cours"] == cours) and (not mat or p["matiere"] == mat)]
         progs.sort(key=lambda p: (COURS.index(p["cours"]) if p["cours"] in COURS else 9, ORDRE_MAT.index(p["matiere"]) if p["matiere"] in ORDRE_MAT else 9,
                                   p.get("dossier") or 0, p.get("num") or 0))
-        dispo = sorted({(p["cours"], p["matiere"]) for p in C["programmes"]}, key=lambda x: (COURS.index(x[0]), ORDRE_MAT.index(x[1])))
+        dispo = sorted({(p["cours"], p["matiere"]) for p in C["programmes"]},
+                       key=lambda x: (COURS.index(x[0]) if x[0] in COURS else 9, ORDRE_MAT.index(x[1]) if x[1] in ORDRE_MAT else 9))
         # planification annuelle officielle du cours (toutes matières) en complément
         import m_synoptique as S
         niv = {v: k for k, v in NIVEAU_COURS.items() if v != "MAT"}.get(cours)
