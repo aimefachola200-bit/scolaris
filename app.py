@@ -436,6 +436,8 @@ MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en d
            "m_inspection", "m_patrimoine_pvs", "m_examens",
            # v1.28 : examen blanc du CEP, modèle commun (CS Pobè)
            "m_examen_blanc",
+           # v2.0 : synchronisation entre niveaux (école → CS → DDEMP), après tous les modules dont elle suit les objets
+           "m_sync",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
            "m_perimetre_enseignant"]
 

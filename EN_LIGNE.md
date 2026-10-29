@@ -119,3 +119,36 @@ Ses données sont **séparées** : ce qui est saisi sur le PC n'apparaît pas en
 ---
 
 *SCOLARIS — Conception : Maître Aimé FACHOLA*
+
+## Synchronisation entre niveaux (v2.0) : l'application de la CS ou de la DDEMP en https
+
+L'application de la circonscription (édition CS) ou de la DDEMP reçoit les paquets de synchronisation des écoles et
+des CS à l'adresse `https://<votre adresse>/sync/push` et les leur renvoie par `/sync/pull`. Les applications
+installées depuis Internet (MEMP-CP, DOSP, CS Pobè, Mon école, ÉduGestion : pages en **https** et applications Android)
+ne peuvent joindre qu'une adresse en **https** : un hub en `http://` n'est accessible que depuis le réseau local
+de l'école (ou par fichier).
+
+1. Mettez l'application de la CS / DDEMP en ligne avec l'une des options ci-dessus : PythonAnywhere et Render donnent
+   une adresse https d'office.
+2. Sur un serveur VPS, placez SCOLARIS derrière **Caddy** (certificat automatique) ou **nginx + Certbot** :
+   ```
+   # Caddyfile
+   cs-pobe.exemple.bj {
+       reverse_proxy 127.0.0.1:8000
+   }
+   ```
+   ou, avec nginx (après `certbot --nginx -d cs-pobe.exemple.bj`) :
+   ```
+   location / { proxy_pass http://127.0.0.1:8000; proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $remote_addr; proxy_set_header X-Forwarded-Proto https;
+                client_max_body_size 16m; }
+   ```
+   Lancez SCOLARIS avec `SCOLARIS_EN_LIGNE=1` (adresses et cookies en https) ; avec Docker :
+   `docker run -e SCOLARIS_EDITION=cs -e SCOLARIS_EN_LIGNE=1 -p 127.0.0.1:8000:8000 -v scolaris-data:/data scolaris`.
+3. Vérifiez : `https://<votre adresse>/sync/info` doit répondre `{"ok": true, …, "niveau": "CS"}`.
+4. Dans « Synchronisation › Entités inscrites », chaque école a son code QR : il contient l'adresse https et le
+   code d'accès de l'école.
+
+Sécurité : seules les adresses `/sync/*` acceptent les appels d'autres sites (CORS, sans cookie) ; chaque paquet est
+signé par l'appareil qui l'envoie et accompagné du code d'accès de l'entité ; 20 refus par heure et par adresse
+bloquent les essais en série.

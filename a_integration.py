@@ -121,6 +121,7 @@ PREFIXES_STRUCTURE = (
     "/installer", "/referentiel.js", "/rejoindre", "/sante", "/signatures", "/cachet.svg",
     "/groupes-whatsapp", "/acces", "/uascep",
     "/sport", "/pilotage", "/reg", "/liaison", "/inspection", "/examens", "/examen-blanc",   # v1.25 : sport scolaire, pilotage, registres (structure ; registres d'école : école ouverte)
+    "/synchronisation", "/sync",   # v2.0 : synchronisation entre niveaux (structure ; API sans session)
     # espaces publics (élèves, parents), API de transmission et de notification, retours de paiement en ligne
     "/eleve", "/parent", "/api", "/webhooks", "/paiement",
 )
@@ -178,7 +179,7 @@ ENDPOINTS_PERIMETRE_COMMUNS = ENDPOINTS_COMMUNS | {
 # le droit jur_synoptique) et pages des divisions (plan d'action : droit jur_divisions)
 PREFIXES_PERIMETRE_COMMUNS = ("jur_synoptique", "jur_division")
 # adresses hors contrôle (sessions élèves / parents, API, paiements en ligne)
-PREFIXES_PUBLICS = ("/eleve", "/parent", "/api", "/webhooks", "/paiement", "/rejoindre")
+PREFIXES_PUBLICS = ("/eleve", "/parent", "/api", "/webhooks", "/paiement", "/rejoindre", "/sync/")
 # familles d'endpoints qui ne suivent pas la règle « racine_ » (racine = endpoint sans « _accueil », pluriel → singulier)
 FAMILLES_ENDPOINTS = {
     "epreuves_accueil": ("epreuve", "grille", "grilles"), "cep_accueil": ("cep", "carte", "liste_cep"),

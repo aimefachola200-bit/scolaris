@@ -87,6 +87,7 @@
 {% endcall %}
 {% call groupe('jtrans', 'Transmissions', ep.startswith('jur_transmission'), 'transmission') %}
   {{ lien('jur_transmissions', 'Recevoir (fichiers, en ligne)', ep in ('jur_transmissions','jur_transmission_detail')) }}
+  {% if peut('synchronisation') %}{{ lien('sync_page', 'Synchronisation (écoles, niveau supérieur)', ep == 'sync_page') }}{{ lien('sync_entites', 'Entités inscrites et codes QR', ep == 'sync_entites') }}{% endif %}
   {{ lien('jur_transmission_suivi', 'Suivi des envois', ep=='jur_transmission_suivi') }}
   {% if CS_ %}{{ lien('jur_transmission_envoi', 'Envoyer à la DDEMP', ep=='jur_transmission_envoi') }}{% endif %}
 {% endcall %}

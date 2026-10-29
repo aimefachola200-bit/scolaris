@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 1.33.0. 
+Version 2.0.0. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -140,6 +140,20 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 
 - Conseil : Téléchargez une sauvegarde au moins une fois par semaine et toujours avant une mise à jour ou un changement d'appareil.
 
+## Synchronisation avec la circonscription et la DDEMP
+
+*Pour : Administrateur / fondateur, Directeur / directrice, Circonscription scolaire, DDEMP*
+
+1. La CS ouvre « Synchronisation › Entités inscrites » et affiche le code QR de l'école (il contient l'adresse de la CS et le code d'accès de l'école).
+2. À l'école, « Synchronisation › Rejoindre » : collez le texte du code QR (ou l'adresse et le code d'accès), puis « Enregistrer ».
+3. « Synchroniser maintenant » envoie ce qui a changé (effectifs, personnel, résultats, bureaux UASCEP, examen blanc, licences, accusés de réception, épreuves proposées) et reçoit les notes de service, circulaires, convocations, échéances, agenda et épreuves proposées par la CS.
+4. Sans Internet : « Préparer le fichier à remettre » (clé USB, WhatsApp, e-mail) ; la CS l'importe et prépare en retour le « Fichier pour elle », que l'école importe.
+5. Chaque paquet est signé par l'appareil : un paquet modifié ou venant d'un autre appareil est refusé. Après un changement d'appareil, la CS accepte la nouvelle clé dans « Entités inscrites ».
+6. La CS se synchronise de la même façon avec la DDEMP ; elle relaie les données de ses écoles et redescend celles de la DDEMP.
+7. « Conflits à revoir » liste les rubriques modifiées des deux côtés : la valeur du niveau le plus élevé est gardée, et chacun peut choisir l'autre.
+
+- Conseil : Les dossiers de santé, les besoins spécifiques des élèves, les parents, les paiements et les mots de passe ne quittent jamais l'école.
+
 ## Mots de passe et sécurité des comptes
 
 *Pour : Tout le monde*
@@ -179,6 +193,10 @@ Installez la version 1.31.1 ou plus récente, qui corrige l'ouverture des fiches
 **Je ne retrouve pas mes données sur un autre appareil.**
 
 Chaque appareil a ses données : faites une sauvegarde sur le premier, restaurez-la sur le second.
+
+**La synchronisation dit « autre clé ».**
+
+L'appareil a changé (ou a été réinstallé) : la CS doit accepter la nouvelle clé dans « Synchronisation › Entités inscrites ».
 
 **Mon compte est bloqué.**
 
