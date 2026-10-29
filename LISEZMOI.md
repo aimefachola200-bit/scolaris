@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 2.0.0. 
+Version 2.1.0. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -153,6 +153,19 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 7. « Conflits à revoir » liste les rubriques modifiées des deux côtés : la valeur du niveau le plus élevé est gardée, et chacun peut choisir l'autre.
 
 - Conseil : Les dossiers de santé, les besoins spécifiques des élèves, les parents, les paiements et les mots de passe ne quittent jamais l'école.
+
+## École maternelle et programme en vigueur d'ES / EPS
+
+*Pour : Enseignant(e), Directeur / directrice, Administrateur / fondateur, Circonscription scolaire*
+
+1. « Préparation de classe › École maternelle » : choisissez la section (petits ou grands), puis le domaine, la composante, le mois et la semaine ; chaque activité ouvre sa fiche (Times 14, imprimable).
+2. La progression des grands vient de la planification 2025-2026 de la CS Cotonou II, reprise pour 2026-2027 ; celle des petits est « proposée » : adaptez-la en conseil des maîtres.
+3. Les vues « Mois », « Semaine » et « Jour » placent les activités dans l'emploi du temps de la section ; « Planification (PDF) » et « Classeur (PDF) » impriment la planification et les fiches de la semaine ou du mois.
+4. « Grilles d'observation » : une grille par composante (acquis, en cours d'acquisition, non acquis), avec la liste des enfants de la classe choisie ; pas d'épreuves écrites à la maternelle.
+5. « Je retiens (éducateur) » donne les repères de chaque composante. Les classes « Maternelle 1 » et « Maternelle 2 » voient les activités de la semaine dans « Cette semaine ».
+6. Éducation sociale et EPS : « Programmes et progressions » affiche « Programme en vigueur : mesures correctives » ; chaque SA donne ses séquences, connaissances et techniques et matériel, et les fiches y sont rattachées.
+
+- Conseil : Les fiches de la maternelle sont des fiches conçues : faites-les valider par le conseiller pédagogique avant de les diffuser.
 
 ## Mots de passe et sécurité des comptes
 

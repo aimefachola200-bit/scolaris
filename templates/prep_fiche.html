@@ -3,7 +3,9 @@
 {% set cid = ((request.args.get('classe') or '')|int) or none %}
 <section class="carte prep-fiche">
   <div class="entete"><div><h2 style="margin:0">{{ f.titre }}</h2>
-    <p class="sous">{{ prep_nom_matiere(f.matiere) }} · {{ PREP_COURS_LIB.get(f.cours, f.cours) }}{% if f.sous_matiere %} · {{ f.sous_matiere }}{% endif %}{% if f.unite %} · {{ f.unite }}{% endif %}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · séance {{ f.seance }}{% endif %}{% if f.duree %} · {{ f.duree }}{% endif %}{% if propre and f.date_seance %} · séance du {{ f.date_seance }}{% endif %}</p></div>
+    <p class="sous">{{ prep_nom_matiere(f.matiere) }} · {{ PREP_COURS_LIB.get(f.cours, f.cours) }}{% if f.sous_matiere %} · {{ f.sous_matiere }}{% endif %}{% if f.unite %} · {{ f.unite }}{% endif %}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · séance {{ f.seance }}{% endif %}{% if f.duree %} · {{ f.duree }}{% endif %}{% if propre and f.date_seance %} · séance du {{ f.date_seance }}{% endif %}</p>
+    {% if f.programme_id and ep_existe('prep_programme') %}<p class="sous"><span class="badge-vigueur">Programme en vigueur : mesures correctives</span> <a href="{{ url_for('prep_programme', pid=f.programme_id) }}">SA {{ f.sa }} — {{ f.intitule }}</a>{% if f.sequence_mc %} · séquence {{ f.sequence_mc }} : {{ f.sequence_mc_titre }}{% endif %}</p>{% elif f.hors_programme %}<p class="sous"><span class="badge att">{{ f.hors_programme }}</span></p>{% endif %}
+    {% if f.domaine_nom %}<p class="sous">{{ f.domaine_code }} — {{ f.domaine_nom }} · {{ f.mois }}, semaine {{ f.semaine }}{% if f.mention %} · <span class="badge att">{{ f.mention }}</span>{% endif %}</p>{% endif %}</div>
     <div class="actions">
       {% if propre %}
       <a class="btn petit" href="{{ url_for('prep_ma_fiche_pdf', mid=f.id) }}">{{ icone('document') }} PDF</a>

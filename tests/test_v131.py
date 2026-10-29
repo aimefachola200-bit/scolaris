@@ -110,7 +110,7 @@ class TestCorpus131(unittest.TestCase):
             self.assertEqual(G[gid]["statut"], "officiel")
         import html as _h; self.assertIn("J'apprends à me situer par rapport à un repère", _h.unescape(G["g-memp-eps-ci"]["html"]))
         eps_ci = [p for p in self.C["programmes"] if p["cours"] == "CI" and p["matiere"] == "eps"]
-        self.assertEqual(len(eps_ci), 12)
+        self.assertEqual(len(eps_ci), 9)   # v2.1 : SA 2-3, 4-5 et 11-12 traitées ensemble (mesures correctives)
         lot = self.C["lots"]["lot131-manuels-mesures"]["guides"]
         self.assertTrue(any("LAHA" in d["decision"] for d in lot["doublons_ou_reference"]))
 

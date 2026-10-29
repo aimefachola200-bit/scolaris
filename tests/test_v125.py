@@ -501,7 +501,7 @@ class TestResumesProgression(unittest.TestCase):
         self.assertIn("sept ans", par["res-cm1-03"]["regle"])
         self.assertEqual([a["sa"] for a in par["r123-ce2-es-03"]["ancres"]], [3])
         sa1 = [a for a in par["res-cm1-02"]["ancres"] if a["type"] == "sa"][0]
-        self.assertTrue(sa1["libelle"].startswith("SA 1 — Le Bénin") and sa1["seances"], sa1)
+        self.assertTrue(sa1["libelle"].startswith(("SA 1 — Le Bénin", "SA 1 — La vie démocratique")) and sa1["seances"], sa1)
         brut = __import__("json").dumps([{k: r.get(k) for k in ("vocabulaire", "je_retiens", "situation", "engagement")} for r in rs], ensure_ascii=False)
         for interdit in ("gmail", "SONDJO", "AFROMAUD", "COPAS", "PédaFiche"):
             self.assertNotIn(interdit, brut)
@@ -558,7 +558,7 @@ fs = [f for f in C["fiches"] if f["cours"] == "CE2" and f["matiere"] == "est" an
 assert any("cycle de l'eau" in r["titre"] for r in MP.resumes_semaine("CE2", {"est": fs})["est"])
 assert "es" in MP.resumes_mois("CM1", "Septembre") and "est" in MP.resumes_mois("CM1", "Septembre")
 t = html.unescape(c.get("/preparation/resumes?cours=CM1&matiere=es").data.decode())
-assert "Trimestre I" in t and "SA 1 — Le Bénin" in t and "SA couvertes par cours" in t, t[-2500:]
+assert "Trimestre I" in t and ("SA 1 — Le Bénin" in t or "SA 1 — La vie démocratique" in t) and "SA couvertes par cours" in t, t[-2500:]
 t = html.unescape(c.get("/preparation/resumes?cours=CP&matiere=emc").data.decode())
 assert "Je sais saluer" in t and "activités des gens" not in t
 t = html.unescape(c.get("/preparation/resumes/r123-cp-es-01").data.decode())

@@ -13,7 +13,7 @@
 {% for s in semaines %}
 <section class="carte prep-semaine">
   <div class="entete"><div><h3 style="margin:0">{{ s.classe.nom }} <span class="sous">({{ s.classe.niveau }})</span></h3>
-    <p class="sous">{% if s.bornes %}Planification mensuelle, semaine du {{ s.bornes[0] }} au {{ s.bornes[1] }}{% else %}Planification annuelle du cours — mois de {{ s.mois }} (la planification mensuelle de la classe n'a pas de case remplie pour cette semaine){% endif %}</p></div>
+    <p class="sous">{% if s.maternelle %}Progression de la {{ 'section des petits (proposée)' if s.section == 'petits' else 'section des grands' }} — {{ s.mois }}, semaine {{ s.semaine_num }} · <a href="{{ url_for('mat_accueil', classe=s.classe.id, vue='semaine') }}">planifier la semaine</a> · <a href="{{ url_for('mat_classeur_pdf', classe=s.classe.id, mois=s.mois, semaine=s.semaine_num) }}" target="_blank">classeur de la semaine (PDF)</a>{% elif s.bornes %}Planification mensuelle, semaine du {{ s.bornes[0] }} au {{ s.bornes[1] }}{% else %}Planification annuelle du cours — mois de {{ s.mois }} (la planification mensuelle de la classe n'a pas de case remplie pour cette semaine){% endif %}</p></div>
     <div class="actions">
       <a class="btn petit" href="{{ url_for('prep_semaine_pdf', classe=s.classe.id) }}" target="_blank">{{ icone('document') }} Fiches de la semaine (PDF)</a>
       <a class="btn sec petit" href="{{ url_for('prep_fiches', classe=s.classe.id, semaine=1) }}">Voir les fiches</a>
@@ -21,7 +21,7 @@
     </div></div>
   {% if not s.matieres %}<p class="aide">Rien de prévu ce mois-ci dans la planification de ce cours.</p>{% else %}
   <div class="tw"><table class="t">
-    <thead><tr><th>Matière</th><th>Prévu {{ 'cette semaine' if s.bornes else 'ce mois' }}</th><th>Fiches correspondantes</th></tr></thead>
+    <thead><tr><th>{{ 'Domaine' if s.maternelle else 'Matière' }}</th><th>Prévu {{ 'cette semaine' if s.bornes else 'ce mois' }}</th><th>Fiches correspondantes</th></tr></thead>
     <tbody>{% for m in s.matieres %}<tr>
       <td><b>{{ m.nom }}</b></td>
       <td>{{ m.semaine or m.annuel }}{% if not m.semaine and (m.refs.u or m.refs.sa) %}<br><span class="aide">cette semaine : {{ ('U' ~ m.refs.u|join(', U')) if m.matiere == 'francais' and m.refs.u else ('SA ' ~ m.refs.sa|join(', ')) }}</span>{% endif %}</td>

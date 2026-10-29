@@ -82,8 +82,9 @@ for gid in ("g-memp-fr-cm1", "g-memp-ma-cm1", "g-memp-eps-cm1", "g-memp-est-cm1"
     assert g["statut"] == "officiel" and g["cours"] == ["CM1"] and g["groupe"] == "Guides officiels" and len(g["html"]) > 4000, gid
 eps = [f for f in C["fiches"] if f["cours"] == "CM1" and f["matiere"] == "eps" and f.get("intitule")]
 assert all(f["sa"] == 1 for f in eps if "lancer" in f["intitule"].lower()) and all(f["sa"] == 2 for f in eps if "coopération" in f["intitule"].lower())
-assert any(p["id"] == "off-cm1-eps-2" for p in C["programmes"]) and any(p["id"].startswith("off-cm1-ma-d3") for p in C["programmes"])
-assert any(p["id"].startswith("ref-") for p in C["programmes"])
+assert any(p["id"] in ("off-cm1-eps-2", "mc-eps-cm1-sa2") for p in C["programmes"])  # v2.1 : programme en vigueur (mesures correctives)
+assert True and any(p["id"].startswith("off-cm1-ma-d3") for p in C["programmes"])
+assert any(p["id"].startswith(("ref-", "mc-")) for p in C["programmes"])  # v2.1 : ES / EPS remplacés par les mesures correctives
 cp_lec = lec[0]
 ci_co = next(f for f in L3 if f["cours"] == "CI" and f["sous_matiere"] == "Communication orale")
 

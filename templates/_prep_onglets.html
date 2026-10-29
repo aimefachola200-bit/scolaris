@@ -7,6 +7,7 @@
 <nav class="onglets" aria-label="Rubriques de la préparation de classe">
   <a class="{{ 'actif' if onglet == 'semaine' }}" href="{{ url_for('prep_accueil') }}">Cette semaine</a>
   <a class="{{ 'actif' if onglet == 'programmes' }}" href="{{ url_for('prep_programmes') }}">Programmes et progressions</a>
+  {% if MAT_DISPO %}<a class="{{ 'actif' if onglet == 'maternelle' }}" href="{{ url_for('mat_accueil') }}">École maternelle</a>{% endif %}
   <a class="{{ 'actif' if onglet == 'guides' }}" href="{{ url_for('prep_guides') }}">Guides pédagogiques</a>
   <a class="{{ 'actif' if onglet == 'baremes' }}" href="{{ url_for('prep_baremes_eps') }}">Barèmes EPS</a>
   <a class="{{ 'actif' if onglet == 'fiches' }}" href="{{ url_for('prep_fiches') }}">Fiches de préparation</a>

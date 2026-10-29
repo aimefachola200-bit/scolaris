@@ -8,7 +8,12 @@
 {% for k, lib in [('theme','Thème'),('domaine','Domaine'),('cd','Compétence disciplinaire'),('ct','Compétences transversales'),('ctd','Compétences transdisciplinaires'),('connaissances','Connaissances et techniques'),('materiel','Matériel'),('page','Pages du guide')] %}{% if p[k] %}<dt>{{ lib }}</dt><dd>{{ p[k]|prep_txt }}</dd>{% endif %}{% endfor %}
 {% if p.detail %}{% for k, v in p.detail.items() %}{% if v %}<dt>{{ k|replace('_',' ')|capitalize }}</dt><dd>{{ v|prep_txt if v is string else v }}</dd>{% endif %}{% endfor %}{% endif %}
 </dl>
-{% if p.sequences %}<h3>Séquences</h3><ol>{% for s in p.sequences %}<li>{{ s.titre }}</li>{% endfor %}</ol>{% endif %}
+{% if p.en_vigueur %}<p class="badge-vigueur" role="note">Programme en vigueur : mesures correctives{% if p.composante and p.composante != 'EPS' %} · {{ p.composante }}{% endif %}</p>{% endif %}
+{% if p.sequences and p.sequences[0].titre is defined %}<h3>Séquences ({{ p.sequences|length }})</h3>
+<div class="tw"><table class="t"><thead><tr><th>N°</th><th>Intitulé de la séquence</th><th>Connaissances et techniques</th><th>Matériel</th></tr></thead><tbody>
+{% for s in p.sequences %}<tr><td>{{ s.num }}</td><td><b>{{ s.titre }}</b></td><td>{{ s.connaissances }}</td><td>{{ s.materiel }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% elif p.sequences %}<h3>Séquences</h3><ol>{% for s in p.sequences %}<li>{{ s.titre if s.titre is defined else s }}</li>{% endfor %}</ol>{% endif %}
 {% if p.semaines %}<h3>Progression par semaine</h3>
 <div class="tw"><table class="t"><thead><tr><th>Semaine</th><th>SA</th><th>Sous-matière</th><th>Contenu</th></tr></thead><tbody>
 {% for s in p.semaines %}{% for x in s.seances %}<tr>{% if loop.first %}<td rowspan="{{ s.seances|length }}">{{ s.num }}</td>{% endif %}<td>{{ x.sa or '' }}</td><td>{{ x.sous_matiere or '' }}</td><td><b>{{ x.titre or '' }}</b>{% if x.detail %}<br><span class="aide">{{ x.detail }}</span>{% endif %}</td></tr>{% endfor %}{% endfor %}

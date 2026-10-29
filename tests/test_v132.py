@@ -166,7 +166,7 @@ class TestFichiers132(unittest.TestCase):
     def test_corpus(self):
         with gzip.open(os.path.join(RACINE, "static", "pedafiche_corpus.json.gz"), "rt", encoding="utf-8") as f:
             c = json.load(f)
-        self.assertEqual(c["version_contenu"], "1.32.0")
+        self.assertGreaterEqual(tuple(map(int, c["version_contenu"].split("."))), (1, 32, 0))
 
 
 if __name__ == "__main__":

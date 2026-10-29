@@ -783,6 +783,10 @@ def enregistrer(app, H):
     def cette_semaine(cl, auj=None):
         auj = auj or date.today()
         cours = NIVEAU_COURS.get(cl["niveau"])
+        if cours == "MAT" and getattr(H, "mat_semaine", None):      # v2.1 : progression de la maternelle par défaut
+            s = H.mat_semaine(cl, auj)
+            if s is not None:
+                return s
         niv = NIVEAU_SYNO.get(cl["niveau"])
         mc = mois_courant(auj)
         ligne = plan_annuel(niv, MOIS_FR[mc.month - 1]) if niv else None
@@ -1119,7 +1123,7 @@ def enregistrer(app, H):
             r = q("SELECT contenu FROM synoptique_planification WHERE ecole_id=? AND niveau=?", (H.eco(), NIVEAU_SYNO[niv]), un=True)
             plan = json.loads(r["contenu"]) if r else S.planification_defaut(NIVEAU_SYNO[niv])
         return render_template("prep_programmes.html", progs=progs, cours=cours, mat=mat, dispo=dispo, COURS=COURS,
-                               MATS=[m for m in ORDRE_MAT], plan=plan, cols=S.COLS_PLAN)
+                               MATS=[m for m in ORDRE_MAT], plan=plan, cols=S.COLS_PLAN, vigueur=C.get("programme_en_vigueur"))
 
     @app.route("/preparation/programmes/<pid>")
     @H.connexion_requise("preparation")
