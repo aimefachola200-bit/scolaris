@@ -193,7 +193,7 @@ public class MainActivity extends Activity {
         col.addView(ok, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
 
         TextView credit = new TextView(this);
-        credit.setText("Conception : Ma\u00eetre Aim\u00e9 FACHE");
+        credit.setText("Conception : Ma\u00eetre Aim\u00e9 FACHOLA");
         credit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         credit.setTextColor(Color.GRAY);
         credit.setGravity(android.view.Gravity.CENTER);

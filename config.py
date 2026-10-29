@@ -6,7 +6,7 @@ import os
 
 import sys
 
-VERSION = "1.31.1"
+VERSION = "1.32.0"
 # v1.8 : vérification des nouvelles versions (page « Releases » du dépôt GitHub) et fichiers à proposer par édition
 DEPOT_MAJ = os.environ.get("SCOLARIS_DEPOT_MAJ", "aimefachola200-bit/scolaris")
 FICHIERS_MAJ = {"privee": ("SCOLARIS-Installation.exe", "SCOLARIS-Autonome.apk"),
@@ -15,7 +15,8 @@ FICHIERS_MAJ = {"privee": ("SCOLARIS-Installation.exe", "SCOLARIS-Autonome.apk")
                 "ddemp": ("SCOLARIS-DDEMP-Installation.exe", "SCOLARIS-DDEMP.apk"),
                 "enseignant": ("SCOLARIS-Enseignant-Installation.exe", "SCOLARIS-Enseignant.apk")}
 APK_CLIENT = "SCOLARIS.apk"
-CONCEPTEUR = "Maître Aimé FACHE"   # mention « Conception » en bas de chaque écran et document
+CONCEPTEUR = "Maître Aimé FACHOLA"   # mention « Conception » en bas de chaque écran et document
+CONCEPTEUR_TEL = "+229 01 96 51 03 33"   # v1.32 : en bas des fiches de préparation, résumés, épreuves et cahiers
 
 # Dossier du programme (templates, static). Dans l'exécutable Windows, PyInstaller
 # décompresse les fichiers dans sys._MEIPASS.

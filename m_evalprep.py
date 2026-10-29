@@ -241,6 +241,9 @@ def enregistrer(app, H):
                          f"<b>Filles {age} ans</b>", f"<b>Filles {age + 2 if age else ''} ans et +</b>"]]
                 data += [[B.nb(l[0])] + l[1:] for l in bm["lignes"]]
                 out.append(KeepTogether([Paragraph(f"<b>Barème — {t(bm['titre'])}</b>", st), tableau(data, [utile * 0.12] + [utile * 0.22] * 4)]))
+            if out:   # v1.32
+                import banque_ea_eps as BEE
+                out.append(Paragraph(f"<i>{t(BEE.MENTION_BAREME)} Adaptations (dispense, handicap) : voir « Barèmes EPS » dans la préparation de classe.</i>", st))
             return out
 
         def fiche_notation(d, utile):
@@ -398,7 +401,7 @@ def enregistrer(app, H):
         buf = io.BytesIO()
         doc = BaseDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
                               title="Épreuves", author="SCOLARIS", pageTemplates=modeles)
-        doc.build(h, canvasmaker=pdfs.GCanvas)
+        doc.build(h, canvasmaker=pdfs.GCanvasPeda)
         return buf.getvalue()
 
     def doc_epreuves(liste, partie):
@@ -841,7 +844,7 @@ def enregistrer(app, H):
              Spacer(1, 6), tb]
         buf = io.BytesIO()
         SimpleDocTemplate(buf, pagesize=(W, Hh), leftMargin=marge, rightMargin=marge, topMargin=marge, bottomMargin=marge, title=titre,
-                          author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvas)
+                          author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvasPeda)
         return H.pdf_reponse(buf.getvalue(), nom(f"planification_{vue}_{cl['nom']}", "pdf"))
 
     # ------------------------------------------------------------------ classeurs de fiches
@@ -914,7 +917,7 @@ def enregistrer(app, H):
         tb.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#98A2B3")), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E4ECF5")), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
         h.append(tb)
         buf = io.BytesIO()
-        SimpleDocTemplate(buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm, title="Classeur", author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvas)
+        SimpleDocTemplate(buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm, title="Classeur", author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvasPeda)
         return buf.getvalue()
 
     @app.route("/preparation/classeur")

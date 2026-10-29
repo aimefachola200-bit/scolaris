@@ -9,7 +9,7 @@ Le PC de l'école peut rester en **secours**, sans Internet. Voir « Garder le P
 
 | | PythonAnywhere | Render | Serveur VPS |
 |---|---|---|---|
-| Difficulté | ★ facile | ★★ moyenne | ★★★ technique |
+| Difficulté | 1 — facile | 2 — moyenne | 3 — technique |
 | Coût indicatif | gratuit pour essayer, puis environ 5 $/mois | environ 7 $/mois + disque (carte bancaire) | environ 5 à 10 $/mois |
 | Adresse | `nom.pythonanywhere.com` (votre domaine en payant) | `nom.onrender.com` ou votre domaine | votre domaine (`scolaris.mon-ecole.bj`) |
 | Mise à jour | envoyer les fichiers + « Reload » | automatique à chaque envoi sur GitHub | recopier + relancer le script |
@@ -118,4 +118,4 @@ Ses données sont **séparées** : ce qui est saisi sur le PC n'apparaît pas en
 
 ---
 
-*SCOLARIS — Conception : Maître Aimé FACHE*
+*SCOLARIS — Conception : Maître Aimé FACHOLA*

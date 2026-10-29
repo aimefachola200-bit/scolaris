@@ -24,7 +24,7 @@
 {% macro groupe(cle, titre, actif, ico) %}<details class="groupe-l {{ 'actif' if actif }}" data-g="{{ cle }}" {{ 'open' if actif }}><summary><span class="ico" aria-hidden="true">{{ icone(ico) }}</span>{{ titre }}</summary><div class="sous">{{ caller() }}</div></details>{% endmacro %}
 <div class="app">
 <aside id="lateral" class="lateral" aria-label="Menu principal">
-  <a class="marque" href="{{ url_for('accueil') }}"><img class="logo-img" src="{{ url_for('static', filename='icons/scolaris-icone.svg') }}" alt="" width="34" height="34"><span>{{ NOM_APPLI }}<small>{{ ECOLE.sigle or ECOLE.nom }}</small></span></a>
+  <a class="marque" href="{{ url_for('accueil') }}"><img class="logo-img" src="{{ url_for('static', filename='icons/scolaris-icone.svg') }}" alt="" width="34" height="34"><span>{{ NOM_APPLI }}<small title="{{ ECOLE.devise or '' }}">{{ ECOLE.sigle or ECOLE.nom }}</small></span>{% if ECOLE.id %}<img class="logo-ecole-entete" src="{{ url_for('ecole_logo', eid=ECOLE.id) }}" alt="" width="30" height="30" onerror="this.remove()" style="margin-left:6px;border-radius:50%;object-fit:contain">{% endif %}</a>
   {% if JURIDICTION and not ECOLE_COURANTE %}
   {# CS / DDEMP : aucune école ouverte tant que l'utilisateur n'en a pas choisi une (a_integration) #}
   <div class="choix-ecole"><span class="aide">École ouverte</span><br><b style="font-size:13px">Aucune école ouverte</b>
@@ -137,6 +137,7 @@
       {{ lien('prep_resumes', 'Résumés — l’essentiel à retenir', ep in ('prep_resumes', 'prep_resume')) }}
       {{ lien('prep_evaluations', 'Évaluations et épreuves (banque)', ep.startswith('prep_epreuve') or ep in ('prep_evaluations', 'prep_organigramme')) }}
       {{ lien('prep_planif', 'Planification et classeurs de fiches', ep.startswith('prep_planif')) }}
+      {{ lien('prep_baremes_eps', 'Barèmes EPS proposés', ep=='prep_baremes_eps') }}
       {{ lien('prep_manquants', 'Fiches et guides manquants', ep=='prep_manquants') }}
     {% endcall %}{% endif %}
     {% if peut('cep') and (not ENS or (classes_enseignant_cm2 is defined and classes_enseignant_cm2())) %}
@@ -220,6 +221,7 @@
       {{ lien('journal_page', "Journal d'activité", ep=='journal_page') }}
     {% endcall %}{% endif %}
     {{ lien('verifier', 'Vérifier un document', ep=='verifier', 'coche') }}
+{{ lien('guide_utilisation', "Guide d'utilisation", ep=='guide_utilisation', 'info') }}
     {% endif %}
   </nav>
   <div class="lateral-pied aide">SCOLARIS {{ VERSION }}<br>Conception : {{ CONCEPTEUR }}</div>

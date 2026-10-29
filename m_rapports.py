@@ -2758,7 +2758,7 @@ def generer_excel(doc, annee, v, origine_auto):
     ws.column_dimensions["C"].width = 22
     for j in range(4, largeur + 3):
         ws.column_dimensions[get_column_letter(j)].width = 11
-    ws.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHE"
+    ws.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHOLA"
     ws.oddFooter.center.size = 8
     # feuille « Données » : chaque case, son libellé, sa valeur et son origine
     wd = wb.create_sheet("Données")
@@ -2783,7 +2783,7 @@ def generer_excel(doc, annee, v, origine_auto):
     wd.column_dimensions["B"].width = 60
     wd.column_dimensions["C"].width = 30
     wd.column_dimensions["D"].width = 22
-    wd.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHE"
+    wd.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHOLA"
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)

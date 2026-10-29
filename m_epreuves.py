@@ -479,7 +479,7 @@ def enregistrer(app, H):
             sous_titre=f"{TYPES_EVAL.get(e['type_evaluation'], '')} n° {e['numero'] or 1} — {e['niveau'] or ''} — {e['matiere'] or ''}",
             infos=entete_epreuve(e, v, items, corrige),
             infos_haut=[("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))],
-            largeurs=largeurs, taille=14, avant=avant, signatures=signatures(v, e["auteur"], e.get("cree_par")), police="serif",
+            largeurs=largeurs, taille=14, avant=avant, signatures=signatures(v, e["auteur"], e.get("cree_par")), police="serif", pedagogique=True,
             notes_bas=None if corrige else ["Nom et prénoms de l'élève : ………………………………………………………………  Classe : ……………  Note : ……… / " + num(e["bareme_total"] if e["bareme_total"] is not None else total_items(items))])
         H.journal("epreuve_pdf", f"#{eid} {'corrigé' if corrige else 'sujet'}")
         return H.pdf_reponse(pdf, f"epreuve_{eid}{'_corrige' if corrige else ''}.pdf")
@@ -498,7 +498,7 @@ def enregistrer(app, H):
             lignes or [["", "Aucun item", "", "", "", ""]], total=["", "TOTAL", "", "", num(total_items(items)), ""],
             sous_titre=f"{TYPES_EVAL.get(e['type_evaluation'], '')} n° {e['numero'] or 1} — {e['niveau'] or ''} — {e['matiere'] or ''}",
             infos=entete_epreuve(e, v, items), infos_haut=[("DDEMP", v.get("ddemp")), ("CS", v.get("cs")), ("ÉCOLE", v.get("ecole"))],
-            largeurs=[6, 40, 22, 30, 10, 14], taille=8, paysage=True, signatures=signatures(v, e["auteur"], e.get("cree_par")),
+            largeurs=[6, 40, 22, 30, 10, 14], taille=8, paysage=True, signatures=signatures(v, e["auteur"], e.get("cree_par")), pedagogique=True,
             notes_bas=["Critères APC : pertinence, cohérence, correction de la langue, perfectionnement (ou compréhension, démarche, "
                        "résultat, présentation en mathématiques)."])
         H.journal("epreuve_bareme_pdf", f"#{eid}")

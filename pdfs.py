@@ -35,30 +35,69 @@ ST_TEXTE = ParagraphStyle("texte", fontName="Helvetica", fontSize=11.5, leading=
 
 # ---------------------------------------------------------------- utilitaires
 def mention_concepteur(c, largeur=None):
-    """« Conception : Maître Aimé FACHE » en bas de chaque page."""
+    """v1.32 — documents administratifs : mention très discrète « Conception : Maître Aimé FACHOLA » (gris clair, 4,5 pt,
+    marge basse à droite), sans téléphone."""
     w = largeur or c._pagesize[0]
     c.saveState()
-    c.setFillColor(colors.HexColor("#667085"))
-    if c._pagesize[1] < 120 * mm:  # petit format (carte) : discret, en bas à droite
-        c.setFont("Helvetica-Oblique", 5)
-        c.drawRightString(w - 2.5 * mm, 1.6 * mm, f"Conception : {config.CONCEPTEUR}")
-    else:
-        c.setFont("Helvetica-Oblique", 6.5)
-        c.drawCentredString(w / 2, 3.2 * mm, f"Conception : {config.CONCEPTEUR}")
+    c.setFillColor(colors.HexColor("#C4C8CF"))
+    c.setFont("Helvetica", 4.5 if c._pagesize[1] >= 120 * mm else 3.6)
+    c.drawRightString(w - (6 if c._pagesize[1] >= 120 * mm else 2.5) * mm, 1.8 * mm, f"Conception : {config.CONCEPTEUR}")
+    c.restoreState()
+
+
+def mention_pedagogique(c, largeur=None):
+    """v1.32 — fiches de préparation, résumés, épreuves, cahiers et guides : « Conception : Maître Aimé FACHOLA —
+    +229 01 96 51 03 33 » en petit (7,5 pt, gris), centré en bas de chaque page."""
+    w = largeur or c._pagesize[0]
+    c.saveState()
+    c.setFillColor(colors.HexColor("#98A2B3"))
+    c.setFont("Helvetica", 7.5)
+    c.drawCentredString(w / 2, 3.4 * mm, f"Conception : {config.CONCEPTEUR} — {getattr(config, 'CONCEPTEUR_TEL', '')}".rstrip(" —"))
     c.restoreState()
 
 
 class GCanvas(canvas.Canvas):
-    """Canvas SCOLARIS : ajoute la mention du concepteur sur chaque page."""
+    """Canvas SCOLARIS : ajoute la mention (discrète) du concepteur sur chaque page."""
+    mention = staticmethod(mention_concepteur)
 
     def showPage(self):
-        mention_concepteur(self)
+        self.mention(self)
         super().showPage()
 
     def save(self):
         if self._code:  # page en cours non terminée
-            mention_concepteur(self)
+            self.mention(self)
         super().save()
+
+
+class GCanvasPeda(GCanvas):
+    """Canvas des documents pédagogiques (fiches, résumés, épreuves, cahiers) : mention du concepteur avec téléphone."""
+    mention = staticmethod(mention_pedagogique)
+
+
+class GCanvasPedaNum(GCanvasPeda):
+    """v1.32 — Fiches de préparation : « Page x / y » centré en bas (recto verso) en plus de la mention du concepteur."""
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._etats = []
+
+    def showPage(self):
+        self._etats.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        n = len(self._etats)
+        for etat in self._etats:
+            self.__dict__.update(etat)
+            self.saveState()
+            self.setFillColor(colors.HexColor("#344054"))
+            self.setFont("Helvetica", 9)
+            self.drawCentredString(self._pagesize[0] / 2, 8 * mm, f"Page {self._pageNumber} / {n}")
+            self.restoreState()
+            self.mention(self)
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
 
 
 def fcfa(n):
@@ -375,7 +414,11 @@ def _entete(c, cycle, titre, sous_titre=None, W=A4[0], H=A4[1], marge=15 * mm):
         lignes.append("Tél. : " + config.ECOLE["telephone"])
     if config.ECOLE.get("email"):
         lignes.append(config.ECOLE["email"])
+    if config.ECOLE.get("devise"):          # v1.32 : devise de l'école
+        lignes.append("« " + config.ECOLE["devise"] + " »")
     for i, t in enumerate(lignes):
+        if t.startswith("« "):
+            c.setFont("Helvetica-Oblique", 7.5)
         c.drawRightString(xd, haut - 19 - 9 * i, t)
 
     y = haut - 50
@@ -988,6 +1031,10 @@ def _entete_primaire(c, W, H, marge, infos_haut=None, cycle=None):
             c.setFont("Helvetica", 7.5)
             c.drawString(marge + c.stringWidth(f"{lab} : ", "Helvetica-Bold", 7.5), yy, str(val)[:70])
             yy -= 9
+            if lab == "ÉCOLE" and config.ECOLE.get("devise"):     # v1.32 : devise sous le nom de l'école
+                c.setFont("Helvetica-Oblique", 7)
+                c.drawString(marge, yy, "« " + str(config.ECOLE["devise"])[:80] + " »")
+                yy -= 9
     logo = _ecole_img("logo.png")
     if logo:
         c.drawImage(logo, W - marge - 18 * mm, y - 18 * mm, 18 * mm, 18 * mm, preserveAspectRatio=True, mask="auto")
@@ -1032,7 +1079,7 @@ def code_tableau(titre, sous_titre, infos, lignes, total, verif=None):
 
 def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, largeurs=None, paysage=False,
                      signatures=None, notes_bas=None, infos_haut=None, total=None, taille=7.5, avant=None, apres=None,
-                     alignements=None, surlignes=None, cycle=None, code=None, verif=None, qr_bloc=True, police=None):
+                     alignements=None, surlignes=None, cycle=None, code=None, verif=None, qr_bloc=True, police=None, pedagogique=False):
     """PDF d'un tableau (répété sur chaque page) avec en-tête officiel, bloc d'infos, signatures.
     colonnes : liste d'intitulés (ou liste de listes pour un en-tête sur plusieurs lignes)
     lignes : liste de listes ; total : ligne de total mise en gras
@@ -1160,7 +1207,7 @@ def document_tableau(titre, colonnes, lignes, sous_titre=None, infos=None, large
 
     doc = SimpleDocTemplate(buf, pagesize=taille_page, leftMargin=marge, rightMargin=marge,
                             topMargin=marge + 30 * mm, bottomMargin=13 * mm, title=titre, author="SCOLARIS")
-    doc.build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=GCanvas)
+    doc.build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=GCanvasPeda if pedagogique else GCanvas)
     return buf.getvalue()
 
 

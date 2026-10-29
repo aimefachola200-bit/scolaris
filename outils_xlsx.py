@@ -62,7 +62,7 @@ def classeur(feuilles):
             larg = max([len(str(h))] + [len(str(l[j - 1])) for l in lignes if j - 1 < len(l) and l[j - 1] is not None])
             ws.column_dimensions[get_column_letter(j)].width = min(max(8, larg + 2), 45)
         ws.freeze_panes = ws.cell(row=r0 + 1, column=1)
-        ws.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHE"
+        ws.oddFooter.center.text = "SCOLARIS · Conception : Maître Aimé FACHOLA"
         ws.oddFooter.center.size = 8
     buf = io.BytesIO()
     wb.save(buf)

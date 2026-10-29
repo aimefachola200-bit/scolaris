@@ -53,6 +53,8 @@ def copier_scolaris():
                         ignore=shutil.ignore_patterns("__pycache__", "*.ico"))
     # modèles officiels EducMaster (v1.6) : à côté des modules Python (m_donnees les cherche près de lui)
     shutil.copytree(os.path.join(RACINE, "modeles"), os.path.join(PY, "modeles"), dirs_exist_ok=True)
+    if os.path.exists(os.path.join(RACINE, "LISEZMOI.md")):     # v1.32 : guide d'utilisation
+        shutil.copy2(os.path.join(RACINE, "LISEZMOI.md"), WEB)
 
 
 def sans_compile(dossier):

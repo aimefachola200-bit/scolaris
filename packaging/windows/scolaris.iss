@@ -1,10 +1,10 @@
 ﻿; Inno Setup : fabrique SCOLARIS-Installation-x.y.z.exe à partir de dist\SCOLARIS
 ; Compiler depuis la racine du projet :  iscc /DVersion=1.3.0 packaging\windows\scolaris.iss
-; Applications jumelles :  iscc /DVersion=1.31.1 /DEdition=publique|cs|ddemp|enseignant packaging\windows\scolaris.iss
+; Applications jumelles :  iscc /DVersion=1.32.0 /DEdition=publique|cs|ddemp|enseignant packaging\windows\scolaris.iss
 ;   -> SCOLARIS-Public-Installation-x.y.z.exe (dossier, données, port 5101 et raccourcis séparés)
 
 #ifndef Version
-  #define Version "1.31.1"
+  #define Version "1.32.0"
 #endif
 #ifndef Edition
   #define Edition "privee"
@@ -50,8 +50,8 @@
 AppId={#Id}
 AppName={#Nom}
 AppVersion={#Version}
-AppPublisher=SCOLARIS – Conception : Maître Aimé FACHE
-AppCopyright=Conception : Maître Aimé FACHE
+AppPublisher=SCOLARIS – Conception : Maître Aimé FACHOLA
+AppCopyright=Conception : Maître Aimé FACHOLA
 DefaultDirName={autopf}\{#Nom}
 DefaultGroupName={#Nom}
 DisableProgramGroupPage=yes
@@ -76,6 +76,7 @@ Name: "parefeu"; Description: "Autoriser les tablettes et téléphones du Wi-Fi 
 
 [Files]
 Source: "..\..\dist\SCOLARIS\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\LISEZMOI.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#Nom}"; Filename: "{app}\SCOLARIS.exe"

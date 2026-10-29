@@ -7,7 +7,7 @@
 {% if manquants %}
 <div class="carte">
   <p><b>{{ manquants|length }}</b> compte(s) sans code d'accès.{% if reste > 0 %} Délai restant : <b>{{ reste }} jour(s)</b>.{% else %} <b class="rouge">Délai écoulé : ces comptes sont bloqués.</b>{% endif %}
-  Envoyez toutes les demandes d'un coup à Maître Aimé FACHE, puis collez ci-dessous la réponse reçue (une ligne par compte).</p>
+  Envoyez toutes les demandes d'un coup à Maître Aimé FACHOLA, puis collez ci-dessous la réponse reçue (une ligne par compte).</p>
   <pre id="demandes" style="white-space:pre-wrap;background:#F2F4F7;border-radius:8px;padding:10px 12px;font-size:13px;max-height:240px;overflow:auto">{{ manquants|join('\n') }}</pre>
   <div class="actions">
     <a class="btn wa" href="{{ lien_wa }}" target="_blank" rel="noopener">{{ icone('message') }} Envoyer les demandes par WhatsApp</a>

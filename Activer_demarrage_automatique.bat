@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-REM SCOLARIS - Conception : Maitre Aime FACHE
+REM SCOLARIS - Conception : Maitre Aime FACHOLA
 REM Fait demarrer SCOLARIS tout seul a chaque allumage du PC (a lancer une seule fois).
 cd /d "%~dp0"
 if not exist "venv\Scripts\pythonw.exe" (

@@ -168,3 +168,77 @@ def eps(cours, k):
 
 
 FICHE_COLONNES = ["N°", "Nom et prénoms", "Sexe", "Âge", "Course (temps)", "Note /10", "Épreuve 2 (perf.)", "Note /10", "Total /20"]
+
+
+# ------------------------------------------------------------------ v1.32 : référentiel des barèmes EPS proposés (CI → CM2)
+# Barèmes originaux « proposés — à valider » (conseil des maîtres, conseiller pédagogique d'EPS) : performance attendue pour la
+# note 10 d'un garçon d'âge normal du cours, puis paliers de 2 points ; colonnes filles et élèves plus âgés (âge + 2 ans et plus)
+# ajustées. Ils restent cohérents avec les SA d'EPS des guides officiels (course, sauts, lancers, gymnastique, jeux).
+MENTION_BAREME = "Barème proposé — à valider par le conseil des maîtres et le conseiller pédagogique d'EPS."
+ENDURANCE = {"CI": 300, "CP": 400, "CE1": 500, "CE2": 600, "CM1": 800, "CM2": 1000}                 # m
+ENDURANCE_VITESSE = {"CI": 2.6, "CP": 2.75, "CE1": 2.9, "CE2": 3.0, "CM1": 3.1, "CM2": 3.2}         # m/s, note 10
+HAUTEUR = {"CE1": 0.75, "CE2": 0.85, "CM1": 0.95, "CM2": 1.05}                                     # m (saut en hauteur, ciseau)
+ADAPTATIONS = [
+    "Élève dispensé (certificat médical ou avis écrit des parents vu par le directeur) : l'épreuve n'est pas notée ; la note d'EPS "
+    "est calculée sur les épreuves passées, ou remplacée par une épreuve écrite courte sur les règles et la santé (hygiène, échauffement).",
+    "Dispense partielle (asthme, blessure récente…) : l'élève passe seulement les épreuves autorisées ; la note est ramenée sur 20.",
+    "Élève en situation de handicap moteur ou sensoriel : distance réduite d'un quart, temps majoré d'un tiers, aide humaine ou matériel "
+    "adapté (balle sonore, repères visuels) ; à défaut, notation sur la grille d'observation (participation, effort, progrès, sécurité).",
+    "Élève de petite taille ou en surpoids : on retient le meilleur de trois essais et on note aussi le progrès depuis l'évaluation précédente.",
+    "Sécurité : échauffement d'au moins 10 minutes, eau à disposition, épreuves de vitesse et d'endurance aux heures fraîches (avant 10 h ou après 16 h).",
+]
+
+
+def _mmss(s):
+    s = int(round(s))
+    return f"{s // 60} min {s % 60:02d} s"
+
+
+def _bareme_temps_long(titre, t10, pas, fille=0.92, plus_age=1.06):
+    """Course d'endurance : temps en minutes et secondes (plus petit = mieux)."""
+    cols = []
+    for sexe in (1.0, fille):
+        for age in (1.0, plus_age):
+            b = t10 / sexe / age
+            p = pas / sexe
+            cols.append([("≤ " + _mmss(b + p * i)) if i < 4 else ("> " + _mmss(b + p * 3)) for i in range(5)])
+    return {"titre": titre, "unite": "min", "lignes": [[n] + [c[i] for c in cols] for i, n in enumerate(NOTES)]}
+
+
+def grille_gym(cours):
+    """Gymnastique au sol : grille critériée sur 10."""
+    elements = ("roulade avant, équilibre sur un pied 3 s, saut groupé" if GROUPE[cours] == "P" else
+                "roulade avant et arrière, équilibre (chandelle 3 s), saut extension, enchaînement de 3 éléments" if GROUPE[cours] == "E" else
+                "enchaînement libre de 5 éléments (roulades, équilibres, saut, roue) présenté au jury")
+    return {"titre": f"Gymnastique au sol — {elements} (grille d'observation)", "unite": "", "observation": True, "lignes": [
+        ["Exécution correcte des éléments", "4", "", "", ""], ["Enchaînement fluide, sans arrêt", "2", "", "", ""],
+        ["Tenue du corps (jambes tendues, pieds joints)", "2", "", "", ""], ["Sécurité et respect des consignes", "2", "", "", ""]]}
+
+
+def grille_jeu(cours):
+    lib, _regle = JEUX[GROUPE[cours]]
+    return {"titre": f"Jeux collectifs — {lib} (grille d'observation)", "unite": "", "observation": True, "lignes": [
+        ["Participation active", "2,5", "", "", ""], ["Respect des règles, de l'arbitre et des adversaires", "2,5", "", "", ""],
+        ["Coopération avec les partenaires", "2,5", "", "", ""], ["Efficacité (déplacements, passes, buts, vitesse)", "2,5", "", "", ""]]}
+
+
+def referentiel(cours):
+    """Tous les barèmes EPS proposés pour un cours : [(épreuve, consigne, barème)]."""
+    d = COURSE[cours]
+    t10 = d / VITESSE[cours]
+    out = [(f"Course de vitesse sur {d} m", "Départ debout au signal, couloirs séparés, temps au chronomètre (deux essais, meilleur temps).",
+            bareme(f"Course de vitesse — {d} m (temps)", "s", t10, 0.6 * d / 40, True, 0.93, 1.06))]
+    de = ENDURANCE[cours]
+    out.append((f"Course d'endurance sur {de} m", "Allure régulière, sans marcher ; on note le temps ; un élève qui marche termine et reçoit au plus 4/10.",
+                _bareme_temps_long(f"Course d'endurance — {de} m (temps)", de / ENDURANCE_VITESSE[cours], de / ENDURANCE_VITESSE[cours] * 0.09)))
+    lib = "Saut à pieds joints sans élan" if cours in ("CI", "CP") else "Saut en longueur avec élan"
+    out.append((lib, "Trois essais ; mesure du bord de la planche (ou de la ligne) à la trace la plus proche ; meilleur essai.",
+                bareme(f"{lib} (meilleur de 3 essais)", "m", SAUT[cours], SAUT[cours] * 0.08, False, 0.90, 1.08)))
+    if cours in HAUTEUR:
+        out.append(("Saut en hauteur (ciseau)", "Élastique ou barre souple, montée de 5 cm en 5 cm ; trois essais par hauteur ; tapis ou sable obligatoire.",
+                    bareme("Saut en hauteur — ciseau (hauteur franchie)", "m", HAUTEUR[cours], 0.05, False, 0.92, 1.06)))
+    out.append(("Lancer de balle (150 g)", "Trois lancers à une main derrière la ligne ; mesure du premier point de chute ; meilleur essai.",
+                bareme("Lancer de balle 150 g (meilleur de 3 essais)", "m", LANCER[cours], LANCER[cours] * 0.12, False, 0.80, 1.10)))
+    out.append(("Gymnastique au sol", "Sur tapis ; présentation devant deux observateurs.", grille_gym(cours)))
+    out.append(("Jeux collectifs", JEUX[GROUPE[cours]][1], grille_jeu(cours)))
+    return out

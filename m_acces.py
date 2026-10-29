@@ -72,7 +72,7 @@ def enregistrer(app, H):
         return A.demande(nom_appli(), installation(), u["identifiant"])
 
     def lien_whatsapp(lignes, qui):
-        texte = (f"Bonjour Maître Aimé FACHE. {qui} demande le(s) code(s) d'accès personnel(s) pour {nom_appli()} "
+        texte = (f"Bonjour Maître Aimé FACHOLA. {qui} demande le(s) code(s) d'accès personnel(s) pour {nom_appli()} "
                  f"(installation {installation()}) :\n" + "\n".join(lignes))
         return f"https://wa.me/{A.TEL_CONCEPTEUR}?text={urllib.parse.quote(texte)}"
 

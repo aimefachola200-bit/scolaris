@@ -31,8 +31,27 @@
     <div><label for="tel">Téléphone</label><input id="tel" name="telephone" value="{{ e.telephone or '' }}" inputmode="tel"></div>
     <div><label for="email">E-mail</label><input id="email" name="email" type="email" value="{{ e.email or '' }}"></div>
   </div>
-  <label for="logo">Logo de l'école (PNG ou JPG)</label><input id="logo" type="file" name="logo" accept="image/*">
-  {% if edition %}<img src="{{ url_for('ecole_logo', eid=e.id) }}" alt="" style="max-height:70px;margin-top:6px" onerror="this.remove()">{% endif %}
+  <h2>Devise et logo</h2>
+  <label for="devise">Devise de l'école</label><input id="devise" name="devise" value="{{ e.devise or '' }}" maxlength="70" list="devises" placeholder="Travail – Discipline – Réussite">
+  <datalist id="devises">{% for d in DEVISES_ECOLE %}<option value="{{ d }}">{% endfor %}</datalist>
+  <p class="aide">La devise figure sous le nom de l'école en tête des documents et, au choix, sur le logo.</p>
+  {% set lc = logo_cfg or {} %}
+  <fieldset class="logo-ecole"><legend>Logo</legend>
+    <label class="choix"><input type="radio" name="logo_mode" value="garder" checked> Garder le logo actuel</label>
+    <label class="choix"><input type="radio" name="logo_mode" value="auto"> Créer le logo automatiquement</label>
+    <label class="choix"><input type="radio" name="logo_mode" value="aucun"> Pas de logo</label>
+    <div class="ligne" id="logo-auto">
+      <div><label for="l-forme">Forme</label><select id="l-forme" name="logo_forme"><option value="rond" {{ 'selected' if lc.forme != 'ecusson' }}>Rond</option><option value="ecusson" {{ 'selected' if lc.forme == 'ecusson' }}>Écusson</option></select></div>
+      <div><label for="l-sym">Symbole</label><select id="l-sym" name="logo_symbole">{% for k, lib in SYMBOLES_ECOLE %}<option value="{{ k }}" {{ 'selected' if (lc.symbole or 'livre') == k }}>{{ lib }}</option>{% endfor %}<option value="initiales" {{ 'selected' if lc.symbole == 'initiales' }}>Initiales seules</option></select></div>
+      <div><label for="l-ini">Initiales</label><input id="l-ini" name="logo_initiales" value="{{ lc.initiales or '' }}" maxlength="4" placeholder="auto"></div>
+      <div><label>Couleurs</label><span class="duo"><input type="color" name="logo_c1" value="{{ lc.c1 or '#1F4E79' }}" aria-label="Couleur du fond"><input type="color" name="logo_c2" value="{{ lc.c2 or '#E8B10E' }}" aria-label="Couleur des filets et de la devise"><input type="color" name="logo_c3" value="{{ lc.c3 or '#1B8A3C' }}" aria-label="Couleur des initiales"></span></div>
+      <div><label class="choix"><input type="checkbox" name="logo_devise_sur" value="1" {{ 'checked' if lc.devise_sur_logo != false }}> Devise sur le logo</label><input type="hidden" name="logo_devise_sur" value="0"></div>
+    </div>
+    <img id="apercu-logo" alt="Aperçu du logo" width="170" height="170" src="{{ url_for('ecole_logo_apercu', nom=e.nom or 'École', devise=e.devise or '', logo_forme=lc.forme or 'rond', logo_symbole=lc.symbole or 'livre', logo_initiales=lc.initiales or '') }}">
+    {% if edition %}<span class="aide">Logo actuel : <img src="{{ url_for('ecole_logo', eid=e.id) }}" alt="" style="max-height:70px;vertical-align:middle" onerror="this.replaceWith('aucun')">
+      · <a href="{{ url_for('ecole_logo_auto', eid=e.id, fmt='svg') }}">Télécharger le logo automatique (SVG)</a> · <a href="{{ url_for('ecole_logo_auto', eid=e.id, fmt='png') }}">PNG</a></span>{% endif %}
+    <label for="logo">Ou importer votre logo (PNG ou JPG)</label><input id="logo" type="file" name="logo" accept="image/*">
+  </fieldset>
 </div>
 <div class="carte">
   <h2 style="margin-top:0">Responsables</h2>
@@ -95,5 +114,12 @@ function majGriffe(){clearTimeout(tg);tg=setTimeout(function(){var gc=f.querySel
 var p=new URLSearchParams({titre:f.directeur_titre.value,nom:f.directeur_nom.value,ligne3:f.griffe_ligne3.value,couleur:(gc&&gc.value)||(cc&&cc.value)||'bleu'});ig.src='{{ url_for("ecole_griffe_svg") }}?'+p;},250);}
 ['directeur_titre','directeur_nom','griffe_ligne3'].forEach(function(n){f[n].addEventListener('input',majGriffe);f[n].addEventListener('change',majGriffe)});
 f.querySelectorAll('[name=griffe_couleur],[name=cachet_couleur]').forEach(function(r){r.addEventListener('change',majGriffe)});})();
+(function(){var f=document.querySelector('form.f'),im=document.getElementById('apercu-logo'),t;if(!im)return;
+function maj(){clearTimeout(t);t=setTimeout(function(){var ds=f.querySelector('[name=logo_devise_sur][type=checkbox]');
+var p=new URLSearchParams({nom:f.nom.value||'École',devise:f.devise.value,logo_forme:f.logo_forme.value,logo_symbole:f.logo_symbole.value,logo_initiales:f.logo_initiales.value,
+logo_c1:f.logo_c1.value,logo_c2:f.logo_c2.value,logo_c3:f.logo_c3.value,logo_devise_sur:ds&&ds.checked?'1':'0'});im.src='{{ url_for("ecole_logo_apercu") }}?'+p;},250);}
+['nom','devise','logo_initiales'].forEach(function(n){f[n].addEventListener('input',maj)});
+['logo_forme','logo_symbole','logo_c1','logo_c2','logo_c3'].forEach(function(n){f[n].addEventListener('change',maj);f[n].addEventListener('input',maj)});
+f.querySelectorAll('#logo-auto input,#logo-auto select').forEach(function(x){x.addEventListener('change',function(){var a=f.querySelector('[name=logo_mode][value=auto]');if(a)a.checked=true;})});})();
 </script>
 {% endblock %}

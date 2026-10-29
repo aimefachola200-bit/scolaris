@@ -15,7 +15,7 @@ import referentiel_benin as RB
 CHAMPS_ECOLE = ["nom", "sigle", "statut", "ordre", "departement", "cs", "up", "zone", "commune", "ville", "adresse", "bp",
                 "telephone", "email", "directeur_titre", "directeur_nom", "directeur_tel", "admin_titre", "admin_nom",
                 "ccs_titre", "ccs_nom", "cachet_sup", "cachet_inf", "cachet_centre", "cachet_couleur",
-                "griffe_actif", "griffe_ligne3", "griffe_couleur"]
+                "griffe_actif", "griffe_ligne3", "griffe_couleur", "devise"]
 ORDRES = ["Maternelle", "Primaire", "Maternelle et primaire", "Secondaire (collège)", "Secondaire (collège et lycée)",
           "Complexe (maternelle, primaire, secondaire)", "Enseignement technique"]
 RE_CLE_SIGNATURE = re.compile(r"^(ecole:\d+:(directeur|admin|ccs)|classe:\d+:titulaire|eleve:\d+|parent:\d+|cep:\d+:chef"
@@ -31,6 +31,9 @@ def enregistrer(app, H):
     H.ajouter_colonne("ecoles", "griffe_actif", "INTEGER DEFAULT 1")
     H.ajouter_colonne("ecoles", "griffe_ligne3", "TEXT")
     H.ajouter_colonne("ecoles", "griffe_couleur", "TEXT")
+    # v1.32 : devise de l'école et réglage du logo créé automatiquement (JSON : auto, forme, symbole, initiales, couleurs…)
+    H.ajouter_colonne("ecoles", "devise", "TEXT")
+    H.ajouter_colonne("ecoles", "logo_cfg", "TEXT")
 
     # ------------------------------------------------------------ école courante
     def ecole_exemple_vide():
@@ -157,6 +160,7 @@ def enregistrer(app, H):
                 if (e["cachet_sup"] or e["cachet_centre"]) else None,
                 "_sig_directeur": signature(f"ecole:{e['id']}:directeur"),
                 "_griffe": griffe_de(e),
+                "devise": (e["devise"] if "devise" in e.keys() else "") or "",
             })
 
     H.appliquer_identite_ecole = appliquer_identite_ecole
@@ -167,7 +171,7 @@ def enregistrer(app, H):
         est celle de la structure, posée par m_juridiction (jur_entete)."""
         config.ECOLE.update({"id": None, "directeur": "", "directeur_titre": "Directeur", "statut": "", "up": "",
                              "zone": "", "bp": "", "commune": "", "admin_titre": "", "admin_nom": "", "ccs_titre": "",
-                             "ccs_nom": "", "_cachet": None, "_sig_directeur": None, "_griffe": None})
+                             "ccs_nom": "", "_cachet": None, "_sig_directeur": None, "_griffe": None, "devise": ""})
 
     @app.before_request
     def charger_ecole():
@@ -242,7 +246,9 @@ def enregistrer(app, H):
             f = {k: request.form.get(k, "").strip()[:200] for k in CHAMPS_ECOLE}
             if not f["nom"]:
                 flash("Le nom de l'école est obligatoire.", "danger")
-                return render_template("ecole_form.html", e=f, ordres=ORDRES, edition=bool(eid)), 400
+                import logo_ecole as LE
+                return render_template("ecole_form.html", e=f, ordres=ORDRES, edition=bool(eid), logo_cfg={}, DEVISES_ECOLE=LE.DEVISES,
+                                       SYMBOLES_ECOLE=[(k, v[0]) for k, v in LE.SYMBOLES.items()]), 400
             if f["cachet_couleur"] not in cachet.COULEURS:
                 f["cachet_couleur"] = "bleu"
             if f["griffe_couleur"] not in cachet.COULEURS:
@@ -261,6 +267,7 @@ def enregistrer(app, H):
                 # applications CS / DDEMP : l'école apparaît aussi dans la liste des écoles de la juridiction
                 if config.juridiction() and getattr(H, "jur_lier_ecole", None):
                     H.jur_lier_ecole(eid)
+            enregistrer_logo(eid, f["nom"], f["devise"])
             logo = request.files.get("logo")
             if logo and logo.filename:
                 try:
@@ -269,11 +276,15 @@ def enregistrer(app, H):
                     img = Image.open(logo.stream)
                     img.thumbnail((600, 600))
                     img.save(os.path.join(config.ECOLE_DIR, f"logo_{eid}.png"), "PNG")
+                    ex("UPDATE ecoles SET logo_cfg=NULL WHERE id=?", (eid,))   # v1.32 : logo importé, plus de logo automatique
                 except Exception:  # noqa: BLE001
                     flash("Logo illisible (PNG ou JPG).", "danger")
             flash("École enregistrée.", "success")
             return redirect(url_for("ecoles"))
-        return render_template("ecole_form.html", e=e or {"statut": "Privée", "directeur_titre": "Directeur",
+        import logo_ecole as LE
+        return render_template("ecole_form.html", logo_cfg=LE.lire_cfg(e["logo_cfg"] if e else None),
+                               DEVISES_ECOLE=LE.DEVISES, SYMBOLES_ECOLE=[(k, v[0]) for k, v in LE.SYMBOLES.items()],
+                               e=e or {"statut": "Privée", "directeur_titre": "Directeur",
                                                           "admin_titre": "Administrateur", "ccs_titre": "Le CCS",
                                                           "cachet_couleur": "bleu", "griffe_actif": 1},
                                ordres=ORDRES, edition=bool(eid))
@@ -325,6 +336,67 @@ def enregistrer(app, H):
         else:
             ex("UPDATE ecoles SET actif=1-actif WHERE id=?", (eid,))
         return redirect(url_for("ecoles"))
+
+    # ------------------------------------------------------------ v1.32 : logo créé automatiquement et devise
+    def cfg_logo_formulaire():
+        """Réglage du logo lu dans le formulaire (mode, forme, symbole, initiales, couleurs, devise sur le logo)."""
+        import logo_ecole as LE
+        a = request.form if request.method == "POST" else request.args
+        cfg = {"forme": a.get("logo_forme") if a.get("logo_forme") in LE.FORMES else "rond",
+               "symbole": a.get("logo_symbole") if (a.get("logo_symbole") in LE.SYMBOLES or a.get("logo_symbole") == "initiales") else "livre",
+               "initiales": re.sub(r"[^A-Za-zÀ-ÿ0-9]", "", a.get("logo_initiales", ""))[:4].upper(),
+               "devise_sur_logo": a.get("logo_devise_sur", "1") != "0"}
+        for k in ("c1", "c2", "c3"):
+            v = (a.get("logo_" + k) or "").strip()
+            if re.fullmatch(r"#[0-9A-Fa-f]{6}", v):
+                cfg[k] = v
+        return cfg
+
+    def enregistrer_logo(eid, nom, devise):
+        """Formulaire de l'école : « logo_mode » = auto (logo dessiné d'après le nom et la devise, PNG enregistré comme
+        logo de l'école), aucun (on retire le logo), garder (rien ne change) ; un fichier importé l'emporte."""
+        import os
+        import logo_ecole as LE
+        mode = request.form.get("logo_mode", "garder")
+        chemin = os.path.join(config.ECOLE_DIR, f"logo_{eid}.png")
+        if mode == "auto":
+            cfg = dict(cfg_logo_formulaire(), auto=True)
+            os.makedirs(config.ECOLE_DIR, exist_ok=True)
+            with open(chemin, "wb") as fo:
+                fo.write(LE.png(LE.params(nom, devise, cfg), 600))
+            ex("UPDATE ecoles SET logo_cfg=? WHERE id=?", (json.dumps(cfg, ensure_ascii=False), eid))
+        elif mode == "aucun":
+            if os.path.exists(chemin):
+                os.remove(chemin)
+            ex("UPDATE ecoles SET logo_cfg=NULL WHERE id=?", (eid,))
+        elif mode == "garder":
+            r = q("SELECT logo_cfg FROM ecoles WHERE id=?", (eid,), un=True)
+            cfg = LE.lire_cfg(r["logo_cfg"] if r else None)
+            if cfg.get("auto"):                     # logo automatique : redessiné si le nom ou la devise changent
+                with open(chemin, "wb") as fo:
+                    fo.write(LE.png(LE.params(nom, devise, cfg), 600))
+
+    @app.route("/ecoles/logo-apercu.svg")
+    @H.connexion_requise()
+    def ecole_logo_apercu():
+        import logo_ecole as LE
+        a = request.args
+        return Response(LE.svg(LE.params(a.get("nom") or "École", a.get("devise") or "", cfg_logo_formulaire()), 220),
+                        mimetype="image/svg+xml", headers={"Cache-Control": "no-cache"})
+
+    @app.route("/ecoles/<int:eid>/logo-auto.<fmt>")
+    @H.connexion_requise()
+    def ecole_logo_auto(eid, fmt):
+        """Téléchargement du logo automatique de l'école (SVG ou PNG), avec le réglage enregistré."""
+        import logo_ecole as LE
+        e = q("SELECT * FROM ecoles WHERE id=?", (eid,), un=True)
+        if not e or fmt not in ("svg", "png"):
+            abort(404)
+        p = LE.params(e["nom"], e["devise"] or "", e["logo_cfg"])
+        nom = re.sub(r"[^A-Za-z0-9]+", "_", "logo_" + (e["sigle"] or e["nom"]))[:60]
+        if fmt == "svg":
+            return Response(LE.svg(p, 800), mimetype="image/svg+xml", headers={"Content-Disposition": f"attachment; filename={nom}.svg"})
+        return Response(LE.png(p, 800), mimetype="image/png", headers={"Content-Disposition": f"attachment; filename={nom}.png"})
 
     @app.route("/cachet.svg")
     def cachet_svg():

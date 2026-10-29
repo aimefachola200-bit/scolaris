@@ -411,7 +411,7 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_preparation", "m_evalprep", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           "m_synoptique", "m_preparation", "m_evalprep", "guide_utilisation", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)
@@ -1680,7 +1680,7 @@ def page_erreur(resume, chemin=""):
         tel = _A.TEL_CONCEPTEUR
     except Exception:  # noqa: BLE001
         tel = "2290196510333"
-    wa = f"https://wa.me/{tel}?text=" + _up.quote("Bonjour Maître Aimé FACHE, erreur dans l'application :\n" + resume)
+    wa = f"https://wa.me/{tel}?text=" + _up.quote("Bonjour Maître Aimé FACHOLA, erreur dans l'application :\n" + resume)
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Erreur</title><style>body{{font-family:system-ui,Arial,sans-serif;background:#f4f6f9;margin:0;padding:18px;color:#1e293b}}
 .c{{max-width:760px;margin:auto;background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.1)}}

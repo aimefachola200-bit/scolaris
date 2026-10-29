@@ -612,7 +612,7 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
         c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                      title=titre_lot or rs[0]["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+                      title=titre_lot or rs[0]["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
     return buf.getvalue()
 
 
@@ -711,7 +711,7 @@ def pdf_revision(rv, eleve=False, partie=None, sujet=None):
         c.drawRightString(W - marge, 7 * mm, f"{rv['cours']} — révision d'éveil — page {doc.page}")
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                      title=rv["titre"], author="SCOLARIS").build(H_, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+                      title=rv["titre"], author="SCOLARIS").build(H_, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
     return buf.getvalue()
 
 
@@ -859,96 +859,183 @@ def enregistrer(app, H):
         return cl, (effectif(cl["id"]) if cl else None)
 
     # ------------------------------------------------------------ PDF et Word
-    def pdf_fiches(fiches, titre_doc="FICHE DE PRÉPARATION"):
-        """Une ou plusieurs fiches (une par page au moins) au format APC ; document vérifiable (QR)."""
+    def titulaire_de(d, cl):
+        """Nom imprimé en filigrane sur la fiche : titulaire de la classe, sinon auteur de la fiche, sinon enseignant connecté."""
+        if cl is not None and "titulaire_nom" in cl.keys() and cl["titulaire_nom"]:
+            return cl["titulaire_nom"]
+        if d.get("user_id"):
+            u = q("SELECT nom FROM utilisateurs WHERE id=?", (d["user_id"],), un=True)
+            if u and u["nom"]:
+                return u["nom"]
+        if g.get("user") is not None and g.user["role"] == "enseignant":
+            return g.user["nom"]
+        if cl is not None:
+            t = q("SELECT u.nom FROM affectations a JOIN utilisateurs u ON u.id=a.user_id WHERE a.classe_id=? AND u.role='enseignant' "
+                  "ORDER BY a.matiere_id IS NOT NULL, a.id LIMIT 1", (cl["id"],), un=True)
+            if t:
+                return t["nom"]
+        return ""
+
+    def pdf_une_fiche(d, titre_doc, s_dir):
+        """v1.32 — Une fiche : Times New Roman 14 pt (tableaux 13 pt), bandeau de la couleur de la matière avec son dessin,
+        rubriques illustrées, filigrane oblique du titulaire, marges alternées pour l'impression recto verso, « Page x / y »,
+        mention du concepteur en bas de page. Renvoie (octets du PDF, nombre de pages)."""
         import pdfs
+        import dessins_pdf as DS
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import mm
-        from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+        from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether, NextPageTemplate, PageTemplate, Paragraph, Spacer, Table,
+                                        TableStyle)
         W, Hh = A4
-        marge = 12 * mm
-        utile = W - 2 * marge
-        st = ParagraphStyle("c", fontName="Helvetica", fontSize=8.3, leading=10.3)
-        stb = ParagraphStyle("b", parent=st, fontName="Helvetica-Bold")
+        SER = pdfs.police_serif()
+        coul_hex = DS.couleur_matiere(d.get("matiere"))
+        coul = colors.HexColor(coul_hex)
+        clair = colors.Color(coul.red, coul.green, coul.blue, alpha=0.10)
+        st = ParagraphStyle("c", fontName=SER["normal"], fontSize=13, leading=16)
+        stb = ParagraphStyle("b", parent=st, fontName=SER["gras"])
         sth = ParagraphStyle("h", parent=stb, textColor=colors.white, alignment=1)
-        sti = ParagraphStyle("ti", fontName="Helvetica-Bold", fontSize=13, leading=16, alignment=1, textColor=pdfs.BLEU)
-        sts = ParagraphStyle("st", fontName="Helvetica", fontSize=9.5, leading=12, alignment=1, spaceAfter=4)
-        stm = ParagraphStyle("m", parent=st, fontName="Helvetica-Oblique", textColor=colors.HexColor("#B54708"))
+        stc = ParagraphStyle("corps", fontName=SER["normal"], fontSize=14, leading=18)
+        stt = ParagraphStyle("rub", fontName=SER["gras"], fontSize=14, leading=18, textColor=coul)
+        sti = ParagraphStyle("ti", fontName=SER["gras"], fontSize=16, leading=20, alignment=1, textColor=coul)
+        sts = ParagraphStyle("st", fontName=SER["normal"], fontSize=13, leading=16, alignment=1, spaceAfter=4)
+        stm = ParagraphStyle("m", parent=st, fontName=SER["italique"], fontSize=11, leading=14, textColor=colors.HexColor("#B54708"))
+        cl, eff = entete_classe(d)
+        filigrane = titulaire_de(d, cl)
+        mat = nom_matiere(d.get("matiere"))
+        bande = " · ".join(x for x in [COURS_LIB.get(d.get("cours"), d.get("cours") or ""), mat, d.get("sous_matiere") or "",
+                                        f"SA {d['sa']}" if d.get("sa") else "", f"séance {d['seance']}" if d.get("seance") else "",
+                                        d.get("duree") or ""] if x)
+
+        def rubrique(k, lib):
+            nom = DS.RUBRIQUES.get(k, "document")
+            t = Table([[DS.flowable(nom, 13, coul_hex), Paragraph(lib.upper(), stt)]], colWidths=[18, None])
+            t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                                   ("LINEBELOW", (1, 0), (1, 0), 0.8, coul)]))
+            return t
+
+        h = [Paragraph(titre_doc, sti), Paragraph(txt_pdf(bande), sts), NextPageTemplate("suite")]
+        utile = W - 25 * mm
+        infos = [("École", config.ECOLE.get("nom", "")), ("Classe", cl["nom"] if cl else (d.get("cours") or "")),
+                 ("Date", datetime.strptime(d["date_seance"], "%Y-%m-%d").strftime("%d/%m/%Y") if d.get("date_seance") else "…… / …… / ……"),
+                 ("Effectif", f"G : {eff['g']}   F : {eff['f']}   T : {eff['t']}" if eff else "G : ……  F : ……  T : ……"),
+                 ("Unité / SA", " · ".join(x for x in [d.get("unite") or "", f"SA n°{d['sa']}" if d.get("sa") else "",
+                                                       f"Séance n°{d['seance']}" if d.get("seance") else ""] if x) or "—"),
+                 ("Durée", d.get("duree") or "—")]
+        grille = []
+        for i in range(0, len(infos), 2):
+            ligne = []
+            for lab, val in infos[i:i + 2]:
+                ligne += [Paragraph(f"<b>{lab}</b>", st), Paragraph(txt_pdf(val), st)]
+            grille.append(ligne + [""] * (4 - len(ligne)))
+        lw = 26 * mm
+        ti = Table(grille, colWidths=[lw, utile / 2 - lw] * 2)
+        ti.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.8, coul), ("BACKGROUND", (0, 0), (-1, -1), clair),
+                                ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
+        h += [ti, Spacer(1, 6)]
+        h.append(Paragraph(f"<b>Titre :</b> {txt_pdf(d.get('titre'))}" + (f" — <i>{txt_pdf(d.get('intitule'))}</i>" if d.get("intitule") and d.get("intitule") != d.get("titre") else ""), stc))
+        h.append(Spacer(1, 5))
+        for k, lib in CHAMPS:
+            if k in ("cd", "ct", "contenus", "objectifs", "strategies", "materiel") and d.get(k):
+                h.append(KeepTogether([rubrique(k, lib), Spacer(1, 2), Paragraph(txt_pdf(d[k]), stc)]))
+                h.append(Spacer(1, 6))
+        lignes = d.get("deroulement") or []
+        data = [[Paragraph("Phases / étapes", sth), Paragraph("Activités de l'enseignant(e) et des apprenant(e)s", sth),
+                 Paragraph("Résultats attendus / évaluation", sth)]]
+        data += [[Paragraph(txt_pdf(a), stb), Paragraph(txt_pdf(b), st), Paragraph(txt_pdf(c), st)] for a, b, c in [(l + ["", "", ""])[:3] for l in lignes]]
+        td = Table(data, colWidths=[38 * mm, utile - 38 * mm - 44 * mm, 44 * mm], repeatRows=1, splitByRow=1, splitInRow=1)
+        td.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), coul),
+                                ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, clair])]))
+        h += [rubrique("deroulement", "Déroulement"), Spacer(1, 3), td, Spacer(1, 6)]
+        for k in ("evaluation", "projection", "je_retiens", "observations"):
+            if d.get(k):
+                h.append(KeepTogether([rubrique(k, dict(CHAMPS)[k]), Spacer(1, 2), Paragraph(txt_pdf(d[k]), stc)]))
+                h.append(Spacer(1, 5))
+        if d.get("mention"):
+            h.append(Paragraph(txt_pdf(d["mention"]), stm))
+        if d.get("source"):
+            h.append(Paragraph(f"Source : {txt_pdf(d['source'])}", ParagraphStyle("so", parent=st, fontSize=9, leading=11, textColor=colors.grey)))
+        u = q("SELECT * FROM utilisateurs WHERE id=?", (d.get("user_id"),), un=True) if d.get("user_id") else None
+        s_ens = pdfs.image_data_url(H.signature_enseignant(u["id"]) if u else (H.signature_titulaire(cl["id"]) if cl else None))
+        sigs = [("L'enseignant(e)", (u["nom"] if u else filigrane), s_ens, False), ("Visa du directeur / de la directrice", "", s_dir, True)]
+        code = pdfs.code_tableau(titre_doc, d.get("titre"), [("Classe", cl["nom"] if cl else d.get("cours")), ("Matière", mat)],
+                                 lignes, None, ("fiche_preparation", f"Fiche de préparation – {d.get('titre', '')[:120]} – {cl['nom'] if cl else d.get('cours', '')}"))
+        h += [Spacer(1, 4), KeepTogether([pdfs._BlocSignatures(sigs, utile, code=code)])]
+
+        def bandeau(c, doc):
+            """Bandeau de la matière (chaque page), filigrane du titulaire, pied de page."""
+            c.saveState()
+            gauche = doc.leftMargin
+            y = Hh - (10 * mm if doc.page > 1 else 8 * mm)
+            if doc.page > 1:
+                c.setFillColor(coul)
+                c.roundRect(gauche, y - 9 * mm, W - doc.leftMargin - doc.rightMargin, 9 * mm, 2 * mm, stroke=0, fill=1)
+                DS.dessiner(c, DS.dessin_matiere(d.get("matiere")), gauche + 2.5 * mm, y - 7.6 * mm, 6.2 * mm, "#FFFFFF", 2)
+                c.setFillColor(colors.white)
+                c.setFont(SER["gras"], 12)
+                c.drawString(gauche + 11 * mm, y - 5.6 * mm, f"Fiche de préparation — {mat}")
+                c.setFont(SER["normal"], 10)
+                c.drawRightString(W - doc.rightMargin - 3 * mm, y - 5.6 * mm, (d.get("titre") or "")[:70])
+            else:
+                pdfs._entete_primaire(c, W, Hh, doc.leftMargin, None, "maternelle" if d.get("cours") == "MAT" else None)
+                c.setFillColor(coul)
+                c.rect(gauche, Hh - 43 * mm, W - doc.leftMargin - doc.rightMargin, 1.6 * mm, stroke=0, fill=1)
+                DS.dessiner(c, DS.dessin_matiere(d.get("matiere")), W / 2 - 6 * mm, Hh - 40 * mm, 12 * mm, coul_hex, 1.8)
+            if filigrane:
+                c.saveState()
+                c.setFillColor(colors.Color(coul.red, coul.green, coul.blue, alpha=0.11))
+                c.translate(W / 2, Hh / 2)
+                c.rotate(35)
+                taille = 54
+                while taille > 24 and c.stringWidth(filigrane, SER["gras"], taille) > Hh * 0.8:
+                    taille -= 2
+                c.setFont(SER["gras"], taille)
+                c.drawCentredString(0, 0, filigrane)
+                c.restoreState()
+            c.setFillColor(colors.HexColor("#667085"))
+            c.setFont(SER["normal"], 9)
+            c.drawString(doc.leftMargin, 8 * mm, f"{config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
+            c.drawRightString(W - doc.rightMargin, 8 * mm, f"imprimé le {date.today().strftime('%d/%m/%Y')}")
+            c.restoreState()
+
+        class Doc(BaseDocTemplate):
+            def afterPage(self):                      # recto verso : marges alternées (reliure à gauche du recto)
+                self.handle_nextPageTemplate("suite_g" if (self.page + 1) % 2 == 0 else "suite")
+
+        buf = io.BytesIO()
+        doc = Doc(buf, pagesize=A4, title=titre_doc, author="SCOLARIS", leftMargin=15 * mm, rightMargin=10 * mm)
+        def cadre(g_, d_, haut):
+            return Frame(g_, 16 * mm, W - g_ - d_, Hh - haut - 16 * mm, id="f", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+        doc.addPageTemplates([
+            PageTemplate("premiere", [cadre(15 * mm, 10 * mm, 50 * mm)], onPageEnd=bandeau),
+            PageTemplate("suite", [cadre(15 * mm, 10 * mm, 22 * mm)], onPageEnd=bandeau),
+            PageTemplate("suite_g", [cadre(10 * mm, 15 * mm, 22 * mm)], onPageEnd=bandeau)])
+        doc.build(h, canvasmaker=pdfs.GCanvasPedaNum)
+        out = buf.getvalue()
+        import pypdf
+        return out, len(pypdf.PdfReader(io.BytesIO(out)).pages)
+
+    def pdf_fiches(fiches, titre_doc="FICHE DE PRÉPARATION"):
+        """Une ou plusieurs fiches ; chaque fiche commence sur un recto (page blanche ajoutée après une fiche d'un nombre
+        impair de pages quand plusieurs fiches sont réunies) ; document vérifiable (QR)."""
+        import pdfs
+        import pypdf
         eid = H.eco()
         s_dir = pdfs.image_data_url(H.signature(f"ecole:{eid}:directeur")) or pdfs.signature_directeur()
-        histoire, cles = [], []
+        if len(fiches) == 1:
+            return pdf_une_fiche(fiches[0], titre_doc, s_dir)[0]
+        w = pypdf.PdfWriter()
         for n, d in enumerate(fiches):
-            cl, eff = entete_classe(d)
-            if n:
-                histoire.append(PageBreak())
-            histoire.append(Paragraph(titre_doc, sti))
-            histoire.append(Paragraph(f"{nom_matiere(d.get('matiere'))} — {COURS_LIB.get(d.get('cours'), d.get('cours') or '')}"
-                                      + (f" — {txt_pdf(d.get('sous_matiere'))}" if d.get("sous_matiere") else ""), sts))
-            infos = [("École", config.ECOLE.get("nom", "")), ("Classe", cl["nom"] if cl else (d.get("cours") or "")),
-                     ("Date", datetime.strptime(d["date_seance"], "%Y-%m-%d").strftime("%d/%m/%Y") if d.get("date_seance") else "…… / …… / ……"),
-                     ("Effectif", f"G : {eff['g']}   F : {eff['f']}   T : {eff['t']}" if eff else "G : ……  F : ……  T : ……"),
-                     ("Unité / SA", " · ".join(x for x in [d.get("unite") or "", f"SA n°{d['sa']}" if d.get("sa") else "",
-                                                           f"Séance n°{d['seance']}" if d.get("seance") else ""] if x) or "—"),
-                     ("Durée", d.get("duree") or "—")]
-            grille = []
-            for i in range(0, len(infos), 2):
-                ligne = []
-                for lab, val in infos[i:i + 2]:
-                    ligne += [Paragraph(f"<b>{lab}</b>", st), Paragraph(txt_pdf(val), st)]
-                grille.append(ligne + [""] * (4 - len(ligne)))
-            lw = 22 * mm
-            ti = Table(grille, colWidths=[lw, utile / 2 - lw] * 2)
-            ti.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, pdfs.BLEU), ("BACKGROUND", (0, 0), (-1, -1), pdfs.GRIS),
-                                    ("TOPPADDING", (0, 0), (-1, -1), 1.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5)]))
-            histoire += [ti, Spacer(1, 4)]
-            histoire.append(Paragraph(f"<b>Titre :</b> {txt_pdf(d.get('titre'))}" + (f" — <i>{txt_pdf(d.get('intitule'))}</i>" if d.get("intitule") and d.get("intitule") != d.get("titre") else ""), st))
-            histoire.append(Spacer(1, 3))
-            blocs = [(lib, d.get(k)) for k, lib in CHAMPS if k in ("cd", "ct", "contenus", "objectifs", "strategies", "materiel") and d.get(k)]
-            if blocs:
-                tb = Table([[Paragraph(f"<b>{lib}</b>", st), Paragraph(txt_pdf(v), st)] for lib, v in blocs], colWidths=[42 * mm, utile - 42 * mm])
-                tb.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#98A2B3")), ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                                        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#EEF4FA"))]))
-                histoire += [tb, Spacer(1, 5)]
-            lignes = d.get("deroulement") or []
-            data = [[Paragraph("Phases / étapes", sth), Paragraph("Activités de l'enseignant(e) et des apprenant(e)s", sth),
-                     Paragraph("Résultats attendus / évaluation", sth)]]
-            data += [[Paragraph(txt_pdf(a), stb), Paragraph(txt_pdf(b), st), Paragraph(txt_pdf(c), st)] for a, b, c in [(l + ["", "", ""])[:3] for l in lignes]]
-            td = Table(data, colWidths=[30 * mm, utile - 30 * mm - 42 * mm, 42 * mm], repeatRows=1)
-            td.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), pdfs.BLEU),
-                                    ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F7F9FC")])]))
-            histoire += [Paragraph("<b>DÉROULEMENT</b>", st), Spacer(1, 2), td, Spacer(1, 5)]
-            for k in ("evaluation", "projection", "je_retiens", "observations"):
-                if d.get(k):
-                    histoire.append(Paragraph(f"<b>{dict(CHAMPS)[k]} :</b><br/>{txt_pdf(d[k])}", st))
-                    histoire.append(Spacer(1, 3))
-            if d.get("mention"):
-                histoire.append(Paragraph(txt_pdf(d["mention"]), stm))
-            if d.get("source"):
-                histoire.append(Paragraph(f"Source : {txt_pdf(d['source'])}", ParagraphStyle("so", parent=st, fontSize=7, textColor=colors.grey)))
-            u = q("SELECT * FROM utilisateurs WHERE id=?", (d.get("user_id"),), un=True) if d.get("user_id") else None
-            s_ens = pdfs.image_data_url(H.signature_enseignant(u["id"]) if u else (H.signature_titulaire(cl["id"]) if cl else None))
-            sigs = [("L'enseignant(e)", (u["nom"] if u else ""), s_ens, False), ("Visa du directeur / de la directrice", "", s_dir, True)]
-            cle_fiche = f"{d.get('id') or d.get('source_id') or ''}|{d.get('titre')}|{d.get('date_seance')}|{cl['nom'] if cl else ''}"
-            cles.append(cle_fiche)
-            code = pdfs.code_tableau(titre_doc, d.get("titre"), [("Classe", cl["nom"] if cl else d.get("cours")), ("Matière", nom_matiere(d.get("matiere")))],
-                                     lignes, None, ("fiche_preparation", f"Fiche de préparation – {d.get('titre', '')[:120]} – {cl['nom'] if cl else d.get('cours', '')}"))
-            histoire.append(Spacer(1, 4))
-            histoire.append(KeepTogether([pdfs._BlocSignatures(sigs, utile, code=code)]))
-
-        def deco(c, doc):
-            pdfs._entete_primaire(c, W, Hh, marge, None, "maternelle" if fiches and fiches[0].get("cours") == "MAT" else None)
-            c.setFont("Helvetica", 6.5)
-            c.setFillColor(colors.grey)
-            c.drawString(marge, 7 * mm, f"SCOLARIS · {config.ECOLE.get('nom', '')} · {config.ANNEE_ACTIVE}")
-            c.drawRightString(W - marge, 7 * mm, f"Page {doc.page} · imprimé le {date.today().strftime('%d/%m/%Y')}")
-            c.setFillColor(colors.black)
-        buf = io.BytesIO()
-        doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm,
-                                bottomMargin=13 * mm, title=titre_doc, author="SCOLARIS")
-        doc.build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
-        return buf.getvalue()
+            octets, nb = pdf_une_fiche(d, titre_doc, s_dir)
+            for pg in pypdf.PdfReader(io.BytesIO(octets)).pages:
+                w.add_page(pg)
+            if nb % 2 and n < len(fiches) - 1:
+                w.add_blank_page()
+        sortie = io.BytesIO()
+        w.add_metadata({"/Title": titre_doc, "/Author": "SCOLARIS"})
+        w.write(sortie)
+        return sortie.getvalue()
 
     def doc_word(fiches, titre_doc="FICHE DE PRÉPARATION"):
         parts = []
@@ -1034,6 +1121,55 @@ def enregistrer(app, H):
             groupes.setdefault(nom_matiere(x["matiere"]), []).append(x)
         return render_template("prep_guides.html", groupes=groupes, mat=mat, cours=cours, MATS=ORDRE_MAT, COURS=COURS)
 
+    # ------------------------------------------------------------ v1.32 : barèmes EPS proposés (CI → CM2)
+    @app.route("/preparation/baremes-eps")
+    @app.route("/preparation/baremes-eps.pdf", endpoint="prep_baremes_eps_pdf")
+    @H.connexion_requise("preparation")
+    def prep_baremes_eps():
+        import banque_ea_eps as BEE
+        cours = request.args.get("cours") or ""
+        liste = [c for c in COURS if c in BEE.COURSE and (not cours or c == cours)]
+        refs = [(c, BEE.AGE[c], BEE.referentiel(c)) for c in liste]
+        if not request.path.endswith(".pdf"):
+            return render_template("prep_baremes_eps.html", refs=refs, cours=cours, COURS=[c for c in COURS if c in BEE.COURSE],
+                                   mention=BEE.MENTION_BAREME, adaptations=BEE.ADAPTATIONS)
+        import pdfs
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.units import mm
+        from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+        S = pdfs.police_serif()
+        rose = colors.HexColor("#C11574")
+        st = ParagraphStyle("p", fontName=S["normal"], fontSize=14, leading=18, spaceAfter=3)
+        sc = ParagraphStyle("c", fontName=S["normal"], fontSize=12, leading=14)
+        sh = ParagraphStyle("h", fontName=S["gras"], fontSize=16, leading=20, textColor=rose, spaceBefore=6, spaceAfter=4)
+        sm = ParagraphStyle("m", fontName=S["italique"], fontSize=12, leading=15, textColor=colors.HexColor("#B54708"))
+        W = A4[0] - 30 * mm
+        h = [Paragraph("BARÈMES D'ÉDUCATION PHYSIQUE ET SPORTIVE", ParagraphStyle("t", parent=sh, fontSize=18, alignment=1)),
+             Paragraph(_html.escape(BEE.MENTION_BAREME), sm), Spacer(1, 6)]
+        for n, (c, age, ref) in enumerate(refs):
+            if n:
+                h.append(PageBreak())
+            h.append(Paragraph(f"{COURS_LIB.get(c, c)} — âge normal : {age} ans", sh))
+            for epreuve, consigne, bm in ref:
+                if bm.get("observation"):
+                    data = [[Paragraph("<b>Critère observé</b>", sc), Paragraph("<b>Points</b>", sc)]] + [[Paragraph(_html.escape(l[0]), sc), Paragraph(l[1], sc)] for l in bm["lignes"]]
+                    cw = [W * 0.8, W * 0.2]
+                else:
+                    data = [[Paragraph(f"<b>{x}</b>", sc) for x in ("Note /10", f"Garçons {age} ans", f"Garçons {age + 2} ans et +", f"Filles {age} ans", f"Filles {age + 2} ans et +")]]
+                    data += [[Paragraph(str(l[0]), sc)] + [Paragraph(_html.escape(x), sc) for x in l[1:]] for l in bm["lignes"]]
+                    cw = [W * 0.12] + [W * 0.22] * 4
+                tb = Table(data, colWidths=cw, repeatRows=1)
+                tb.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#FCE7F6")),
+                                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+                h.append(KeepTogether([Paragraph(f"<b>{_html.escape(epreuve)}</b> — {_html.escape(consigne)}", st), tb, Spacer(1, 6)]))
+        h += [PageBreak(), Paragraph("Dispenses, adaptations et sécurité", sh)] + [Paragraph("• " + _html.escape(a), st) for a in BEE.ADAPTATIONS]
+        buf = io.BytesIO()
+        SimpleDocTemplate(buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=16 * mm,
+                          title="Barèmes EPS", author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvasPeda)
+        return H.pdf_reponse(buf.getvalue(), "baremes_eps" + (f"_{cours}" if cours else "") + ".pdf")
+
     @app.route("/preparation/guides/<gid>")
     @H.connexion_requise("preparation")
     def prep_guide(gid):
@@ -1081,7 +1217,7 @@ def enregistrer(app, H):
             c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
         buf = io.BytesIO()
         SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                          title=x["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvas)
+                          title=x["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
         return H.pdf_reponse(buf.getvalue(), re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent("guide_" + x["titre"]))[:70] + ".pdf")
 
     @app.route("/preparation/fiches")

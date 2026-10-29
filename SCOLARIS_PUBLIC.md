@@ -50,4 +50,4 @@ Elles se téléchargent sur la même page : https://aimefachola200-bit.github.io
 
 ---
 
-*SCOLARIS — Conception : Maître Aimé FACHE*
+*SCOLARIS — Conception : Maître Aimé FACHOLA*

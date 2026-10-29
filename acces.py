@@ -21,7 +21,7 @@ DELAI_GRACE_JOURS = 15
 # Contrôle des codes d'accès : désactivé pour le moment (demande du concepteur, 19/10/2026).
 # Mettre True (ou la variable d'environnement CODES_ACCES=1) pour l'activer de nouveau : rien d'autre à changer.
 ACTIF = False
-TEL_CONCEPTEUR = "2290196510333"   # Maître Aimé FACHE — 01 96 51 03 33
+TEL_CONCEPTEUR = "2290196510333"   # Maître Aimé FACHOLA — +229 01 96 51 03 33
 
 # ------------------------------------------------------------------ Ed25519 (vérification seule, RFC 8032)
 _P = 2 ** 255 - 19

@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
         m.setPadding(0, dp(16), 0, dp(24));
         col.addView(m);
         TextView c = new TextView(this);
-        c.setText("SCOLARIS · Conception : Maître Aimé FACHE");
+        c.setText("SCOLARIS · Conception : Maître Aimé FACHOLA");
         c.setTextColor(Color.GRAY);
         c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         c.setGravity(Gravity.CENTER);

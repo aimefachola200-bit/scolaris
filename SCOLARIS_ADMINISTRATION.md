@@ -82,4 +82,4 @@ Partout, on peut ajouter, importer et exporter (Excel, PDF) comme dans les autre
 
 ---
 
-*SCOLARIS — Conception : Maître Aimé FACHE*
+*SCOLARIS — Conception : Maître Aimé FACHOLA*

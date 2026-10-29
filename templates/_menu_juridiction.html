@@ -106,6 +106,7 @@
 {# v1.6 : modules des écoles ouverts à la CS / DDEMP (Données, Secrétariat, Cantine, Vie, Évaluation, CEP…) #}
 {% include "_menu_juridiction_ecoles.html" ignore missing %}
 {{ lien('verifier', 'Vérifier un document', ep=='verifier', 'coche') }}
+{{ lien('guide_utilisation', "Guide d'utilisation", ep=='guide_utilisation', 'info') }}
 {# v1.6 – périmètre d'une division (a_integration.perimetre_utilisateur) : pour un chef de service / agent rattaché à
    une division, les liens du menu dont l'adresse n'est pas dans la liste des adresses autorisées sont retirés, puis les
    groupes vidés. Le contrôle réel est fait côté serveur (403 « Hors du périmètre de votre division »). #}

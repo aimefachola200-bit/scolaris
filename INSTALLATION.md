@@ -179,4 +179,4 @@ puis l'import de SCOLARIS (menu **Données**).
 
 ---
 
-*SCOLARIS — Conception : Maître Aimé FACHE*
+*SCOLARIS — Conception : Maître Aimé FACHOLA*
