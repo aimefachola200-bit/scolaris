@@ -95,12 +95,35 @@ def corpus():
         return _charger_corpus()
 
 
+
+def _lire_fichier_corpus(pdfs):
+    """v2.1.1 : sur Android, la fabrication de l'APK retire l'extension « .gz » des fichiers de l'application
+    (static/pedafiche_corpus.json, non compressé) ; on accepte les deux formes, et un corpus absent ou illisible
+    ne doit jamais empêcher l'application de s'ouvrir (page de connexion comprise)."""
+    for nom in ("pedafiche_corpus.json.gz", "pedafiche_corpus.json"):
+        p = pdfs.fichier_static(nom)
+        if not p:
+            continue
+        try:
+            with open(p, "rb") as f:
+                gz = f.read(2) == b"\x1f\x8b"
+            if gz:
+                with gzip.open(p, "rt", encoding="utf-8") as f:
+                    return json.load(f)
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:  # noqa: BLE001 - fichier abîmé : essayer l'autre forme, sinon corpus vide
+            continue
+    vide = {k: [] for k in ("cours", "programmes", "guides", "modeles", "fiches", "resumes", "doublons", "manuels",
+                            "mesures_correctives", "revisions")}
+    vide.update({k: {} for k in ("matieres", "manquants", "inventaire_cm1", "lots", "programme_en_vigueur", "maternelle")})
+    vide.update(version=0, source="", version_contenu="", _absent=True)
+    return vide
+
 def _charger_corpus():
     if not _CORPUS:
         import pdfs
-        p = pdfs.fichier_static("pedafiche_corpus.json.gz")
-        with gzip.open(p, "rt", encoding="utf-8") as f:
-            c = json.load(f)
+        c = _lire_fichier_corpus(pdfs)
         for x in c["fiches"] + c["programmes"]:
             for k in ("sa", "seance", "num", "dossier"):
                 v = x.get(k)

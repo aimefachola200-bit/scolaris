@@ -112,7 +112,7 @@ Ses données sont **séparées** : ce qui est saisi sur le PC n'apparaît pas en
 ## Sécurité en ligne (déjà en place)
 
 - **Connexion chiffrée :** https, avec des cookies de session sécurisés.
-- **Blocage des essais :** 15 minutes de blocage après 10 mots de passe faux.
+- **Blocage des essais :** 15 minutes de blocage après 5 mots de passe faux.
 - **Mots de passe :** chaque personne a son propre compte et le mot de passe **admin** doit être changé à la première connexion.
 - **Sauvegardes :** une sauvegarde automatique chaque jour (les 14 dernières sont gardées). Téléchargez-en une copie chaque semaine.
 

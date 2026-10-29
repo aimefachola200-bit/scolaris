@@ -400,4 +400,7 @@ def enregistrer(app, H):
 
     @app.context_processor
     def _ctx_mat():
-        return {"MAT_DISPO": bool(donnees())}
+        try:  # v2.1.1 : jamais d'erreur sur toutes les pages (connexion comprise) si le corpus manque
+            return {"MAT_DISPO": bool(donnees())}
+        except Exception:  # noqa: BLE001
+            return {"MAT_DISPO": False}
