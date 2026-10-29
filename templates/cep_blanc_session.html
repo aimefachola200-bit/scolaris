@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block titre %}Examen blanc CEP N° {{ s.numero }}{% endblock %}
 {% import "_macros.html" as M with context %}
-{% block contenu %}
+{% block contenu %}{% include "_examen_blanc_onglets.html" %}
 <style>
 .btn.vert{color:#fff} /* .vert (couleur de texte) l'emporte sinon sur .btn */
 #cb-table input{padding:4px 5px;font-size:13px}
@@ -32,6 +32,7 @@
       {% for a in autres if a.id != s.id %}<option value="{{ url_for('cep_blanc_session', sid=a.id) }}">N° {{ a.numero }} – {{ a.annee }} – {{ a.centre or '' }}</option>{% endfor %}
     </select>
     <a class="btn sec petit" href="{{ url_for('cep_blanc_accueil') }}">← Examens blancs</a>
+    {% if ep_existe('examen_blanc_reprendre_libre') and peut('examen_blanc') and not ENS %}<form method="post" action="{{ url_for('examen_blanc_reprendre_libre', sid=s.id) }}" style="display:inline" onsubmit="return confirm('Reprendre les candidats et les notes de cette session dans l\'examen blanc commun (9 épreuves) ? La session libre est conservée.')"><button class="btn sec petit" title="Candidats et notes des matières reconnues">{{ icone('ajouter') }} Reprendre dans l'examen blanc commun</button></form>{% endif %}
   </div>
 </div>
 

@@ -381,12 +381,49 @@ def url_verif(code):
     return f"{base.rstrip('/')}/verifier/{code}"
 
 
+_QR_CACHE = {}
+
+
+def qr_modules(texte):
+    """Matrice du QR code (niveau L, comme QrCodeWidget), gardée en cache."""
+    m = _QR_CACHE.get(texte)
+    if m is None:
+        from reportlab.graphics.barcode import qrencoder
+        qr = qrencoder.QRCode(None, qrencoder.QRErrorCorrectLevel.L)
+        qr.addData(texte)
+        qr.make()
+        m = [[bool(v) for v in ligne] for ligne in qr.modules]
+        if len(_QR_CACHE) > 2000:
+            _QR_CACHE.clear()
+        _QR_CACHE[texte] = m
+    return m
+
+
+def dessiner_qr(c, texte, x, y, taille, bord=4):
+    """v1.33 : QR code tracé directement sur le canevas (un seul chemin) — même rendu que QrCodeWidget, bien plus
+    rapide (bulletins d'une classe entière, cartes, attestations en série)."""
+    m = qr_modules(texte)
+    n = len(m)
+    pas = taille / (n + 2.0 * bord)
+    p = c.beginPath()
+    for r, ligne in enumerate(m):
+        col = 0
+        while col < n:
+            if ligne[col]:
+                debut = col
+                while col < n and ligne[col]:
+                    col += 1
+                p.rect(x + (debut + bord) * pas, y + taille - (r + bord + 1) * pas, (col - debut) * pas, pas)
+            else:
+                col += 1
+    c.saveState()
+    c.setFillColor(colors.black)
+    c.drawPath(p, stroke=0, fill=1)
+    c.restoreState()
+
+
 def _qr(c, code, x, y, taille=22 * mm, legende=True):
-    w = QrCodeWidget(url_verif(code))
-    b = w.getBounds()
-    d = Drawing(taille, taille, transform=[taille / (b[2] - b[0]), 0, 0, taille / (b[3] - b[1]), 0, 0])
-    d.add(w)
-    renderPDF.draw(d, c, x, y)
+    dessiner_qr(c, url_verif(code), x, y, taille)
     if legende:
         c.setFont("Helvetica", 6.5)
         c.setFillColor(colors.black)

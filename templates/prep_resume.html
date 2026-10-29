@@ -8,7 +8,11 @@
   {% if eleve %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id) }}">Version enseignant</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id, eleve=1) }}">Version élève</a>{% endif %}
   <a class="btn petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1 if eleve else None) }}">PDF {{ 'élève' if eleve else 'enseignant' }}</a>
   <button type="button" class="btn sec petit" onclick="window.print()">Imprimer</button>
+  {% if peut_adapter and ep_existe('prep_resume_modifier') and not original %}<a class="btn sec petit" href="{{ url_for('prep_resume_modifier', rid=r.id) }}">{{ icone('modifier') }} Adapter pour l'école</a>{% endif %}
+  {% if r._local %}{% if original %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id) }}">Voir la version de l'école</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resume', rid=r.id, original=1) }}">Voir l'original</a>{% if peut_adapter %}<form method="post" action="{{ url_for('prep_resume_original', rid=r.id) }}" style="display:inline"><button class="btn sec petit">Revenir à l'original</button></form>{% endif %}{% endif %}{% endif %}
+  {% if ep_existe('partage_historique') %}<a class="btn sec petit" href="{{ url_for('partage_historique', t='resume', cle=r.id) }}">{{ icone('horloge') }} Historique</a>{% endif %}
 </div>
+{% if r._local and not original %}<p class="alerte info">Version adaptée par l'école, enregistrée le {{ r._maj }} — partagée par tous les comptes de l'école.</p>{% endif %}
 <article class="carte resume" aria-labelledby="titre-resume">
   <h2 id="titre-resume">{{ r.titre }}</h2>
   {% if r.lecture %}{# v1.31 : texte de lecture du manuel officiel #}

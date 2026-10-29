@@ -397,7 +397,9 @@ def appliquer_parametres():
     config.SECTEUR_ENSEIGNANT = "privee" if v.get("secteur_enseignant") == "privee" else "publique"
 
 
-MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous les autres modules)
+MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en dernier sur la réponse), index de la base
+           "m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous les autres modules)
+           "m_securite",  # v1.33 : règle des mots de passe, blocage par compte, fin de session
            "m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appel", "m_paie", "m_tresorerie", "m_secretariat",
            # v1.3
            "m_inscriptions", "m_evaluations", "m_resultats", "m_registre", "m_affichage", "m_cep", "m_synthese",
@@ -411,7 +413,7 @@ MODULES = ["m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous 
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_preparation", "m_evalprep", "guide_utilisation", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           "m_synoptique", "m_partage", "m_preparation", "m_evalprep", "guide_utilisation", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)
@@ -584,8 +586,10 @@ def create_app(test_config=None):
             ancien, nouveau, conf = (request.form.get(k, "") for k in ("ancien", "nouveau", "confirmation"))
             if not check_password_hash(g.user["mdp_hash"], ancien):
                 flash("Mot de passe actuel incorrect.", "danger")
-            elif len(nouveau) < 8:
-                flash("Le nouveau mot de passe doit faire au moins 8 caractères.", "danger")
+            elif __import__("m_securite").erreur_mdp(nouveau, g.user["identifiant"]):
+                flash(__import__("m_securite").erreur_mdp(nouveau, g.user["identifiant"]), "danger")
+            elif nouveau == ancien:
+                flash("Choisissez un mot de passe différent de l'actuel.", "danger")
             elif nouveau != conf:
                 flash("La confirmation ne correspond pas.", "danger")
             else:
@@ -1523,6 +1527,8 @@ def create_app(test_config=None):
     @connexion_requise("parametres")
     def sauvegarde():
         """Archive ZIP : base de données (copie cohérente), photos, logo/cachet/signature."""
+        if "sauvegarde_un_clic" in app.view_functions:   # v1.33 : même archive vérifiable (manifeste), copie notée
+            return app.view_functions["sauvegarde_un_clic"]()
         import sqlite3
         import tempfile
         import zipfile

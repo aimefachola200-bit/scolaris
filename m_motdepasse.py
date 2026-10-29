@@ -92,8 +92,9 @@ def enregistrer(app, H):
                 flash("Délai dépassé : recommencez.", "danger")
             else:
                 n1, n2 = request.form.get("nouveau", ""), request.form.get("confirmation", "")
-                if len(n1) < 8:
-                    flash("Le nouveau mot de passe doit faire au moins 8 caractères.", "danger")
+                err = __import__("m_securite").erreur_mdp(n1, u["identifiant"])
+                if err:
+                    flash(err, "danger")
                     etape = "nouveau"
                 elif n1 != n2:
                     flash("La confirmation ne correspond pas.", "danger")

@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 1.32.0. 
+Version 1.33.0. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -72,7 +72,8 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 1. « Session CEP » : candidats, centres, jurys, numéros de table.
 2. « Saisie des notes » puis « Délibération et résultats » : statistiques par école et par sexe, PV, listes, relevés.
 3. « Examen blanc du CEP » : neuf épreuves, seuil de six maîtrises sur neuf (six sur huit pour un dispensé d'EPS), classement et recommandations.
-4. « Révisions d'éveil » (CM1, CM2) : cahiers de révision et sujets type CEP avec corrigé et barème.
+4. Le même module a deux onglets : « Examen blanc commun (CS, 9 épreuves) » et « Examen blanc libre (école) », aux matières choisies par l'école ; « Reprendre dans l'examen blanc commun » y verse une session libre (candidats et notes).
+5. « Révisions d'éveil » (CM1, CM2) : cahiers de révision et sujets type CEP avec corrigé et barème.
 
 ## Bureaux UASCEP et sport scolaire
 
@@ -129,12 +130,33 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 
 *Pour : Administrateur / fondateur, Directeur / directrice*
 
-1. Menu « Données » : « Sauvegarder » télécharge une archive (base, photos, logo, cachet, signatures).
-2. Gardez la sauvegarde hors de l'appareil (clé USB, ordinateur, envoi à soi-même).
-3. « Restaurer » remet une sauvegarde en place (après confirmation).
-4. « Transmettre » envoie les données attendues à la circonscription.
+1. L'application fait seule une sauvegarde chaque jour sur l'appareil (Administration › Mise en ligne et sauvegardes) ; le nombre gardé se règle.
+2. « Télécharger une sauvegarde maintenant » crée une archive à jour (base, photos, logo, cachet, signatures) et la télécharge : gardez-la hors de l'appareil (clé USB, ordinateur, envoi à soi-même).
+3. Un bandeau rappelle de le faire quand aucune copie hors de l'appareil n'a été faite depuis 7 jours.
+4. Sur ordinateur, indiquez un « dossier de secours » (clé USB, disque externe) : chaque sauvegarde y est aussi copiée quand il est branché.
+5. « Vérifier » contrôle une sauvegarde sans rien remplacer (empreintes de chaque fichier, état de la base).
+6. « Restaurer » remet une sauvegarde en place : elle est vérifiée d'abord, et refusée si elle est abîmée ou modifiée.
+7. « Transmettre » envoie les données attendues à la circonscription.
 
-- Conseil : Sauvegardez au moins une fois par semaine et toujours avant une mise à jour ou un changement d'appareil.
+- Conseil : Téléchargez une sauvegarde au moins une fois par semaine et toujours avant une mise à jour ou un changement d'appareil.
+
+## Mots de passe et sécurité des comptes
+
+*Pour : Tout le monde*
+
+1. Un mot de passe compte au moins 8 caractères, avec au moins une lettre et un chiffre ; il ne contient pas l'identifiant et n'est pas un mot de passe trop connu (admin123, 12345678…).
+2. Si vous vous connectez avec un mot de passe de départ ou trop faible, l'application vous demande aussitôt d'en choisir un nouveau.
+3. Après 5 essais faux sur un compte, ce compte est bloqué 15 minutes : utilisez « Mot de passe oublié ? » si besoin.
+4. Sans activité pendant 2 heures (8 heures sur l'application du téléphone), la session se ferme : reconnectez-vous.
+
+## Versions partagées des épreuves, fiches et résumés
+
+*Pour : Enseignant(e), Directeur / directrice, Conseiller pédagogique, Administrateur / fondateur*
+
+1. Une épreuve modifiée, un résumé « adapté pour l'école » ou une fiche « partagée avec l'école » est le même pour tous les comptes de l'école.
+2. « Historique » montre chaque version (auteur, date) ; « Rétablir » remet une version précédente pour toute l'école.
+3. Une fiche partagée par un collègue se lit et se copie dans ses propres fiches (« Copier dans mes fiches »).
+4. Le directeur ou le CP peut « Proposer à la CS / DDEMP » une version : elle part avec la synchronisation.
 
 ## Hors ligne, téléphone et tablette
 
@@ -157,6 +179,14 @@ Installez la version 1.31.1 ou plus récente, qui corrige l'ouverture des fiches
 **Je ne retrouve pas mes données sur un autre appareil.**
 
 Chaque appareil a ses données : faites une sauvegarde sur le premier, restaurez-la sur le second.
+
+**Mon compte est bloqué.**
+
+Après 5 mots de passe faux, attendez 15 minutes ou utilisez « Mot de passe oublié ? ».
+
+**L'application me demande de changer mon mot de passe.**
+
+Votre mot de passe était celui de départ ou trop faible : choisissez-en un de 8 caractères au moins, avec lettres et chiffres.
 
 **Le logo n'apparaît pas sur les documents.**
 

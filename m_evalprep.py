@@ -187,6 +187,15 @@ def enregistrer(app, H):
         ex("INSERT INTO prep_epreuves (ecole_id, annee, cle, donnees, origine, maj, maj_par) VALUES (?,?,?,?,?,?,?) "
            "ON CONFLICT(ecole_id, annee, cle) DO UPDATE SET donnees=excluded.donnees, origine=excluded.origine, maj=excluded.maj, maj_par=excluded.maj_par",
            (H.eco(), config.ANNEE_ACTIVE, cle, json.dumps(d, ensure_ascii=False), origine, H.maintenant(), g.user["id"]))
+        if hasattr(H, "partage_noter") and origine != "retablie":   # v1.33 : historique partagé (auteur, date)
+            H.partage_noter("epreuve", cle, d.get("titre") or cle, d, {"modifiee": "modification", "copie": "copie",
+                                                                       "regeneree": "régénérée d'après la planification"}.get(origine, origine))
+
+    if hasattr(H, "partage_type"):
+        def _restaurer_epreuve(cle, d):
+            cle_valide(cle)
+            sauver(cle, d, "retablie")
+        H.partage_type("epreuve", "Épreuve", lambda cle: url_for("prep_epreuve", cle=cle), _restaurer_epreuve)
 
     # ------------------------------------------------------------------ PDF / Word des épreuves
     def pdf_epreuves(liste, partie, par_page="auto"):

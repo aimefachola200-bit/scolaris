@@ -11,7 +11,8 @@
   l'examen blanc » import / export), saisie des notes, PV de centre, relevé de centre et résultats signés (QR), Excel.
 
 Calculs purs en tête de fichier : arrondis identiques à Math.round du JavaScript (demi vers le haut).
-L'examen blanc « libre » de l'école (/cep-blanc, matières au choix) reste disponible.
+L'examen blanc « libre » de l'école (/cep-blanc, matières au choix) est l'onglet « Examen blanc libre (école) » du même module
+(v1.33) ; une session libre peut être reprise dans l'examen blanc commun (/examen-blanc/reprendre-libre/<sid>).
 """
 import io
 import json
@@ -300,6 +301,64 @@ def enregistrer(app, H):
             sessions_cep, centres_cep = [], []
         return render_template("examen_blanc_centre.html", c=c, b=b, recos=recommandations(b), MATIERES=MATIERES, peut_ecrire=peut_ecrire(),
                                num=num_txt, sessions_cep=sessions_cep, centres_cep=centres_cep, ecoles=ecoles_perimetre())
+
+    def cle_de_matiere(nom):
+        """Matière de l'examen blanc libre -> épreuve du modèle commun (None si aucune correspondance sûre)."""
+        t = R._norm(nom).strip()
+        for k, lib, abr in MATIERES:
+            if t in (R._norm(lib).strip(), R._norm(abr).strip(), k):
+                return k
+        alias = ALIAS.get(t)
+        if alias:
+            for k, lib, _a in MATIERES:
+                if lib == alias:
+                    return k
+        regles = [(r"dict", "dictee"), (r"compr", "comprehension"), (r"expr|redac|communic", "communication"), (r"math|calcul", "maths"),
+                  (r"scien|\best\b", "est"), (r"social|histoire|geo|\bes\b|civi|moral", "es"), (r"\beps\b|physique", "eps"),
+                  (r"chant|poes|conte|vivant", "ea_vivant"), (r"dessin|couture|plast|artist", "ea_artistique")]
+        for motif, k in regles:
+            if re.search(motif, t):
+                return k
+        return None
+
+    @app.route("/examen-blanc/reprendre-libre/<int:sid>", methods=["POST"])
+    @H.connexion_requise("examen_blanc")
+    def examen_blanc_reprendre_libre(sid):
+        """v1.33 : verse une session de l'examen blanc libre de l'école dans un centre de l'examen blanc commun
+        (candidats et notes des matières reconnues ; la session libre est conservée telle quelle)."""
+        exiger()
+        s = q("SELECT * FROM cep_blanc_sessions WHERE id=? AND ecole_id=?", (sid, H.eco()), un=True)
+        if not s:
+            abort(404)
+        try:
+            mats = [str(m) for m in json.loads(s["matieres"] or "[]")]
+        except ValueError:
+            mats = []
+        corr = {m: cle_de_matiere(m) for m in mats}
+        niv, ent = R.entite_courante()
+        session_cible = s["annee"] if re.fullmatch(r"\d{4}-\d{4}", s["annee"] or "") else R.annee_active()
+        nom = f"{s['centre'] or ent or 'Centre'} — examen blanc libre n° {s['numero'] or 1}"
+        cid = ex("INSERT INTO eb_centres (portee, session, nom, chef, date, niveau, entite, cree_le, maj) VALUES (?,?,?,?,?,?,?,?,?)",
+                 (portee(), session_cible, nom[:200], s["chef_centre"] or "", s["date_signature"] or "", niv, ent, H.maintenant(), H.maintenant()))
+        n = 0
+        for x in q("SELECT * FROM cep_blanc_candidats WHERE session_id=? ORDER BY COALESCE(numero_table,''), nom", (sid,)):
+            try:
+                brut = json.loads(x["notes"] or "{}")
+            except ValueError:
+                brut = {}
+            notes = {}
+            for m, v in brut.items():
+                k = corr.get(m) or cle_de_matiere(m)
+                if k and isinstance(v, (int, float)) and 0 <= v <= 20 and k not in notes:
+                    notes[k] = round(float(v) * 4) / 4
+            n += 1
+            ex("INSERT INTO eb_candidats (centre_id, ordre, nom, sexe, ecole, notes, maj) VALUES (?,?,?,?,?,?,?)",
+               (cid, n, f"{x['nom']} {x['prenoms'] or ''}".strip(), sexe_de(x["sexe"]), x["ecole"] or "", json.dumps(notes), H.maintenant()))
+        ignorees = [m for m, k in corr.items() if not k]
+        H.journal("examen_blanc_reprise_libre", f"session {sid} -> centre {cid} ({n} candidats)")
+        flash(f"{n} candidat(s) repris dans l'examen blanc commun (centre « {nom} »)."
+              + (f" Matières sans équivalent, non reprises : {', '.join(ignorees)}." if ignorees else ""), "success")
+        return redirect(url_for("examen_blanc_centre", cid=cid))
 
     def reprendre_cep(c, session_cep, centre_cep):
         sql, a = "SELECT * FROM reg_examens_candidats WHERE portee=?", [portee()]

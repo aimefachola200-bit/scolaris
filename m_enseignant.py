@@ -120,8 +120,9 @@ def enregistrer(app, H):
         if avec_compte:
             if not RE_IDENT.match(f["identifiant"]) or f["identifiant"].lower() == "admin":
                 err.append("Identifiant : 3 à 40 lettres, chiffres, points ou tirets (pas « admin »).")
-            if len(f["mdp"]) < 8:
-                err.append("Le mot de passe doit faire au moins 8 caractères.")
+            e_mdp = __import__("m_securite").erreur_mdp(f["mdp"], f["identifiant"])
+            if e_mdp:
+                err.append(e_mdp)
             elif f["mdp"] != f["confirmation"]:
                 err.append("La confirmation du mot de passe ne correspond pas.")
         return err

@@ -1,12 +1,11 @@
 {# v1.28 — examen blanc du CEP (modèle commun CS Pobè) : centres de la session et synthèse #}
 {% extends "base.html" %}{% block titre %}Examen blanc du CEP{% endblock %}
-{% block contenu %}
+{% block contenu %}{% include "_examen_blanc_onglets.html" %}
 <div class="entete"><div><h1>{{ icone('examen', 26) }} Examen blanc du CEP</h1>
 <p class="sous">9 épreuves, maîtrise à 10/20, seuil atteint à 6 maîtrises (6 sur 8 pour un dispensé d'EPS), classement au total avec ex æquo, bilan par centre et par sexe, recommandations.</p></div>
 <div class="actions"><a class="btn sec petit" href="{{ url_for('examen_blanc_resultats_pdf', session=s) }}">{{ icone('document') }} Résultats (PDF signé)</a>
 <a class="btn sec petit" href="{{ url_for('examen_blanc_tous_xlsx', session=s) }}">{{ icone('graphique') }} Excel</a>
-{% if ep_existe('pilotage') and peut('pilotage') %}<a class="btn sec petit" href="{{ url_for('pilotage') }}">{{ icone('pilotage') }} Tableau de bord</a>{% endif %}
-{% if ep_existe('cep_blanc_accueil') and peut('cep') %}<a class="btn sec petit" href="{{ url_for('cep_blanc_accueil') }}">Examen blanc libre de l'école</a>{% endif %}</div></div>
+{% if ep_existe('pilotage') and peut('pilotage') %}<a class="btn sec petit" href="{{ url_for('pilotage') }}">{{ icone('pilotage') }} Tableau de bord</a>{% endif %}</div></div>
 <form method="get" class="filtres" style="margin:6px 0 10px"><label>Session <select name="session" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a == s }}>{{ a }}</option>{% endfor %}</select></label></form>
 {% if not lignes %}<div class="carte"><p><b>Aucun centre pour la session {{ s }}.</b> Ajoutez les centres d'examen blanc (nom, chef de centre, date), puis les candidats de chaque centre (saisie, reprise de la liste du CEP ou Excel).</p>
 {% if peut_ecrire %}<form method="post"><input type="hidden" name="session" value="{{ s }}"><button class="btn" name="action" value="proposer">{{ icone('ajouter') }} Créer les centres proposés</button></form>{% endif %}</div>{% endif %}

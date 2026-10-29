@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% block titre %}Examen blanc CEP{% endblock %}
-{% block contenu %}{% if PREP_REVISIONS %}<p class="aide noprint" style="margin:4px 0">Réviser l'éveil : <a href="{{ url_for('prep_revision', rid='rev-eveil-cm2') }}">cahier de révision ES / EST du CM2 et sujets type CEP</a> · <a href="{{ url_for('prep_revision_pdf', rid='rev-eveil-cm2', eleve=1) }}">version élève (PDF)</a></p>{% endif %}
+{% block contenu %}{% include "_examen_blanc_onglets.html" %}{% if PREP_REVISIONS %}<p class="aide noprint" style="margin:4px 0">Réviser l'éveil : <a href="{{ url_for('prep_revision', rid='rev-eveil-cm2') }}">cahier de révision ES / EST du CM2 et sujets type CEP</a> · <a href="{{ url_for('prep_revision_pdf', rid='rev-eveil-cm2', eleve=1) }}">version élève (PDF)</a></p>{% endif %}
 <div class="entete">
-  <div><h1>Examen blanc du CEP</h1>
-  <p class="sous">Gestion du centre : candidats, notes, maîtrise, ordre de mérite, relevés de notes{% if ep_existe('examen_blanc') %} — voir aussi l'<a href="{{ url_for('examen_blanc') }}">examen blanc commun aux applications (9 épreuves, CS Pobè)</a>{% endif %}</p></div>
+  <div><h1>Examen blanc du CEP — libre (école)</h1>
+  <p class="sous">Gestion du centre : candidats, notes, maîtrise, ordre de mérite, relevés de notes — examen blanc libre de l'école : matières au choix</p></div>
   <div class="actions">
     <form method="post" action="{{ url_for('cep_blanc_nouvelle') }}" class="ligne" style="gap:6px;align-items:flex-end">
       <label>N° de l'examen blanc<br><input type="number" name="numero" min="1" max="99" value="{{ (sessions[0].numero + 1) if sessions else 1 }}" style="width:90px"></label>

@@ -10,7 +10,11 @@
       <a class="btn sec petit" href="{{ url_for('prep_ma_fiche_doc', mid=f.id) }}">Word</a>
       {% if auteur %}<a class="btn sec petit" href="{{ url_for('prep_ma_fiche', mid=f.id, modifier=1) }}">{{ icone('modifier') }} Modifier</a>
       <form method="post" action="{{ url_for('prep_ma_fiche_dupliquer', mid=f.id) }}" style="display:inline"><button class="btn sec petit">⧉ Dupliquer</button></form>
-      <form method="post" action="{{ url_for('prep_ma_fiche_supprimer', mid=f.id) }}" style="display:inline" onsubmit="return confirm('Supprimer cette fiche ?')"><button class="btn danger petit">Supprimer</button></form>{% endif %}
+      {% if ep_existe('prep_ma_fiche_partager') %}<form method="post" action="{{ url_for('prep_ma_fiche_partager', mid=f.id) }}" style="display:inline"><button class="btn sec petit">{{ icone('echanger') }} {{ 'Ne plus partager' if f.partagee else "Partager avec l'école" }}</button></form>{% endif %}
+      <form method="post" action="{{ url_for('prep_ma_fiche_supprimer', mid=f.id) }}" style="display:inline" onsubmit="return confirm('Supprimer cette fiche ?')"><button class="btn danger petit">Supprimer</button></form>{% elif ep_existe('prep_ma_fiche_copier') and g.user.role == 'enseignant' %}
+      <form method="post" action="{{ url_for('prep_ma_fiche_copier', mid=f.id) }}" style="display:inline"><button class="btn sec petit">{{ icone('dupliquer') }} Copier dans mes fiches</button></form>{% endif %}
+      {% if ep_existe('partage_historique') %}<a class="btn sec petit" href="{{ url_for('partage_historique', t='fiche', cle=f.id|string) }}">{{ icone('horloge') }} Historique</a>{% endif %}
+      {% if f.partagee %}<span class="badge ok">partagée avec l'école</span>{% endif %}
       {% else %}
       <a class="btn petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid) }}">{{ icone('document') }} PDF</a>
       <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}">Word</a>

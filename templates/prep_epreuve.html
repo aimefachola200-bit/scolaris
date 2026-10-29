@@ -29,6 +29,7 @@
   <form method="post" action="{{ url_for('prep_epreuve_dupliquer', cle=cle) }}" style="display:inline"><button class="btn sec petit">Dupliquer</button></form>
   <form method="post" action="{{ url_for('prep_epreuve_regenerer', cle=cle) }}" style="display:inline"><button class="btn sec petit">Régénérer d'après la planification</button></form>
   {% if d._origine != 'banque' %}<form method="post" action="{{ url_for('prep_epreuve_regenerer', cle=cle) }}" style="display:inline"><input type="hidden" name="banque" value="1"><button class="btn sec petit">{{ 'Supprimer la copie' if '~' in cle else "Revenir à l'original" }}</button></form>{% endif %}
+  {% if ep_existe('partage_historique') %}<a class="btn sec petit" href="{{ url_for('partage_historique', t='epreuve', cle=cle) }}">{{ icone('horloge') }} Historique des versions</a>{% endif %}
   {% for c in classes %}<form method="post" action="{{ url_for('prep_eval_creer') }}" style="display:inline"><input type="hidden" name="classe" value="{{ c.id }}"><input type="hidden" name="periode" value="{{ d.periode }}"><button class="btn petit">Créer l'évaluation — {{ c.nom }}</button></form>{% endfor %}{% endif %}
 </div>
 {% if copies or '~' in cle %}<p class="aide"><b>Versions :</b> <a href="{{ url_for('prep_epreuve', cle=base) }}">épreuve d'origine</a>{% for k in copies %} · <a href="{{ url_for('prep_epreuve', cle=k) }}">copie n° {{ k.split('~')[1] }}</a>{% endfor %}</p>{% endif %}

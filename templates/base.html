@@ -122,7 +122,7 @@
       <a href="{{ url_for('reg_page', gcle='examens', rcle='candidats') }}">Candidats</a>
       {{ lien('examens_notes', 'Saisie des notes', ep=='examens_notes') }}
       {{ lien('examens_deliberation', 'Délibération et résultats', ep=='examens_deliberation') }}
-      {{ lien('examen_blanc', 'Examen blanc du CEP', ep.startswith('examen_blanc')) }}
+      {{ lien('examen_blanc', 'Examen blanc du CEP', ep.startswith('examen_blanc') or ep.startswith('cep_blanc')) }}
       <a href="{{ url_for('reg_page', gcle='examens', rcle='concours') }}">Concours scolaires</a>
     {% endcall %}{% endif %}
     {% if peut('pilotage') and ep_existe('pilotage') and not ENS %}{{ lien('pilotage', 'Tableau de bord du pilotage', ep.startswith('pilotage'), 'progression') }}{% endif %}
@@ -144,7 +144,7 @@
     {% call groupe('cep', 'Examens (CEP)', ep.startswith('cep') or ep.startswith('carte'), 'diplome') %}
       {{ lien('cep_accueil', "Fiches d'inscription au CEP", ep.startswith('cep_fiche') or ep=='cep_accueil') }}
       {{ lien('carte_editeur', 'Carte scolaire du candidat', ep.startswith('carte')) }}
-      {{ lien('cep_blanc_accueil', 'Examen blanc CEP', ep.startswith('cep_blanc')) }}
+      {% if not (peut('examens_pvs') and ep_existe('examens_session') and ep_existe('examen_blanc') and peut('examen_blanc') and not ENS) %}{{ lien('cep_blanc_accueil', 'Examen blanc du CEP', ep.startswith('cep_blanc')) }}{% endif %}
     {% endcall %}{% endif %}
     {% if peut('cantine') %}
     {% call groupe('cant', 'Cantine', ep.startswith('cantine') or ep.startswith('stock'), 'cantine') %}
@@ -278,6 +278,7 @@
 <main {% if g.user %}class="travail"{% endif %}>
   {% if acces_bandeau is defined %}{% set _ab = acces_bandeau() %}{% if _ab is not none %}<div class="flash warning">{{ icone('verrou') }} Votre compte n'a pas encore son <b>code d'accès personnel</b> : {% if _ab > 0 %}encore {{ _ab }} jour(s) avant le blocage.{% else %}délai écoulé.{% endif %} <a href="{{ url_for('acces_page') }}"><b>Demander / saisir mon code</b></a>{% if acces_gestion() %} · <a href="{{ url_for('acces_comptes') }}">codes de tous les comptes</a>{% endif %}</div>{% endif %}{% endif %}
   {% if ep not in ('login', 'accueil', 'parent_accueil', 'eleve_accueil', '') %}<div class="retour-ligne no-print"><button type="button" class="btn-retour" onclick="scolarisRetour('{{ url_for('accueil') if g.user else (url_for('parent_accueil') if g.get('parent') else url_for('login')) }}')" title="Revenir à la page précédente" aria-label="Revenir à la page précédente">← Retour</button><a class="btn-retour sec" href="{{ url_for('accueil') if g.user else (url_for('parent_accueil') if g.get('parent') else url_for('login')) }}" title="Page d'accueil" aria-label="Page d'accueil">{{ icone('accueil') }} Accueil</a></div>{% endif %}
+  {% if rappel_sauvegarde is defined %}{% set _rs = rappel_sauvegarde() %}{% if _rs %}<div class="flash warning noprint" role="status">{{ icone('archives') }} {% if _rs.jours is none %}Aucune sauvegarde n'a encore été copiée hors de cet appareil.{% else %}Dernière sauvegarde copiée hors de cet appareil il y a {{ _rs.jours }} jours.{% endif %} Une panne ou une perte de l'appareil effacerait les données. <a href="{{ url_for('sauvegarde_un_clic') }}"><b>Télécharger une sauvegarde maintenant</b></a> puis gardez-la sur une clé USB · <a href="{{ url_for('en_ligne_page') }}">réglages</a></div>{% endif %}{% endif %}
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
   {% endwith %}

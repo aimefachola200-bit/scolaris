@@ -17,4 +17,5 @@
   <a class="{{ 'actif' if onglet == 'planif' }}" href="{{ url_for('prep_planif') }}">Planification et classeurs</a>
   <a class="{{ 'actif' if onglet == 'mes' }}" href="{{ url_for('prep_mes_fiches') }}">{{ 'Mes fiches' if g.user.role == 'enseignant' else 'Fiches des enseignants' }}</a>
   <a class="{{ 'actif' if onglet == 'manquants' }}" href="{{ url_for('prep_manquants') }}">Fiches et guides manquants</a>
+  {% if ep_existe('partage_accueil') %}<a class="{{ 'actif' if onglet == 'partage' }}" href="{{ url_for('partage_accueil') }}">Versions partagées</a>{% endif %}
 </nav>

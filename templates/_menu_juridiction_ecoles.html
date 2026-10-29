@@ -47,8 +47,8 @@
 {% call groupe('cep', 'CEP', ep.startswith('cep') or ep.startswith('carte') or ep.startswith('jur_cep_blanc'), 'diplome') %}
   {{ lien('cep_accueil', "Fiches d'inscription au CEP", ep.startswith('cep_fiche') or ep=='cep_accueil') }}
   {{ lien('carte_editeur', 'Carte scolaire du candidat', ep.startswith('carte')) }}
-  {{ lien('cep_blanc_accueil', "Examen blanc CEP (école)", ep.startswith('cep_blanc')) }}
-  {{ lien('jur_cep_blanc', 'Examen blanc ' ~ ('CS' if JUR_NIVEAU == 'cs' else 'DDEMP'), ep.startswith('jur_cep_blanc') and ep != 'jur_cep_blanc_synthese') }}
+  {% if not (ep_existe('examen_blanc') and peut('examen_blanc') and ep_existe('examens_session') and peut('examens_pvs')) %}{{ lien('cep_blanc_accueil', "Examen blanc du CEP (école)", ep.startswith('cep_blanc')) }}{% endif %}
+  {{ lien('jur_cep_blanc', 'Examen blanc ' ~ ('CS' if JUR_NIVEAU == 'cs' else 'DDEMP') ~ ' (consolidation des écoles)', ep.startswith('jur_cep_blanc') and ep != 'jur_cep_blanc_synthese') }}
   {{ lien('jur_cep_blanc_synthese', 'Synthèse des examens par niveau', ep=='jur_cep_blanc_synthese') }}
 {% endcall %}{% endif %}
 {% if peut('cantine') %}

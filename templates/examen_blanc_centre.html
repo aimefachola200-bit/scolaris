@@ -1,6 +1,6 @@
 {# v1.28 — un centre d'examen blanc : candidats, notes, résultats, bilan, recommandations #}
 {% extends "base.html" %}{% block titre %}{{ c.nom }} — examen blanc{% endblock %}
-{% block contenu %}
+{% block contenu %}{% include "_examen_blanc_onglets.html" %}
 <p class="aide"><a href="{{ url_for('examen_blanc', session=c.session) }}">← Centres de l'examen blanc {{ c.session }}</a></p>
 <div class="entete"><div><h1>{{ c.nom }}</h1><p class="sous">Session {{ c.session }}{% if c.chef %} · chef de centre : {{ c.chef }}{% endif %}{% if c.date %} · {{ c.date }}{% endif %}</p></div>
 <div class="actions"><a class="btn sec petit" href="{{ url_for('examen_blanc_pdf', cid=c.id, doc='pv') }}">{{ icone('document') }} PV du centre</a>

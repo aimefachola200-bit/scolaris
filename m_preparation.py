@@ -718,7 +718,12 @@ def pdf_revision(rv, eleve=False, partie=None, sujet=None):
 def enregistrer(app, H):
     q, ex, config = H.q, H.ex, H.config
     H.schema(SCHEMA)
-    if config.AUTONOME:   # v1.31.1 : téléphone / tablette
+    H.ajouter_colonne("prep_fiches", "partagee", "INTEGER NOT NULL DEFAULT 0")     # v1.33 : fiche partagée avec l'école
+    H.schema("""CREATE TABLE IF NOT EXISTS prep_resumes_locaux (ecole_id INTEGER NOT NULL, rid TEXT NOT NULL, donnees TEXT NOT NULL,
+                maj TEXT, maj_par INTEGER, PRIMARY KEY (ecole_id, rid));""")
+    # v1.31.1 : téléphone / tablette ; v1.33 : toutes les installations (la première page de la préparation ne paie plus
+    # le chargement du corpus) — sauf pendant les tests, où l'on mesure aussi le premier chargement
+    if config.AUTONOME or not (app.config.get("TESTING") or os.environ.get("SCOLARIS_SANS_PRECHARGEMENT")):
         threading.Thread(target=corpus, name="corpus-pedagogique", daemon=True).start()
 
     @app.template_filter("prep_txt")
@@ -806,15 +811,33 @@ def enregistrer(app, H):
         r = q("SELECT * FROM prep_fiches WHERE id=? AND ecole_id=?", (mid, H.eco()), un=True)
         if not r:
             abort(404)
-        if g.user["role"] == "enseignant" and r["user_id"] != g.user["id"]:
+        if g.user["role"] == "enseignant" and r["user_id"] != g.user["id"] and not (r["partagee"] if "partagee" in r.keys() else 0):
             abort(403)
         if ecrire and r["user_id"] != g.user["id"]:
             abort(403)
         d = json.loads(r["donnees"])
         d.update({"id": r["id"], "classe_id": r["classe_id"], "date_seance": r["date_seance"], "cours": r["cours"],
                   "matiere": r["matiere"], "sa": r["sa"], "seance": r["seance"], "titre": r["titre"], "source_id": r["source_id"],
-                  "user_id": r["user_id"], "maj_le": r["maj_le"]})
+                  "user_id": r["user_id"], "maj_le": r["maj_le"], "partagee": r["partagee"] if "partagee" in r.keys() else 0})
         return d
+
+    def noter_fiche(mid, titre, donnees, note):
+        if hasattr(H, "partage_noter"):
+            H.partage_noter("fiche", str(mid), titre, donnees, note)
+
+    def restaurer_fiche(cle, d):
+        mid = int(cle)
+        r = q("SELECT * FROM prep_fiches WHERE id=? AND ecole_id=?", (mid, H.eco()), un=True)
+        if not r:
+            abort(404)
+        if r["user_id"] != g.user["id"] and g.user["role"] not in ("directeur", "admin", "fondateur"):
+            abort(403)
+        titre = d.pop("_titre", None) or r["titre"]
+        ex("UPDATE prep_fiches SET titre=?, donnees=?, maj_le=? WHERE id=?",
+           (titre[:300], json.dumps({k: d.get(k, "") for k in CLES_TEXTE + ["deroulement"]}, ensure_ascii=False), H.maintenant(), mid))
+
+    if hasattr(H, "partage_type"):
+        H.partage_type("fiche", "Fiche de préparation", lambda cle: url_for("prep_ma_fiche", mid=int(cle)), restaurer_fiche)
 
     def lire_formulaire(f):
         d = {k: (f.get(k) or "").strip()[:4000] for k in CLES_TEXTE}
@@ -1318,6 +1341,7 @@ def enregistrer(app, H):
                       d["titre"][:300], json.dumps({k: d[k] for k in CLES_TEXTE + ["deroulement"]}, ensure_ascii=False),
                       (request.form.get("source_id") or "")[:80] or None, maint, maint))
             H.journal("prep_fiche_creee", f"{cl['nom']} : {d['titre'][:120]}")
+            noter_fiche(mid, d["titre"], dict({k: d[k] for k in CLES_TEXTE + ["deroulement"]}, _titre=d["titre"]), "création")
             flash("Fiche enregistrée dans « Mes fiches ».", "success")
             return redirect(url_for("prep_ma_fiche", mid=mid))
         cid = request.args.get("classe", type=int)
@@ -1344,13 +1368,47 @@ def enregistrer(app, H):
     @app.route("/preparation/mes-fiches")
     @H.connexion_requise("preparation")
     def prep_mes_fiches():
+        partagees = []
         if g.user["role"] == "enseignant":
             rows = q("SELECT p.*, c.nom classe_nom FROM prep_fiches p LEFT JOIN classes c ON c.id=p.classe_id WHERE p.ecole_id=? AND p.user_id=? "
                      "ORDER BY COALESCE(p.date_seance, p.maj_le) DESC", (H.eco(), g.user["id"]))
+            partagees = q("SELECT p.*, c.nom classe_nom, u.nom auteur FROM prep_fiches p LEFT JOIN classes c ON c.id=p.classe_id "
+                          "LEFT JOIN utilisateurs u ON u.id=p.user_id WHERE p.ecole_id=? AND p.user_id<>? AND p.partagee=1 "
+                          "ORDER BY p.maj_le DESC LIMIT 300", (H.eco(), g.user["id"]))
         else:
             rows = q("SELECT p.*, c.nom classe_nom, u.nom auteur FROM prep_fiches p LEFT JOIN classes c ON c.id=p.classe_id "
                      "LEFT JOIN utilisateurs u ON u.id=p.user_id WHERE p.ecole_id=? ORDER BY COALESCE(p.date_seance, p.maj_le) DESC", (H.eco(),))
-        return render_template("prep_mes_fiches.html", rows=rows)
+        return render_template("prep_mes_fiches.html", rows=rows, partagees=partagees)
+
+    @app.route("/preparation/mes-fiches/<int:mid>/partager", methods=["POST"])
+    @H.connexion_requise("preparation")
+    def prep_ma_fiche_partager(mid):
+        """v1.33 : partager (ou ne plus partager) une fiche avec les collègues de l'école."""
+        d = ma_fiche(mid, ecrire=True)
+        v = 0 if d.get("partagee") else 1
+        ex("UPDATE prep_fiches SET partagee=? WHERE id=?", (v, mid))
+        if v:
+            noter_fiche(mid, d["titre"], dict({k: d.get(k, "") for k in CLES_TEXTE + ["deroulement"]}, _titre=d["titre"]), "partagée avec l'école")
+        H.journal("prep_fiche_partagee" if v else "prep_fiche_non_partagee", d["titre"][:120])
+        flash("Fiche partagée : vos collègues de l'école peuvent la lire et la copier." if v else "La fiche n'est plus partagée.", "success")
+        return redirect(url_for("prep_ma_fiche", mid=mid))
+
+    @app.route("/preparation/mes-fiches/<int:mid>/copier", methods=["POST"])
+    @H.connexion_requise("preparation")
+    def prep_ma_fiche_copier(mid):
+        """v1.33 : copier la fiche partagée d'un collègue dans ses propres fiches (une de ses classes du même cours)."""
+        d = ma_fiche(mid)
+        cls = classes()
+        cl = next((c for c in cls if NIVEAU_COURS.get(c["niveau"]) == d.get("cours")), cls[0] if cls else None)
+        if not cl or not peut_ecrire(cl["id"]):
+            abort(403)
+        maint = H.maintenant()
+        nid = ex("INSERT INTO prep_fiches (ecole_id, user_id, classe_id, date_seance, cours, matiere, sa, seance, titre, donnees, source_id, cree_le, maj_le) "
+                 "SELECT ecole_id, ?, ?, NULL, cours, matiere, sa, seance, titre, donnees, source_id, ?, ? FROM prep_fiches WHERE id=?",
+                 (g.user["id"], cl["id"], maint, maint, mid))
+        H.journal("prep_fiche_copiee", f"{mid} -> {nid}")
+        flash("Fiche copiée dans vos fiches : choisissez la date de la séance.", "success")
+        return redirect(url_for("prep_ma_fiche", mid=nid, modifier=1))
 
     @app.route("/preparation/mes-fiches/<int:mid>", methods=["GET", "POST"])
     @H.connexion_requise("preparation")
@@ -1370,6 +1428,7 @@ def enregistrer(app, H):
                (cl["id"], n["date_seance"], NIVEAU_COURS.get(cl["niveau"]), n["matiere"], n["sa"], n["seance"], n["titre"][:300],
                 json.dumps({k: n[k] for k in CLES_TEXTE + ["deroulement"]}, ensure_ascii=False), H.maintenant(), mid))
             H.journal("prep_fiche_modifiee", n["titre"][:120])
+            noter_fiche(mid, n["titre"], dict({k: n[k] for k in CLES_TEXTE + ["deroulement"]}, _titre=n["titre"]), "modification")
             flash("Fiche modifiée.", "success")
             return redirect(url_for("prep_ma_fiche", mid=mid))
         if modif and d["user_id"] == g.user["id"]:
@@ -1499,6 +1558,101 @@ def enregistrer(app, H):
                                sas=sorted({n for r in rs for n in (r.get("sa") or [])}) if cours and mat else [],
                                tdom=table_domaines(tous), OUTILS_FR=OUTILS_FR, DOMAINES_MA=DOMAINES_MA)
 
+    # ---------------------------------------------------------------- v1.33 : résumé adapté par l'école (version partagée)
+    CHAMPS_RESUME = [("titre", "Titre"), ("regle", "Je retiens (règle / notions essentielles)"), ("methode", "Méthode"),
+                     ("exemple", "Exemple"), ("actualisation", "Et aujourd'hui ?")]
+
+    def resume_local(rid):
+        r = q("SELECT * FROM prep_resumes_locaux WHERE ecole_id=? AND rid=?", (H.eco(), rid), un=True)
+        if not r:
+            return None
+        try:
+            d = json.loads(r["donnees"])
+        except ValueError:
+            return None
+        d["_maj"] = r["maj"]
+        return d
+
+    def locaux_resumes():
+        out = {}
+        for x in q("SELECT rid, donnees, maj FROM prep_resumes_locaux WHERE ecole_id=?", (H.eco(),)):
+            try:
+                d = json.loads(x["donnees"])
+            except ValueError:
+                continue
+            d["_maj"] = x["maj"]
+            out[x["rid"]] = d
+        return out
+
+    def resume_ecole(r, original=False, cache=None):
+        """Le résumé du corpus, avec la version de l'école par-dessus quand elle existe."""
+        if original:
+            return r
+        loc = cache.get(r["id"]) if cache is not None else resume_local(r["id"])
+        if not loc:
+            return r
+        d = dict(r)
+        d.update({k: v for k, v in loc.items() if not k.startswith("_")})
+        d["_local"], d["_maj"] = True, loc.get("_maj")
+        return d
+
+    def sauver_resume(rid, d, note):
+        ex("INSERT INTO prep_resumes_locaux (ecole_id, rid, donnees, maj, maj_par) VALUES (?,?,?,?,?) "
+           "ON CONFLICT(ecole_id, rid) DO UPDATE SET donnees=excluded.donnees, maj=excluded.maj, maj_par=excluded.maj_par",
+           (H.eco(), rid, json.dumps(d, ensure_ascii=False), H.maintenant(), g.user["id"]))
+        if hasattr(H, "partage_noter") and note != "rétablie":
+            H.partage_noter("resume", rid, d.get("titre") or rid, d, note)
+
+    def resume_corpus(rid):
+        r = next((x for x in corpus().get("resumes") or [] if x["id"] == rid), None)
+        if not r:
+            abort(404)
+        return r
+
+    if hasattr(H, "partage_type"):
+        H.partage_type("resume", "Résumé", lambda cle: url_for("prep_resume", rid=cle),
+                       lambda cle, d: (resume_corpus(cle), sauver_resume(cle, d, "rétablie")))
+
+    def peut_adapter_resume():
+        return g.user["role"] in ("enseignant", "directeur", "admin", "fondateur", "cp")
+
+    @app.route("/preparation/resumes/<rid>/modifier", methods=["GET", "POST"])
+    @H.connexion_requise("preparation")
+    def prep_resume_modifier(rid):
+        r = resume_corpus(rid)
+        if not peut_adapter_resume():
+            abort(403)
+        if request.method == "POST":
+            d = {k: (request.form.get(k) or "").strip()[:4000] for k, _l in CHAMPS_RESUME}
+            if not d["titre"]:
+                flash("Le titre est obligatoire.", "danger")
+                return redirect(url_for("prep_resume_modifier", rid=rid))
+            exos = []
+            for i in range(1, 9):
+                qq, rr = (request.form.get(f"q{i}") or "").strip()[:600], (request.form.get(f"r{i}") or "").strip()[:600]
+                if qq:
+                    exos.append({"q": qq, "r": rr})
+            d["exercices"] = exos
+            voc = [v.strip() for v in (request.form.get("vocabulaire") or "").split(";") if v.strip()][:30]
+            if voc:
+                d["vocabulaire"] = voc
+            sauver_resume(rid, d, "adaptation de l'école")
+            H.journal("prep_resume_adapte", rid)
+            flash("Résumé adapté enregistré pour toute l'école (l'original reste consultable).", "success")
+            return redirect(url_for("prep_resume", rid=rid))
+        return render_template("prep_resume_form.html", r=resume_ecole(r), CHAMPS=CHAMPS_RESUME)
+
+    @app.route("/preparation/resumes/<rid>/original", methods=["POST"])
+    @H.connexion_requise("preparation")
+    def prep_resume_original(rid):
+        resume_corpus(rid)
+        if not peut_adapter_resume():
+            abort(403)
+        ex("DELETE FROM prep_resumes_locaux WHERE ecole_id=? AND rid=?", (H.eco(), rid))
+        H.journal("prep_resume_original", rid)
+        flash("Résumé d'origine rétabli (la version de l'école reste dans l'historique).", "success")
+        return redirect(url_for("prep_resume", rid=rid))
+
     @app.route("/preparation/resumes/<rid>")
     @H.connexion_requise("preparation")
     def prep_resume(rid):
@@ -1507,7 +1661,9 @@ def enregistrer(app, H):
             abort(404)
         meme = sorted(resumes_filtres(COLLECTION_DE[r["collection"]], r["cours"], r["matiere"]), key=ordre_resume)
         i = meme.index(r)
-        return render_template("prep_resume.html", r=r, eleve=bool(request.args.get("eleve")),
+        r = resume_ecole(r, bool(request.args.get("original")))
+        return render_template("prep_resume.html", r=r, eleve=bool(request.args.get("eleve")), peut_adapter=peut_adapter_resume(),
+                               original=bool(request.args.get("original")),
                                prec=meme[i - 1] if i > 0 else None, suiv=meme[i + 1] if i + 1 < len(meme) else None)
 
     @app.route("/preparation/resumes/<rid>.pdf")
@@ -1517,6 +1673,7 @@ def enregistrer(app, H):
         if not r:
             abort(404)
         eleve = bool(request.args.get("eleve"))
+        r = resume_ecole(r, bool(request.args.get("original")))
         nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resume_") + r["titre"]))[:70] + ".pdf"
         return H.pdf_reponse(pdf_resumes([r], eleve), nom)
 
@@ -1530,7 +1687,8 @@ def enregistrer(app, H):
             rs = [r for r in rs if r.get("seance_resume")]
         if not rs:
             abort(404)
-        rs = sorted(rs, key=ordre_resume)
+        _loc = locaux_resumes()
+        rs = [resume_ecole(r, cache=_loc) for r in sorted(rs, key=ordre_resume)]
         eleve = bool(a.get("eleve"))
         lib = " ".join(x for x in [dict(COLLECTIONS_RES).get(a.get("col") or "", ""), a.get("cours") or "",
                                     nom_matiere(a["matiere"]) if a.get("matiere") else "", a.get("domaine") or "",
