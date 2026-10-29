@@ -83,8 +83,8 @@ for u in pages:
     pdf_ok(html.unescape(m.group(1)))
     docx_ok(html.unescape(m.group(2)))
 # Word d'une fiche : vrai .docx avec le titre
-x = docx_ok(f"/preparation/fiches/{f['id']}.doc", None)
-assert x and "Times New Roman" in c.get(f"/preparation/fiches/{f['id']}.doc").data.decode("latin1") or True
+x = docx_ok(f"/preparation/fiches/{f['id']}.docx", None)
+assert x and "Times New Roman" in c.get(f"/preparation/fiches/{f['id']}.docx").data.decode("latin1") or True
 # listes : par ligne et en lot
 h = c.get("/preparation/fiches?cours=CE2&matiere=maths&sa=1").data.decode()
 assert "lot-case" in h and "fiches-lot.pdf" in h, "liste des fiches sans téléchargement groupé"
@@ -101,7 +101,7 @@ docx_ok(f"/preparation/resumes/{rs['id']}.docx?eleve=1", None)
 pdf_ok("/preparation/resumes-lot.pdf?cours=CE2&matiere=maths&eleve=1")
 assert len(zip_ok("/preparation/resumes-lot.zip?ids=" + rs["id"])) == 1
 h = c.get("/preparation/evaluations?cours=CE2").data.decode()
-assert "jeu.docx" in h and ".doc?" in h or ".doc\"" in h
+assert "jeu.docx" in h and ".docx" in h
 m = re.search(r'/preparation/evaluations/jeu\.pdf\?cours=CE2&amp;periode=([^"&]+)', h)
 if m:
     docx_ok(f"/preparation/evaluations/jeu.docx?cours=CE2&periode={m.group(1)}")

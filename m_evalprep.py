@@ -593,6 +593,10 @@ def enregistrer(app, H):
         return H.pdf_reponse(pdf_epreuves([d], p, par_page()), nom(f"epreuve_{cle}_{p}", "pdf"))
 
     @app.route("/preparation/evaluations/e/<cle>.doc")
+    def prep_epreuve_doc_ancien(cle):            # v2.2.1 : anciens liens « .doc » -> « .docx »
+        return redirect(url_for("prep_epreuve_doc", cle=cle, **request.args.to_dict()), 301)
+
+    @app.route("/preparation/evaluations/e/<cle>.docx")
     @H.connexion_requise("preparation")
     def prep_epreuve_doc(cle):
         cours, per, code = cle_valide(cle)

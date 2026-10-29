@@ -89,7 +89,7 @@ def parcours(c, directeur):
     assert "Déroulement" in t and "Adapter pour ma classe" in t
     s, n = texte_pdf(ok(c.get(f"/preparation/fiches/{f_est['id']}.pdf?classe={ce2}")))
     assert "FICHE DE PRÉPARATION" in s and "CE2 P" in s and "Phases" in s and "code" in s, s[:800]
-    r = ok(c.get(f"/preparation/fiches/{f_ci['id']}.doc"))
+    r = ok(c.get(f"/preparation/fiches/{f_ci['id']}.docx"))
     # v2.2 : vrai document Word (.docx) au lieu d'une page HTML nommée « .doc »
     import zipfile as _zf, io as _io
     assert r.mimetype.endswith("wordprocessingml.document") and "FICHE DE PRÉPARATION" in _zf.ZipFile(_io.BytesIO(r.data)).read("word/document.xml").decode("utf-8")
@@ -114,7 +114,7 @@ def parcours(c, directeur):
     s, n = texte_pdf(ok(c.get(f"/preparation/mes-fiches/{mid}.pdf")))
     assert d["titre"] + " v2" in s and "CD adapté" in s and "Rappel" in s
     import zipfile as _zf2, io as _io2
-    assert "CE2 P" in _zf2.ZipFile(_io2.BytesIO(ok(c.get(f"/preparation/mes-fiches/{mid}.doc")).data)).read("word/document.xml").decode("utf-8")
+    assert "CE2 P" in _zf2.ZipFile(_io2.BytesIO(ok(c.get(f"/preparation/mes-fiches/{mid}.docx")).data)).read("word/document.xml").decode("utf-8")
     r = ok(c.post(f"/preparation/mes-fiches/{mid}/dupliquer"), 302)
     t = txt(ok(c.get("/preparation/mes-fiches")))
     assert "(copie)" in t

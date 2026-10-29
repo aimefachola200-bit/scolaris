@@ -77,7 +77,7 @@ def parcours(c, directeur):
     assert "CORRIGÉ TYPE" in s and "rougeole" in s
     s, npg = texte_pdf(ok(c.get(f"/preparation/evaluations/e/CM1-T1-expr.pdf?partie=grille")))
     assert "Pertinence" in s and "Cohérence" in s and "Total" in s
-    r = ok(c.get(f"/preparation/evaluations/e/{cle}.doc?partie=corrige"))
+    r = ok(c.get(f"/preparation/evaluations/e/{cle}.docx?partie=corrige"))
     # v2.2 : vrai document Word (.docx) au lieu d'une page HTML nommée « .doc »
     import zipfile as _zf, io as _io
     assert r.mimetype.endswith("wordprocessingml.document") and "Réponse attendue" in _zf.ZipFile(_io.BytesIO(r.data)).read("word/document.xml").decode("utf-8")

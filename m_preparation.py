@@ -214,10 +214,71 @@ _SOUS_TITRES = re.compile(r"(?m)^[ \t]*(INTRODUCTION|MISE EN SITUATION|R[ÉE]ALI
                           r"Phase introductive|EXERCICE STRUCTURAL[^\n]*|EXERCICE MENTAL|LEÇON DU JOUR[^\n]*|Activit[ée] \d+[^\n]{0,40})[ \t]*$")
 
 
-def _case_deroulement(t, phase):
+_SECTIONS_BRUTES = re.compile(r"(?m)^\s*(?:\*\*)?(INTRODUCTION|MISE EN SITUATION|R[ÉE]ALISATION|Titre\b|CONSIGNES|R[ÉE]SULTATS ATTENDUS|"
+                             r"[ÉE]mergence des acquis)", re.I)
+_MOTS_COLLES = re.compile(r"[a-zàâçéèêëîïôûù]{3,}[A-ZÉÈÀ][a-zàâçéèêëîïôûù]{2,}")
+_DIALOGUE = re.compile(r"^(?:[ÉE]l[èe]ve|Ma[iî]tre|Enseignant|Apprenant|Tous|Groupe|Question|R[ée]ponse)", re.I)
+
+
+def case_illisible(t):
+    """v2.2.1 — case de déroulement abîmée à l'extraction : deux colonnes du PDF mêlées ligne à ligne (sous-titres répétés,
+    mots collés d'une colonne à l'autre)."""
+    if not isinstance(t, str):
+        return False
+    secs = [x.upper() for x in _SECTIONS_BRUTES.findall(t)]
+    return bool(_MOTS_COLLES.search(t)) or (len(secs) >= 2 and len(set(secs)) < len(secs))
+
+
+def fin_coupee(t):
+    t = (t or "").strip()
+    return len(t) > 200 and bool(re.search(r"[a-zàâçéèêëîïôûù]{2,}$", t)) and not re.search(r"[.!?:;»)\]…]$", t)
+
+
+def lignes_doublees(t):
+    lignes = [x.strip() for x in str(t or "").split("\n") if x.strip()]
+    return sum(1 for a, b in zip(lignes, lignes[1:]) if a == b and len(a) > 8 and not _DIALOGUE.match(a))
+
+
+def activite_apc(phase, titre):
+    p = (phase or "").lower()
+    t = (titre or "la séance").strip().rstrip(".")
+    if "introduction" in p or "situation" in p:
+        return (f"\u25aa Présentation de la situation de départ liée à « {t} ».\n\u25aa Dis ce que tu sais déjà sur le sujet "
+                "(émergence des acquis antérieurs).\n\u25aa Formule ce que tu vas apprendre aujourd'hui.")
+    if "retour" in p or "projection" in p or "objectivation" in p:
+        return ("\u25aa Dis ce que tu as appris.\n\u25aa Dis comment tu l'as appris.\n\u25aa Dis les difficultés rencontrées.\n"
+                "\u25aa Dis à quelles occasions tu vas utiliser ce que tu as appris.")
+    return (f"\u25aa Observe / lis le support de la séance (« {t} ») et réponds individuellement aux questions.\n"
+            "\u25aa Échange en groupe et mets-toi d'accord sur les réponses.\n"
+            "\u25aa Présente les résultats de ton groupe ; mise en commun et synthèse avec l'enseignant(e).\n"
+            "(Activité reconstituée selon l'APC : le texte d'origine était illisible.)")
+
+
+def _case_deroulement(t, phase, titre=None):
     t = _sans_filigrane(t)
     if not isinstance(t, str):
         return t
+    if case_illisible(t):                       # v2.2.1 : colonnes mêlées -> activité APC propre
+        REPARATIONS["illisible"] = REPARATIONS.get("illisible", 0) + 1
+        return activite_apc(phase, titre)
+    if lignes_doublees(t):                      # lignes répétées par l'extraction
+        REPARATIONS["doublons"] = REPARATIONS.get("doublons", 0) + 1
+        out, precedente = [], None
+        for l in t.split("\n"):
+            ls = l.strip()
+            if ls and ls == precedente and len(ls) > 8 and not _DIALOGUE.match(ls):
+                continue
+            if ls:
+                precedente = ls
+            out.append(l)
+        t = "\n".join(out)
+    if fin_coupee(t):                           # texte coupé net en fin de case
+        REPARATIONS["fin"] = REPARATIONS.get("fin", 0) + 1
+        lignes = t.rstrip().split("\n")
+        if len(lignes) > 1 and len(lignes[-1].strip()) < 45:
+            t = "\n".join(lignes[:-1]).rstrip()
+        if fin_coupee(t) or not re.search(r"[.!?:;»)\]…]$", t.strip()):
+            t = t.rstrip() + " […]"
     # bloc brut d'une fiche extraite d'un PDF (plusieurs étapes dans une case) : sous-titres en gras, lisibles
     if len(_SOUS_TITRES.findall(t)) >= 2 and "**" not in t:
         REPARATIONS["residu"] += 1
@@ -254,6 +315,9 @@ def _reparer_fiches(c):
                     f[k] = v[:m.start()].rstrip(" ;,") or ""
         if f.get("strategies") and f.get("strategies") == f.get("objectifs"):
             f["strategies"] = "Travail individuel — travail en groupe — travail collectif."
+        for k in ("titre", "intitule"):              # « NationsUnies » -> « Nations Unies »
+            if isinstance(f.get(k), str) and _MOTS_COLLES.search(f[k]):
+                f[k] = re.sub(r"([a-zàâçéèêëîïôûù]{3,})([A-ZÉÈÀ][a-zàâçéèêëîïôûù]{2,})", r"\1 \2", f[k])
         for k in ("contenus", "cd", "ct", "objectifs", "materiel", "strategies", "evaluation", "projection", "titre",
                   "je_retiens", "observations", "intitule"):
             if isinstance(f.get(k), str):
@@ -263,7 +327,8 @@ def _reparer_fiches(c):
                     REPARATIONS["coupe"] += 1
                 f[k] = v2
         if isinstance(f.get("deroulement"), list):
-            f["deroulement"] = [[_case_deroulement(x, (ligne or [""])[0]) if isinstance(x, str) else x for x in ligne]
+            f["deroulement"] = [[(_case_deroulement(x, (ligne or [""])[0], f.get("titre")) if k else _sans_filigrane(x)) if isinstance(x, str) else x
+                                 for k, x in enumerate(ligne)]
                                 if isinstance(ligne, list) else ligne for ligne in f["deroulement"]]
     for cle in ("guides", "modeles", "resumes", "programmes", "manuels", "mesures_correctives", "revisions"):
         for x in c.get(cle) or []:
@@ -1674,13 +1739,17 @@ def enregistrer(app, H):
         return H.pdf_reponse(pdf_fiches([f]), nom_fichier(f, "pdf"))
 
     @app.route("/preparation/fiches/<fid>.doc")
+    def prep_fiche_doc_ancien(fid):              # v2.2.1 : anciens liens « .doc » -> « .docx » (Word 2007 et plus)
+        return redirect(url_for("prep_fiche_doc", fid=fid, **request.args.to_dict()), 301)
+
+    @app.route("/preparation/fiches/<fid>.docx")
     @H.connexion_requise("preparation")
     def prep_fiche_doc(fid):
         f = dict(fiche_corpus(fid))
         cid = request.args.get("classe", type=int)
         if cid and any(c["id"] == cid and NIVEAU_COURS.get(c["niveau"]) == f.get("cours") for c in classes()):
             f["classe_id"] = cid
-        return reponse_doc(doc_word([f]), nom_fichier(f, "doc"))
+        return reponse_doc(doc_word([f]), nom_fichier(f, "docx"))
 
     @app.route("/preparation/semaine.pdf")
     @H.connexion_requise("preparation")
@@ -1845,10 +1914,14 @@ def enregistrer(app, H):
         return H.pdf_reponse(pdf_fiches([d]), nom_fichier(d, "pdf"))
 
     @app.route("/preparation/mes-fiches/<int:mid>.doc")
+    def prep_ma_fiche_doc_ancien(mid):
+        return redirect(url_for("prep_ma_fiche_doc", mid=mid, **request.args.to_dict()), 301)
+
+    @app.route("/preparation/mes-fiches/<int:mid>.docx")
     @H.connexion_requise("preparation")
     def prep_ma_fiche_doc(mid):
         d = ma_fiche(mid)
-        return reponse_doc(doc_word([d]), nom_fichier(d, "doc"))
+        return reponse_doc(doc_word([d]), nom_fichier(d, "docx"))
 
     # ------------------------------------------------------------ v1.31 : révisions d'éveil, manuels, mesures correctives
     @app.route("/preparation/revisions")
