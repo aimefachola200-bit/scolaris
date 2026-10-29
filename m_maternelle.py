@@ -394,6 +394,11 @@ def enregistrer(app, H):
                 w.add_page(pg)
         out = io.BytesIO()
         w.add_metadata({"/Title": "Classeur — école maternelle", "/Author": "SCOLARIS"})
+        if hasattr(w, "compress_identical_objects"):   # v2.2 : images communes une seule fois
+            try:
+                w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+            except Exception:  # noqa: BLE001
+                pass
         w.write(out)
         H.journal("mat_classeur_pdf", f"{c['section']} {c['mois']} {c['semaine'] or ''} : {len(fs)} fiche(s)")
         return H.pdf_reponse(out.getvalue(), f"classeur_maternelle_{c['section']}_{_sa(c['mois'])}{'_s' + str(c['semaine']) if c['semaine'] else ''}.pdf")

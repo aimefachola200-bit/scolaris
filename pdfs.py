@@ -378,7 +378,21 @@ def url_verif(code):
             base = request.host_url
         except RuntimeError:
             base = "http://localhost:5100"
+    if _adresse_locale(base):     # v2.2 : jamais « http://localhost/… » sur un document (adresse inutilisable ailleurs)
+        return f"{getattr(config, 'NOMS_APPLI', {}).get(getattr(config, 'EDITION', ''), 'SCOLARIS') if hasattr(config, 'NOMS_APPLI') else 'SCOLARIS'} — code de vérification {code} — Vérifier dans l'application (menu Vérifier un document)"
     return f"{base.rstrip('/')}/verifier/{code}"
+
+
+def _adresse_locale(base):
+    import urllib.parse
+    h = (urllib.parse.urlsplit(base or "").hostname or "").lower()
+    return not h or h in ("localhost", "0.0.0.0", "::1") or h.startswith("127.")
+
+
+def texte_verif(code):
+    """v2.2 — ligne imprimée sous le QR : l'adresse de vérification, ou « Vérifier dans l'application » sans adresse publique."""
+    u = url_verif(code)
+    return u if u.startswith("http") else f"Vérifier dans l'application · code {code}"
 
 
 _QR_CACHE = {}
@@ -429,7 +443,7 @@ def _qr(c, code, x, y, taille=22 * mm, legende=True):
         c.setFillColor(colors.black)
         c.drawString(x + taille + 2 * mm, y + taille - 8, "Document vérifiable")
         c.drawString(x + taille + 2 * mm, y + taille - 17, f"Code : {code}")
-        c.drawString(x + taille + 2 * mm, y + taille - 26, url_verif(code)[:60])
+        c.drawString(x + taille + 2 * mm, y + taille - 26, texte_verif(code)[:60])
 
 
 def _entete(c, cycle, titre, sous_titre=None, W=A4[0], H=A4[1], marge=15 * mm):
@@ -1290,7 +1304,7 @@ class _BlocSignatures(_Flowable):
             c.setFillColor(colors.black)
             xc = x0 + t / 2
             c.drawCentredString(xc, 3.6 * mm, f"Document vérifiable · code {self.code}")
-            c.drawCentredString(xc, 1 * mm, url_verif(self.code)[:70])
+            c.drawCentredString(xc, 1 * mm, texte_verif(self.code)[:70])
         for i, s in enumerate(self.sigs):
             titre, nom, image, avec_cachet = (list(s) + [None, None, False])[:4]
             x = self.largeur * (i + 0.5) / n

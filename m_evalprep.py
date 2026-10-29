@@ -598,8 +598,7 @@ def enregistrer(app, H):
         cours, per, code = cle_valide(cle)
         exiger_cours(cours)
         p = partie()
-        return Response("﻿" + doc_epreuves([epreuve(cle)], p), mimetype="application/msword",
-                        headers={"Content-Disposition": f"attachment; filename={nom(f'epreuve_{cle}_{p}', 'doc')}"})
+        return H.reponse_docx(doc_epreuves([epreuve(cle)], p), nom(f"epreuve_{cle}_{p}", "docx"), "Épreuve")
 
     @app.route("/preparation/evaluations/jeu.pdf")
     @H.connexion_requise("preparation")
@@ -611,6 +610,29 @@ def enregistrer(app, H):
         p = partie()
         liste = [epreuve(f"{cours}-{per}-{e['code']}") for e in B.organigramme(cours, B.PER[per][2])]
         return H.pdf_reponse(pdf_epreuves(liste, p, par_page()), nom(f"epreuves_{cours}_{per}_{p}", "pdf"))
+
+    @app.route("/preparation/evaluations/jeu.<fmt>")
+    @H.connexion_requise("preparation")
+    def prep_jeu_word(fmt):
+        """v2.2 — toutes les épreuves d'une période : un document Word (.docx) ou un ZIP d'un Word par épreuve."""
+        if fmt not in ("docx", "zip"):
+            abort(404)
+        cours, per = request.args.get("cours") or "", request.args.get("periode") or ""
+        exiger_cours(cours)
+        if per not in [p[0] for p in B.periodes_du_cours(cours)]:
+            abort(404)
+        p = partie()
+        liste = [epreuve(f"{cours}-{per}-{e['code']}") for e in B.organigramme(cours, B.PER[per][2])]
+        if fmt == "docx":
+            return H.reponse_docx(doc_epreuves(liste, p), nom(f"epreuves_{cours}_{per}_{p}", "docx"), f"Épreuves {cours} {per}")
+        import zipfile
+        import export_doc as E
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            for k, d in enumerate(liste, 1):
+                z.writestr(f"{k:02d}_" + nom(f"{d.get('discipline') or d.get('cle') or 'epreuve'}_{p}", "docx"),
+                           E.html_vers_docx(doc_epreuves([d], p), d.get("discipline") or "Épreuve"))
+        return H.reponse_fichier(out.getvalue(), nom(f"epreuves_{cours}_{per}_{p}_word", "zip"), "application/zip")
 
     @app.route("/preparation/evaluations/creer", methods=["POST"])
     @H.connexion_requise("preparation")
@@ -946,7 +968,7 @@ def enregistrer(app, H):
         base = f"classeur_{portee}_{cl['nom']}_{d.isoformat()}"
         H.journal("prep_classeur", f"{cl['nom']} {portee} : {len(fiches)} fiche(s)")
         if fmt == "doc":
-            return Response("﻿" + H.prep_doc_word(fiches), mimetype="application/msword", headers={"Content-Disposition": f"attachment; filename={nom(base, 'doc')}"})
+            return H.reponse_docx(H.prep_doc_word(fiches), nom(base, "docx"), "Classeur de fiches")
         from pypdf import PdfReader, PdfWriter
         pages, pdfs_f = [], []
         for f in fiches:
@@ -965,12 +987,18 @@ def enregistrer(app, H):
             for pg in PdfReader(io.BytesIO(b)).pages:
                 w.add_page(pg)
         out = io.BytesIO()
+        if hasattr(w, "compress_identical_objects"):   # v2.2 : images communes une seule fois
+            try:
+                w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+            except Exception:  # noqa: BLE001
+                pass
         w.write(out)
         if fmt == "zip":
             z = io.BytesIO()
             with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
                 zf.writestr(nom(base, "pdf"), out.getvalue())
-                zf.writestr(nom(base, "doc"), "﻿" + H.prep_doc_word(fiches))
+                import export_doc as _E
+                zf.writestr(nom(base, "docx"), _E.html_vers_docx(H.prep_doc_word(fiches), "Classeur de fiches"))
                 for i, (f, b) in enumerate(zip(fiches, pdfs_f), 1):
                     zf.writestr(f"fiches/{i:02d}_" + nom(f.get("titre", "fiche"), "pdf"), b)
             return Response(z.getvalue(), mimetype="application/zip", headers={"Content-Disposition": f"attachment; filename={nom(base, 'zip')}"})

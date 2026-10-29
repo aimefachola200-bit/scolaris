@@ -43,7 +43,9 @@ import java.util.Map;
  * L'application web est embarquée dans l'APK (assets/www) et servie à l'adresse sécurisée
  * https://appassets.androidplatform.net/ (caméra, base de données locale) : elle fonctionne sans Internet.
  * Les exports (PDF, Excel, sauvegardes) sont enregistrés dans « Téléchargements » ; l'impression passe par Android.
- * Conception : Maître Aimé FACHE.
+ * Documents : « Télécharger en PDF », « Télécharger en Word » et « Imprimer » (js/doc-export.js dans les applications) ;
+ * l'impression passe par le service d'impression d'Android.
+ * Conception : Maître Aimé FACHOLA.
  */
 public class MainActivity extends Activity {
 
@@ -80,14 +82,16 @@ public class MainActivity extends Activity {
             + "if(this.hasAttribute('download')&&(h.indexOf('blob:')===0||h.indexOf('data:')===0)){envoyer(this.href,this.getAttribute('download'));return;}return clic.apply(this,arguments);};"
             + "document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[download]');"
             + "if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('blob:')===0||h.indexOf('data:')===0){e.preventDefault();e.stopPropagation();envoyer(a.href,a.getAttribute('download'));}},true);"
-            + "window.print=function(){MempCP.imprimer(document.title||'MEMP CP');};"
+            // impression : les applications proposent PDF / Word / Imprimer (DocExport) ; sinon impression Android de la page
+            + "if(!window.DocExport){window.print=function(){MempCP.imprimer(document.title||'MEMP CP');};}"
             // fenêtre d'impression (window.open('') puis document.write, comme ÉduGestion Pro) : imprimée par Android
             + "var ouvrir=window.open;window.open=function(u){u=String(u||'');"
             + "if(u.indexOf('blob:')===0||u.indexOf('data:')===0){envoyer(u,'document');return {closed:false,close:function(){},focus:function(){}};}"
             + "if(u&&u!=='about:blank'){return ouvrir.apply(window,arguments);}"
             + "var buf='',w={closed:false,focus:function(){},close:function(){w.closed=true;},"
             + "document:{open:function(){buf='';},write:function(t){buf+=t;},writeln:function(t){buf+=t+'\\n';},close:function(){}},"
-            + "print:function(){var m=/<title>([^<]*)<\\/title>/i.exec(buf);MempCP.imprimerHtml(m?m[1]:(document.title||'Document'),buf);}};return w;};"
+            + "print:function(){var m=/<title>([^<]*)<\\/title>/i.exec(buf),t=m?m[1]:(document.title||'Document');"
+            + "if(window.DocExport&&DocExport.choisirDocument){DocExport.choisirDocument(buf,t);}else{MempCP.imprimerHtml(t,buf);}}};return w;};"
             + "})();";
 
     @Override
@@ -135,8 +139,25 @@ public class MainActivity extends Activity {
                     return false;
                 }
                 try {   // WhatsApp, téléphone, e-mail, sites : applications du téléphone
-                    startActivity(new Intent(Intent.ACTION_VIEW, u));
-                } catch (ActivityNotFoundException e) {
+                    if ("intent".equals(u.getScheme())) {
+                        Intent i = Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME);
+                        i.addCategory(Intent.CATEGORY_BROWSABLE);
+                        i.setComponent(null);
+                        i.setSelector(null);
+                        try {
+                            startActivity(i);
+                        } catch (ActivityNotFoundException e2) {
+                            String repli = i.getStringExtra("browser_fallback_url");
+                            if (repli != null) {
+                                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(repli)));
+                            } else {
+                                throw e2;
+                            }
+                        }
+                    } else {
+                        startActivity(new Intent(Intent.ACTION_VIEW, u));
+                    }
+                } catch (ActivityNotFoundException | java.net.URISyntaxException e) {
                     Toast.makeText(MainActivity.this, "Aucune application pour ouvrir ce lien", Toast.LENGTH_SHORT).show();
                 }
                 return true;
@@ -264,6 +285,9 @@ public class MainActivity extends Activity {
                 String ext = android.webkit.MimeTypeMap.getFileExtensionFromUrl(propre.replace(' ', '_')).toLowerCase();
                 String devine = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
                 if ("xlsx".equals(ext)) devine = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                if ("docx".equals(ext)) devine = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                if ("pdf".equals(ext)) devine = "application/pdf";
+                if ("json".equals(ext) || "scsync".equals(ext)) devine = "application/json";
                 type = devine != null ? devine : "application/octet-stream";
             }
             if (Build.VERSION.SDK_INT >= 29) {
@@ -364,8 +388,51 @@ public class MainActivity extends Activity {
         return lancerChoix(params, image);
     }
 
+    /** Intention de choix de fichier : les extensions demandées (.xlsx, .json, .scsync…) deviennent des types MIME. */
+    private Intent intentionFichier(WebChromeClient.FileChooserParams params) {
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        java.util.ArrayList<String> mimes = new java.util.ArrayList<>();
+        boolean tout = false;
+        String[] types = params.getAcceptTypes();
+        if (types != null) {
+            for (String brut : types) {
+                if (brut == null) continue;
+                for (String t : brut.split(",")) {
+                    t = t.trim().toLowerCase();
+                    if (t.isEmpty()) continue;
+                    if (t.startsWith(".")) {
+                        String ext = t.substring(1);
+                        String m = TYPES.get(ext);
+                        if (m == null) m = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                        if ("xls".equals(ext)) m = "application/vnd.ms-excel";
+                        if ("csv".equals(ext)) m = "text/csv";
+                        if (m == null) { tout = true; } else if (!mimes.contains(m)) { mimes.add(m); }
+                        if ("csv".equals(ext) && !mimes.contains("text/comma-separated-values")) mimes.add("text/comma-separated-values");
+                    } else if (t.contains("/")) {
+                        if (!mimes.contains(t)) mimes.add(t);
+                    } else {
+                        tout = true;
+                    }
+                }
+            }
+        }
+        if (tout || mimes.isEmpty()) {
+            i.setType("*/*");   // extension propre à l'application (.scsync…) : tous les fichiers
+        } else if (mimes.size() == 1) {
+            i.setType(mimes.get(0));
+        } else {
+            i.setType("*/*");
+            i.putExtra(Intent.EXTRA_MIME_TYPES, mimes.toArray(new String[0]));
+        }
+        if (params.getMode() == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE) {
+            i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+        return i;
+    }
+
     private boolean lancerChoix(WebChromeClient.FileChooserParams params, boolean image) {
-        Intent galerie = params.createIntent();
+        Intent galerie = intentionFichier(params);
         Intent aLancer = galerie;
         photoUri = null;
         if (image && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -472,13 +539,31 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Retour : ferme d'abord la fenêtre (boîte de dialogue) ouverte dans l'application, sinon page précédente. */
+    private static final String JS_RETOUR = "(function(){var s='.de-voile,.ped-voile,.uas-voile,.pvs-voile,.gd-voile,.modal.active,.modal.show,.modal.open,.modal-overlay.active,[role=dialog][aria-modal=true]';"
+            + "var v=[].slice.call(document.querySelectorAll(s)).filter(function(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0;});"
+            + "if(!v.length)return '';var e=v[v.length-1];var b=e.querySelector('[data-de=annuler],header button[aria-label=Fermer],.modal-close,.close,[data-dismiss],[aria-label=Fermer]');"
+            + "if(b){b.click();return 'ferme';}var k=new KeyboardEvent('keydown',{key:'Escape',keyCode:27,bubbles:true});document.dispatchEvent(k);return 'ferme';})()";
+
     @Override
     public void onBackPressed() {
-        if (web != null && web.canGoBack()) {
-            web.goBack();
-        } else {
+        if (web == null) {
             super.onBackPressed();
+            return;
         }
+        web.evaluateJavascript(JS_RETOUR, new ValueCallback<String>() {
+            @Override
+            public void onReceiveValue(String r) {
+                if (r != null && r.contains("ferme")) {
+                    return;
+                }
+                if (web.canGoBack()) {
+                    web.goBack();
+                } else {
+                    MainActivity.super.onBackPressed();
+                }
+            }
+        });
     }
 
     /** Appelé depuis les pages de l'application (script PONT_JS). */

@@ -1781,7 +1781,7 @@ def bloc_signatures(sigs, largeur, code=None):
                 c.setFont("Helvetica", 6.3)
                 c.setFillColor(colors.black)
                 c.drawString(0, 6 * mm, f"Document vérifiable · code {code}")
-                c.drawString(0, 3 * mm, pdfs.url_verif(code)[:58])
+                c.drawString(0, 3 * mm, pdfs.texte_verif(code)[:58])
                 x0 = 46 * mm
             n = max(1, len(sigs))
             w = (largeur - x0) / n

@@ -45,13 +45,22 @@
   <a class="btn sec petit" href="{{ url_for('prep_resumes_pdf', cours=cours, matiere=mat, seances=1, eleve=1) }}">Cahier élève</a>
   {% if seul %}<a class="btn sec petit" href="{{ url_for('prep_resumes', cours=cours, matiere=mat, vue=vue) }}">Tous les résumés</a>{% else %}<a class="btn sec petit" href="{{ url_for('prep_resumes', cours=cours, matiere=mat, seances=1, vue=vue) }}">Résumés de séance seulement</a>{% endif %}{% endif %}
 </div>
+{% set qs = request.query_string.decode() %}
+<div class="carte lot-telechargement no-print">
+  <b>Télécharger directement</b> — les résumés cochés, ou tous ceux du choix ({{ n }}{{ ', limité à 300' if n > 300 }}) :
+  <a class="btn petit" href="{{ url_for('prep_resumes_lot', fmt='pdf') }}{{ '?' ~ qs if qs else '' }}" data-fmt="pdf">{{ icone('document') }} PDF</a>
+  <a class="btn petit" href="{{ url_for('prep_resumes_lot', fmt='docx') }}{{ '?' ~ qs if qs else '' }}" data-fmt="docx">{{ icone('texte') }} Word</a>
+  <a class="btn sec petit" href="{{ url_for('prep_resumes_lot', fmt='zip') }}{{ '?' ~ qs if qs else '' }}" data-fmt="zip">{{ icone('archives') }} ZIP (un Word par résumé)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_resumes_lot', fmt='pdf') }}?{{ qs ~ '&' if qs else '' }}eleve=1" data-fmt="pdf" data-eleve="1">PDF élève</a>
+  <span class="aide lot-compte"></span>
+</div>
 {% if sas %}<p class="aide">Livret d'une SA (PDF) : {% for n in sas %}<a href="{{ url_for('prep_resumes_pdf', cours=cours, matiere=mat, sa=n) }}">SA {{ n }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
 {% endif %}
 {% if vue == 'progression' and progression %}
 {% for t, mois in progression %}<h3>Trimestre {{ t }}</h3>
 {% for m, reps in mois %}<div class="tw"><table class="t" aria-label="{{ m }}"><thead><tr><th style="width:22%">{{ m }}</th><th>Résumé</th><th style="width:18%">Domaine</th><th style="width:1%"></th></tr></thead><tbody>
 {% for rep, rs in reps %}{% for r in rs %}<tr><td>{% if loop.first %}<b>{{ rep }}</b>{% endif %}</td><td><a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a>{% set a = (r.ancres or [{}])[0] %}{% if a.seance_titre and a.seance_titre != r.titre %} <span class="aide">· séance « {{ a.seance_titre }} »</span>{% endif %}{% if r.seance_resume and r.ancres|length > 1 %} <span class="aide">· {{ r.ancres|length }} séances</span>{% endif %}{% if r.a_verifier %} <span class="badge">à vérifier</span>{% endif %}</td><td>{{ r.domaine }}</td>
-<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id) }}">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1) }}">Élève</a></td></tr>{% endfor %}{% endfor %}
+<td style="white-space:nowrap"><input type="checkbox" class="lot-case no-print" value="{{ r.id }}" aria-label="Choisir {{ r.titre }}"> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, telecharger=1) }}" title="Télécharger en PDF">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_docx', rid=r.id) }}" title="Télécharger en Word">Word</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1, telecharger=1) }}" title="Version élève (PDF)">Élève</a></td></tr>{% endfor %}{% endfor %}
 </tbody></table></div>{% endfor %}{% endfor %}
 {% else %}
 {% for k in ordre %}{% set collection, c = k %}
@@ -59,7 +68,7 @@
 {% for d, rs in groupes[k].items() %}
 <div class="tw"><table class="t"><thead><tr><th>{{ d }}</th><th style="width:1%"></th></tr></thead><tbody>
 {% for r in rs %}<tr><td><a href="{{ url_for('prep_resume', rid=r.id) }}">{{ r.titre }}</a>{% if r.etape %} <span class="aide">· {{ r.etape }}</span>{% endif %}{% if collection == 'Révision CEP' %} <span class="aide">· {{ prep_nom_matiere(r.matiere) }}</span>{% endif %}</td>
-<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id) }}">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1) }}">Élève</a></td></tr>{% endfor %}
+<td style="white-space:nowrap"><input type="checkbox" class="lot-case no-print" value="{{ r.id }}" aria-label="Choisir {{ r.titre }}"> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, telecharger=1) }}" title="Télécharger en PDF">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_resume_docx', rid=r.id) }}" title="Télécharger en Word">Word</a> <a class="btn sec petit" href="{{ url_for('prep_resume_pdf', rid=r.id, eleve=1, telecharger=1) }}" title="Version élève (PDF)">Élève</a></td></tr>{% endfor %}
 </tbody></table></div>
 {% endfor %}
 {% else %}<div class="carte"><p class="aide">Aucun résumé pour ce choix.</p></div>{% endfor %}

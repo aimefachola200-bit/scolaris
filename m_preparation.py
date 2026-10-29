@@ -39,6 +39,7 @@ import json
 import os
 import re
 import threading
+import zipfile
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 
@@ -83,6 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_prep_fiches ON prep_fiches (ecole_id, user_id, cl
 """
 
 _CORPUS = {}
+FICHES_DEBORDANTES = set()   # v2.2 : fiches qui dépassent encore deux pages (suivi)
 _VERROU_CORPUS = threading.Lock()
 
 
@@ -120,10 +122,162 @@ def _lire_fichier_corpus(pdfs):
     vide.update(version=0, source="", version_contenu="", _absent=True)
     return vide
 
+# v2.2 — textes coupés dans les fiches importées (fin de ligne perdue à l'extraction) et fautes de frappe répétées
+_COMPLETIONS = [
+    ("maîtrise de l’intonation du débit et de", "maîtrise de l’intonation, du débit et de la prononciation"),
+    ("maîtrise de l'intonation du débit et de", "maîtrise de l'intonation, du débit et de la prononciation"),
+    ("(lecture de texte/ narration des faits du", "(lecture de texte / narration des faits du texte)"),
+    ("Elaborer une explication à un phénomène, à un objet de", "Élaborer une explication à un phénomène, à un objet de son environnement"),
+    ("Elaborer une explication à un phénomène, à un objet, de", "Élaborer une explication à un phénomène, à un objet de son environnement"),
+    ("Construire une représentation correcte des", "Construire une représentation correcte des phénomènes et des objets de son environnement"),
+    ("Apprécier l’apport de la science et de la technologie à l’activité humaine et",
+     "Apprécier l’apport de la science et de la technologie à l’activité humaine et à la qualité de la vie"),
+]
+_FAUTES = [("sufflet", "sifflet"), ("feuille, de resultas", "feuille de résultats"), ("resultas", "résultats"),
+           ("planchette, centre,", "planchette, cendre,"), ("croyon", "crayon"), ("BBalle", "Balle"), ("cercle de un pied", "cercle d’un pied")]
+_MOTS_SUSPENDUS = re.compile(r"(?:\s(?:et de|de|du|des|et|la|le|les|à|au|aux|en|l’|l'|d’|d'|pour|par|avec|sur|un|une))\s*$")
+
+
+def _reparer_texte(v):
+    if not isinstance(v, str) or not v.strip():
+        return v
+    t = v
+    for a, b in _FAUTES:
+        t = t.replace(a, b)
+    for a, b in _COMPLETIONS:
+        if t.rstrip().endswith(a):
+            return t.rstrip()[: -len(a)] + b
+    t2 = t.rstrip()
+    if t2.endswith((",", ";")):
+        return t2[:-1].rstrip() + "."
+    if _MOTS_SUSPENDUS.search(t2):
+        return t2 + " […]"        # texte incomplet dans la fiche d'origine : on le signale au lieu d'une phrase coupée
+    return t
+
+
+# v2.2 — filigrane d'un auteur tiers resté dans le texte des fiches importées : ses lettres, lues verticalement à
+# l'extraction, forment des lignes de 1 à 3 lettres (« GO / ITO / Ma / thi / as », « TO / G / C / OF / F / IL »…)
+_FILIGRANE_JETONS = {"GO", "G", "ITO", "TO", "HI", "Ma", "thi", "as", "C", "OF", "F", "FF", "IL", "N", "US", "GA", "CO", "O", "H",
+                     "I", "T", "M", "A", "L", "S", "U"}
+_FILIGRANE_NOMS = re.compile(r"\b(?:go\s*hi\s*to|gohito)\b(?:\s+mathias)?|\bmathias\s+gohito\b", re.I)
+# entête brute de la fiche suivante collée dans une case du déroulement (extraction PDF)
+_DEBORDEMENT = re.compile(r"(?:(?<=\n)|^)\s*(?:\d{1,4}\s*\n+\s*)?(?:TH[ÈE]ME\s*:|UNIT[ÉE]\s*N\s*°\s*\d|FICHE DE (?:PR[ÉE]PARATION|FRAN[CÇ]AIS|MATH|"
+                          r"L.[ÉE]DUCATION|EPS|EST|ES)\b|Fn°)", re.I)
+_RESIDU_ENTETE = re.compile(r"^\s*(?:CONSIGNES|R[ÉE]SULTATS\s*\n?\s*ATTENDUS)\s*\n", re.I)
+REPARATIONS = {"filigrane": 0, "debordement": 0, "residu": 0, "coupe": 0}
+
+
+_FILIGRANE_FORTS = {"GO", "GOIT", "GOH", "GOHI", "ITO", "HITO", "OM", "Ma", "thi", "as", "TO", "OF", "FF", "IL"}
+_FILIGRANE_LIGNE = re.compile(r"^(?:[A-Za-z]{1,2}(?:\s[A-Za-z]{1,2}){1,6}|s\s?\d{2}|\d{2}(?:\s\d{2}){0,3}|GOIT|GOH|GOHI|HITO|OM)$")
+
+
+def _fragment(l):
+    l = l.strip()
+    return bool(l) and (l in _FILIGRANE_JETONS or bool(_FILIGRANE_LIGNE.match(l)))
+
+
+def _sans_filigrane(t):
+    """Retire les suites d'au moins deux lignes faites seulement de fragments du filigrane (lettres isolées ou espacées,
+    morceaux de numéro de téléphone), quand la suite contient au moins un morceau caractéristique du nom."""
+    if not isinstance(t, str) or "\n" not in t:
+        return t
+    lignes = t.split("\n")
+    garder = [True] * len(lignes)
+    i = 0
+    while i < len(lignes):
+        j, nb, idx = i, 0, []
+        while j < len(lignes) and (lignes[j].strip() == "" or _fragment(lignes[j])):
+            if lignes[j].strip():
+                nb += 1
+                idx.append(j)
+            j += 1
+        fort = any(lignes[k].strip() in _FILIGRANE_FORTS or re.match(r"^a\s?t\s?h\s?i\s?a", lignes[k].strip()) for k in idx)
+        if nb >= 2 and fort:
+            for k in range(i, j):
+                garder[k] = k not in idx and garder[k]
+            REPARATIONS["filigrane"] += 1
+            i = j
+        else:
+            i += 1
+    out = "\n".join(l for l, g_ in zip(lignes, garder) if g_)
+    # morceaux isolés du nom (« at h i a ») et en-têtes de tableau restés dans le texte (« CONSIGNES », « RÉSULTATS ATTENDUS »)
+    out2 = re.sub(r"(?m)^[ \t]*(?:a\s?t\s?h\s?i\s?a(?:\s?s)?|GOIT|GOHITO|G\s?O\s?H\s?I\s?T\s?O|CONSIGNES|R[ÉE]SULTATS\s+ATTENDUS)[ \t]*$\n?", "", out)
+    if out2 != out:
+        REPARATIONS["filigrane"] += 1
+        out = out2
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    return _FILIGRANE_NOMS.sub("", out)
+
+
+_SOUS_TITRES = re.compile(r"(?m)^[ \t]*(INTRODUCTION|MISE EN SITUATION|R[ÉE]ALISATION|RETOUR ET PROJECTION|"
+                          r"[ÉE]mergence des acquis ant[ée]rieurs|Proposition de nouvelles acquisitions|Rappel|PHASE INTRODUCTIVE|"
+                          r"Phase introductive|EXERCICE STRUCTURAL[^\n]*|EXERCICE MENTAL|LEÇON DU JOUR[^\n]*|Activit[ée] \d+[^\n]{0,40})[ \t]*$")
+
+
+def _case_deroulement(t, phase):
+    t = _sans_filigrane(t)
+    if not isinstance(t, str):
+        return t
+    # bloc brut d'une fiche extraite d'un PDF (plusieurs étapes dans une case) : sous-titres en gras, lisibles
+    if len(_SOUS_TITRES.findall(t)) >= 2 and "**" not in t:
+        REPARATIONS["residu"] += 1
+        t = _SOUS_TITRES.sub(lambda m: "**" + m.group(1).strip() + "**", t)
+    m = _DEBORDEMENT.search(t)
+    if m:
+        REPARATIONS["debordement"] += 1
+        t = t[:m.start()].rstrip()
+        if not t:
+            p = (phase or "").lower()
+            if "réalisation" in p or "activit" in p or "realisation" in p:
+                t = ("\u25aa Activités de la séance d'après le guide pédagogique et le manuel : lecture et exploitation du support, "
+                     "travail individuel puis en groupe, mise en commun.")
+            else:
+                t = "\u25aa Voir le guide pédagogique (étape de la séance)."
+    while _RESIDU_ENTETE.match(t or ""):
+        REPARATIONS["residu"] += 1
+        t = _RESIDU_ENTETE.sub("", t, count=1).lstrip("\n")
+    return t
+
+
+_DEROULEMENT_COLLE = re.compile(r"\s(?:1\.\s*Calcul mental|STRAT[ÉE]GIES\s+DESCRIPTION|3\.1\.\s*INTRODUCTION|D[ÉE]ROULEMENT\b)")
+
+
+def _reparer_fiches(c):
+    for f in c.get("fiches") or []:
+        # v2.2 : déroulement entier recopié dans « stratégies » / « objectifs » à l'extraction (guide CP 2022…) : coupé
+        for k in ("strategies", "objectifs", "cd", "contenus", "ct", "materiel"):
+            v = f.get(k)
+            if isinstance(v, str) and len(v) > 700:
+                m = _DEROULEMENT_COLLE.search(v)
+                if m:
+                    REPARATIONS["debordement"] += 1
+                    f[k] = v[:m.start()].rstrip(" ;,") or ""
+        if f.get("strategies") and f.get("strategies") == f.get("objectifs"):
+            f["strategies"] = "Travail individuel — travail en groupe — travail collectif."
+        for k in ("contenus", "cd", "ct", "objectifs", "materiel", "strategies", "evaluation", "projection", "titre",
+                  "je_retiens", "observations", "intitule"):
+            if isinstance(f.get(k), str):
+                v = _sans_filigrane(f[k])
+                v2 = _reparer_texte(v)
+                if v2 != v:
+                    REPARATIONS["coupe"] += 1
+                f[k] = v2
+        if isinstance(f.get("deroulement"), list):
+            f["deroulement"] = [[_case_deroulement(x, (ligne or [""])[0]) if isinstance(x, str) else x for x in ligne]
+                                if isinstance(ligne, list) else ligne for ligne in f["deroulement"]]
+    for cle in ("guides", "modeles", "resumes", "programmes", "manuels", "mesures_correctives", "revisions"):
+        for x in c.get(cle) or []:
+            if isinstance(x, dict):
+                for k, v in list(x.items()):
+                    if isinstance(v, str) and _FILIGRANE_NOMS.search(v):
+                        x[k] = _FILIGRANE_NOMS.sub("", v)
+
+
 def _charger_corpus():
     if not _CORPUS:
         import pdfs
         c = _lire_fichier_corpus(pdfs)
+        _reparer_fiches(c)
         for x in c["fiches"] + c["programmes"]:
             for k in ("sa", "seance", "num", "dossier"):
                 v = x.get(k)
@@ -554,20 +708,23 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
     W, Hh = A4
     marge = 15 * mm
     larg = W - 2 * marge
-    P = lambda n, **k: ParagraphStyle(n, **{"fontName": "Helvetica", "fontSize": 9.5, "leading": 12.5, **k})  # noqa: E731
-    st = {"t": P("t", fontName="Helvetica-Bold", fontSize=12.5, leading=15, textColor=colors.white),
-          "s": P("s", fontSize=8, textColor=colors.HexColor("#475467")),
-          "h": P("h", fontName="Helvetica-Bold", fontSize=9.5, textColor=pdfs.BLEU, spaceBefore=4, spaceAfter=1),
-          "p": P("p"), "q": P("q", leftIndent=12, firstLineIndent=-12),
-          "r": P("r", fontName="Helvetica-Oblique", textColor=colors.HexColor("#067647"), leftIndent=12),
-          "l": P("l", textColor=colors.HexColor("#98A2B3"), leftIndent=12),
-          "m": P("m", fontName="Helvetica-Oblique", fontSize=7, textColor=colors.grey)}
+    # v2.2 : même style que les fiches (v1.32) — Times New Roman 14 pt (Liberation Serif incorporée), bandeau, mention
+    ps = pdfs.police_serif()
+    FN, FB, FI = ps["normal"], ps["gras"], ps["italique"]
+    P = lambda n, **k: ParagraphStyle(n, **{"fontName": FN, "fontSize": 14, "leading": 17.5, **k})  # noqa: E731
+    st = {"t": P("t", fontName=FB, fontSize=16, leading=19, textColor=colors.white),
+          "s": P("s", fontSize=11, leading=13.5, textColor=colors.HexColor("#475467")),
+          "h": P("h", fontName=FB, fontSize=14.5, textColor=pdfs.BLEU, spaceBefore=5, spaceAfter=1),
+          "p": P("p"), "q": P("q", leftIndent=14, firstLineIndent=-14),
+          "r": P("r", fontName=FI, textColor=colors.HexColor("#067647"), leftIndent=14),
+          "l": P("l", textColor=colors.HexColor("#98A2B3"), leftIndent=14),
+          "m": P("m", fontName=FI, fontSize=10, leading=12, textColor=colors.grey)}
     histoire = []
     if titre_lot:
         histoire += [Paragraph(("FICHES DE RÉVISION — " if eleve else "RÉSUMÉS — L'ESSENTIEL À RETENIR — ") + _html.escape(titre_lot.upper()),
-                               P("lot", fontName="Helvetica-Bold", fontSize=13, alignment=1, textColor=pdfs.BLEU, leading=17)),
+                               P("lot", fontName=FB, fontSize=16, alignment=1, textColor=pdfs.BLEU, leading=20)),
                      Paragraph(f"{len(rs)} résumé(s)" + (" — version élève (sans les réponses)" if eleve else " — version enseignant (avec corrigé)"),
-                               P("lot2", fontSize=8.5, alignment=1)), Spacer(1, 6)]
+                               P("lot2", fontSize=11, leading=14, alignment=1)), Spacer(1, 6)]
     for i, r in enumerate(rs):
         bandeau = Table([[Paragraph(_res_txt(r["titre"]), st["t"])]], colWidths=[larg])
         bandeau.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), pdfs.BLEU), ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -616,7 +773,7 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
             bloc.append(Paragraph("Exercices", st["h"]))
         for j, e in enumerate(r["exercices"], 1):
             bloc.append(Paragraph(f"{j}. " + _res_txt(e["q"]), st["q"]))
-            bloc += ([Paragraph("…" * 46, st["l"])] if eleve else [Paragraph("Réponse : " + _res_txt(e["r"]), st["r"])])
+            bloc += ([Paragraph("…" * 30, st["l"])] if eleve else [Paragraph("Réponse : " + _res_txt(e["r"]), st["r"])])
         if not eleve:
             if r.get("sources"):
                 bloc.append(Paragraph(_html.escape("Sources : " + " ; ".join(r["sources"])), st["m"]))
@@ -628,7 +785,7 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
 
     def deco(c, doc):
         pdfs._entete_primaire(c, W, Hh, marge, None, None)
-        c.setFont("Helvetica", 6.5)
+        c.setFont(FN, 9)
         c.setFillColor(colors.grey)
         if eleve:
             c.drawString(marge, 7 * mm, "Nom : ………………………………………   Classe : ……………   Date : ……………")
@@ -638,6 +795,63 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
                       title=titre_lot or rs[0]["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
     return buf.getvalue()
 
+
+def html_resumes(rs, eleve=False, titre_lot=None):
+    """v2.2 — mêmes résumés que pdf_resumes, en HTML simple pour le document Word (.docx)."""
+    e = lambda t: _html.escape(str(t or ""))  # noqa: E731
+    br = lambda t: e(t).replace("\n", "<br>")  # noqa: E731
+    out = []
+    if titre_lot:
+        out.append(f"<h1>{'FICHES DE RÉVISION' if eleve else 'RÉSUMÉS — L’ESSENTIEL À RETENIR'} — {e(titre_lot.upper())}</h1>"
+                   f"<p>{len(rs)} résumé(s) — {'version élève (sans les réponses)' if eleve else 'version enseignant (avec corrigé)'}</p>")
+    for k, r in enumerate(rs):
+        saut = " style='page-break-before:always'" if k and (eleve or len(rs) > 1) and k % 2 == 0 else ""
+        out.append(f"<h2{saut}>{e(r.get('titre'))}</h2>")
+        info = f"{r.get('collection', '')} · {r.get('cours', '')} · {r.get('domaine', '')}" + (f" · {r['etape']}" if r.get("etape") else "")
+        if r.get("seance_resume") and r.get("trimestre"):
+            info += f" · trimestre {r['trimestre']} · {r.get('mois', '')}"
+        out.append(f"<p><i>{e(info)}</i></p>")
+        seances = r.get("ancres") if r.get("seance_resume") else []
+        if seances:
+            out.append("<p><i>Séance(s) : " + e(" ; ".join(a.get("libelle", "") for a in seances)) + "</i></p>")
+        if r.get("lecture"):
+            if r.get("manuel_note"):
+                out.append(f"<p><i>{e(r['manuel_note'])}</i></p>")
+            out.append(f"<table><tr><td><b>Ce que dit le texte</b><br>{br(r.get('regle'))}</td></tr></table>")
+            out.append(f"<h3>Personnages et informations clés</h3><p>{br(r.get('methode'))}</p>")
+            if r.get("vocabulaire"):
+                out.append(f"<h3>Vocabulaire</h3><p>{e(' — '.join(r['vocabulaire']))}</p>")
+            out.append(f"<h3>Le message du texte</h3><p>{br(r.get('exemple'))}</p>")
+            if r.get("actualisation"):
+                out.append(f"<h3>Et aujourd'hui ?</h3><p>{br(r['actualisation'])}</p>")
+            out.append("<h3>Questions de compréhension</h3>")
+        elif r.get("je_retiens"):
+            if r.get("situation"):
+                out.append(f"<h3>Situation de la vie courante</h3><p>{br(r['situation'])}</p>")
+            out.append(f"<h3>{'Valeur ou règle de vie' if r.get('emc') else 'Notions essentielles'}</h3><p>{br(r.get('regle'))}</p>")
+            if r.get("vocabulaire"):
+                out.append("<ul>" + "".join(f"<li>{e(v)}</li>" for v in r["vocabulaire"]) + "</ul>")
+            out.append(f"<table><tr><td><b>Je retiens</b><br>{br(r['je_retiens'])}</td></tr></table>")
+            if r.get("engagement"):
+                out.append(f"<h3>Je m'engage</h3><p>{br(r['engagement'])}</p>")
+            out.append(f"<h3>Méthode</h3><p>{br(r.get('methode'))}</p><h3>Exemple</h3><p>{br(r.get('exemple'))}</p><h3>Exercices — petite évaluation</h3>")
+        else:
+            out.append(f"<table><tr><td><b>Je retiens</b><br>{br(r.get('regle'))}</td></tr></table>")
+            if r.get("methode"):
+                out.append(f"<h3>Méthode</h3><p>{br(r['methode'])}</p>")
+            out.append(f"<h3>Exemple</h3><p>{br(r.get('exemple'))}</p>")
+            if r.get("vocabulaire"):
+                out.append(f"<h3>Vocabulaire</h3><p>{e(' — '.join(r['vocabulaire']))}</p>")
+            out.append("<h3>Exercices</h3>")
+        for j, x in enumerate(r.get("exercices") or [], 1):
+            out.append(f"<p>{j}. {br(x.get('q'))}</p>")
+            out.append("<p>" + ("…" * 30) + "</p>" if eleve else f"<p><i>Réponse : {br(x.get('r'))}</i></p>")
+        if not eleve:
+            if r.get("sources"):
+                out.append(f"<p><i>Sources : {e(' ; '.join(r['sources']))}</i></p>")
+            if r.get("mention"):
+                out.append(f"<p><i>{e(r['mention'])}</i></p>")
+    return "<html><body>" + "".join(out) + "</body></html>"
 
 def pdf_revision(rv, eleve=False, partie=None, sujet=None):
     """v1.31 — Cahier de révision des disciplines d'éveil (CM1 / CM2) -> PDF A4 en Times New Roman 14 pt (Liberation Serif
@@ -924,7 +1138,12 @@ def enregistrer(app, H):
                   "ORDER BY a.matiere_id IS NOT NULL, a.id LIMIT 1", (cl["id"],), un=True)
             if t:
                 return t["nom"]
-        return ""
+        # v2.2 : jamais sans filigrane — la classe, sinon la personne connectée, sinon le cours
+        if cl is not None and cl["nom"]:
+            return f"Classe {cl['nom']}"
+        if g.get("user") is not None and g.user["nom"] and g.user["role"] not in ("admin", "fondateur"):
+            return g.user["nom"]
+        return COURS_LIB.get(d.get("cours"), d.get("cours") or "") or ""
 
     def pdf_une_fiche(d, titre_doc, s_dir):
         """v1.32 — Une fiche : Times New Roman 14 pt (tableaux 13 pt), bandeau de la couleur de la matière avec son dessin,
@@ -936,82 +1155,134 @@ def enregistrer(app, H):
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import mm
-        from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether, NextPageTemplate, PageTemplate, Paragraph, Spacer, Table,
-                                        TableStyle)
+        from reportlab.platypus import (BaseDocTemplate, Frame, KeepTogether, NextPageTemplate, PageBreak, PageTemplate, Paragraph, Spacer,
+                                        Table, TableStyle)
         W, Hh = A4
         SER = pdfs.police_serif()
         coul_hex = DS.couleur_matiere(d.get("matiere"))
         coul = colors.HexColor(coul_hex)
         clair = colors.Color(coul.red, coul.green, coul.blue, alpha=0.10)
-        st = ParagraphStyle("c", fontName=SER["normal"], fontSize=13, leading=16)
-        stb = ParagraphStyle("b", parent=st, fontName=SER["gras"])
-        sth = ParagraphStyle("h", parent=stb, textColor=colors.white, alignment=1)
-        stc = ParagraphStyle("corps", fontName=SER["normal"], fontSize=14, leading=18)
-        stt = ParagraphStyle("rub", fontName=SER["gras"], fontSize=14, leading=18, textColor=coul)
-        sti = ParagraphStyle("ti", fontName=SER["gras"], fontSize=16, leading=20, alignment=1, textColor=coul)
-        sts = ParagraphStyle("st", fontName=SER["normal"], fontSize=13, leading=16, alignment=1, spaceAfter=4)
-        stm = ParagraphStyle("m", parent=st, fontName=SER["italique"], fontSize=11, leading=14, textColor=colors.HexColor("#B54708"))
         cl, eff = entete_classe(d)
         filigrane = titulaire_de(d, cl)
         mat = nom_matiere(d.get("matiere"))
         bande = " · ".join(x for x in [COURS_LIB.get(d.get("cours"), d.get("cours") or ""), mat, d.get("sous_matiere") or "",
                                         f"SA {d['sa']}" if d.get("sa") else "", f"séance {d['seance']}" if d.get("seance") else "",
                                         d.get("duree") or ""] if x)
-
-        def rubrique(k, lib):
-            nom = DS.RUBRIQUES.get(k, "document")
-            t = Table([[DS.flowable(nom, 13, coul_hex), Paragraph(lib.upper(), stt)]], colWidths=[18, None])
-            t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                                   ("LINEBELOW", (1, 0), (1, 0), 0.8, coul)]))
-            return t
-
-        h = [Paragraph(titre_doc, sti), Paragraph(txt_pdf(bande), sts), NextPageTemplate("suite")]
-        utile = W - 25 * mm
-        infos = [("École", config.ECOLE.get("nom", "")), ("Classe", cl["nom"] if cl else (d.get("cours") or "")),
-                 ("Date", datetime.strptime(d["date_seance"], "%Y-%m-%d").strftime("%d/%m/%Y") if d.get("date_seance") else "…… / …… / ……"),
-                 ("Effectif", f"G : {eff['g']}   F : {eff['f']}   T : {eff['t']}" if eff else "G : ……  F : ……  T : ……"),
-                 ("Unité / SA", " · ".join(x for x in [d.get("unite") or "", f"SA n°{d['sa']}" if d.get("sa") else "",
-                                                       f"Séance n°{d['seance']}" if d.get("seance") else ""] if x) or "—"),
-                 ("Durée", d.get("duree") or "—")]
-        grille = []
-        for i in range(0, len(infos), 2):
-            ligne = []
-            for lab, val in infos[i:i + 2]:
-                ligne += [Paragraph(f"<b>{lab}</b>", st), Paragraph(txt_pdf(val), st)]
-            grille.append(ligne + [""] * (4 - len(ligne)))
-        lw = 26 * mm
-        ti = Table(grille, colWidths=[lw, utile / 2 - lw] * 2)
-        ti.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.8, coul), ("BACKGROUND", (0, 0), (-1, -1), clair),
-                                ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
-        h += [ti, Spacer(1, 6)]
-        h.append(Paragraph(f"<b>Titre :</b> {txt_pdf(d.get('titre'))}" + (f" — <i>{txt_pdf(d.get('intitule'))}</i>" if d.get("intitule") and d.get("intitule") != d.get("titre") else ""), stc))
-        h.append(Spacer(1, 5))
-        for k, lib in CHAMPS:
-            if k in ("cd", "ct", "contenus", "objectifs", "strategies", "materiel") and d.get(k):
-                h.append(KeepTogether([rubrique(k, lib), Spacer(1, 2), Paragraph(txt_pdf(d[k]), stc)]))
-                h.append(Spacer(1, 6))
         lignes = d.get("deroulement") or []
-        data = [[Paragraph("Phases / étapes", sth), Paragraph("Activités de l'enseignant(e) et des apprenant(e)s", sth),
-                 Paragraph("Résultats attendus / évaluation", sth)]]
-        data += [[Paragraph(txt_pdf(a), stb), Paragraph(txt_pdf(b), st), Paragraph(txt_pdf(c), st)] for a, b, c in [(l + ["", "", ""])[:3] for l in lignes]]
-        td = Table(data, colWidths=[38 * mm, utile - 38 * mm - 44 * mm, 44 * mm], repeatRows=1, splitByRow=1, splitInRow=1)
-        td.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), coul),
-                                ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, clair])]))
-        h += [rubrique("deroulement", "Déroulement"), Spacer(1, 3), td, Spacer(1, 6)]
-        for k in ("evaluation", "projection", "je_retiens", "observations"):
-            if d.get(k):
-                h.append(KeepTogether([rubrique(k, dict(CHAMPS)[k]), Spacer(1, 2), Paragraph(txt_pdf(d[k]), stc)]))
-                h.append(Spacer(1, 5))
-        if d.get("mention"):
-            h.append(Paragraph(txt_pdf(d["mention"]), stm))
-        if d.get("source"):
-            h.append(Paragraph(f"Source : {txt_pdf(d['source'])}", ParagraphStyle("so", parent=st, fontSize=9, leading=11, textColor=colors.grey)))
         u = q("SELECT * FROM utilisateurs WHERE id=?", (d.get("user_id"),), un=True) if d.get("user_id") else None
         s_ens = pdfs.image_data_url(H.signature_enseignant(u["id"]) if u else (H.signature_titulaire(cl["id"]) if cl else None))
         sigs = [("L'enseignant(e)", (u["nom"] if u else filigrane), s_ens, False), ("Visa du directeur / de la directrice", "", s_dir, True)]
         code = pdfs.code_tableau(titre_doc, d.get("titre"), [("Classe", cl["nom"] if cl else d.get("cours")), ("Matière", mat)],
                                  lignes, None, ("fiche_preparation", f"Fiche de préparation – {d.get('titre', '')[:120]} – {cl['nom'] if cl else d.get('cours', '')}"))
-        h += [Spacer(1, 4), KeepTogether([pdfs._BlocSignatures(sigs, utile, code=code)])]
+        utile = W - 25 * mm
+
+        def resserrer(t):
+            """Lignes courtes successives réunies sur une ligne (« 16 ; 23 ; 2 × 6 + 4 ») et retours à la ligne au milieu d'une
+            phrase (coupures de l'extraction PDF) supprimés : même contenu, moins de hauteur."""
+            t = re.sub(r"(?<![.:;!?»\n])\n(?=[a-zàâçéèêëîïôûùüÿœ(«0-9])", " ", str(t or ""))
+            t = re.sub(r"\n{2,}", "\n", t)
+            out, tampon = [], []
+            for l in t.split("\n"):
+                ls = l.strip()
+                if ls and len(ls) <= 28 and not ls.startswith(("**", "\u25aa", "-", "\u2022")):
+                    tampon.append(ls.rstrip(";"))
+                    continue
+                if tampon:
+                    out.append(" ; ".join(tampon))
+                    tampon = []
+                if ls:
+                    out.append(l)
+            if tampon:
+                out.append(" ; ".join(tampon))
+            return "\n".join(out)
+
+        def histoire(B, rupture, compact, dense=False, colonnes=False):
+            """B : taille du corps (14 pt, réduite jusqu'à 12 pt seulement s'il le faut pour tenir sur deux pages) ;
+            rupture : le déroulement commence la page 2 ; compact : espacements et tableau resserrés."""
+            T = B - 1                                  # tableaux : un point de moins que le texte
+            esp = 0.6 if compact else 1.0
+            st = ParagraphStyle("c", fontName=SER["normal"], fontSize=T, leading=T * 1.23)
+            stb = ParagraphStyle("b", parent=st, fontName=SER["gras"])
+            sth = ParagraphStyle("h", parent=stb, textColor=colors.white, alignment=1)
+            stc = ParagraphStyle("corps", fontName=SER["normal"], fontSize=B, leading=B * (1.22 if compact else 1.29))
+            stt = ParagraphStyle("rub", fontName=SER["gras"], fontSize=B, leading=B * 1.25, textColor=coul)
+            sti = ParagraphStyle("ti", fontName=SER["gras"], fontSize=B + 2, leading=(B + 2) * 1.25, alignment=1, textColor=coul)
+            sts = ParagraphStyle("st", fontName=SER["normal"], fontSize=T, leading=T * 1.23, alignment=1, spaceAfter=4 * esp)
+            stm = ParagraphStyle("m", parent=st, fontName=SER["italique"], fontSize=min(11, T), leading=min(11, T) * 1.27, textColor=colors.HexColor("#B54708"))
+
+            def rubrique(k, lib):
+                nom = DS.RUBRIQUES.get(k, "document")
+                t = Table([[DS.flowable(nom, B - 1, coul_hex), Paragraph(lib.upper(), stt)]], colWidths=[18, None])
+                t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                                       ("LINEBELOW", (1, 0), (1, 0), 0.8, coul)]))
+                return t
+
+            h = [Paragraph(titre_doc, sti), Paragraph(txt_pdf(bande), sts), NextPageTemplate("suite")]
+            infos = [("École", config.ECOLE.get("nom", "")), ("Classe", cl["nom"] if cl else (d.get("cours") or "")),
+                     ("Date", datetime.strptime(d["date_seance"], "%Y-%m-%d").strftime("%d/%m/%Y") if d.get("date_seance") else "…… / …… / ……"),
+                     ("Effectif", f"G : {eff['g']}   F : {eff['f']}   T : {eff['t']}" if eff else "G : ……  F : ……  T : ……"),
+                     ("Unité / SA", " · ".join(x for x in [d.get("unite") or "", f"SA n°{d['sa']}" if d.get("sa") else "",
+                                                           f"Séance n°{d['seance']}" if d.get("seance") else ""] if x) or "—"),
+                     ("Durée", d.get("duree") or "—")]
+            grille = []
+            for i in range(0, len(infos), 2):
+                ligne = []
+                for lab, val in infos[i:i + 2]:
+                    ligne += [Paragraph(f"<b>{lab}</b>", st), Paragraph(txt_pdf(val), st)]
+                grille.append(ligne + [""] * (4 - len(ligne)))
+            lw = 26 * mm
+            ti = Table(grille, colWidths=[lw, utile / 2 - lw] * 2)
+            ti.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.8, coul), ("BACKGROUND", (0, 0), (-1, -1), clair),
+                                    ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
+            h += [ti, Spacer(1, 6 * esp)]
+            h.append(Paragraph(f"<b>Titre :</b> {txt_pdf(d.get('titre'))}" + (f" — <i>{txt_pdf(d.get('intitule'))}</i>" if d.get("intitule") and d.get("intitule") != d.get("titre") else ""), stc))
+            h.append(Spacer(1, 5 * esp))
+            for k, lib in CHAMPS:
+                if k in ("cd", "ct", "contenus", "objectifs", "strategies", "materiel") and d.get(k):
+                    texte = resserrer(d[k]) if dense else d[k]
+                    corps_ = st if dense and len(str(d[k])) > 600 else stc
+                    h.append(KeepTogether([rubrique(k, lib), Spacer(1, 2), Paragraph(txt_pdf(texte), corps_)]))
+                    h.append(Spacer(1, 6 * esp))
+            data = [[Paragraph("Phases / étapes", sth), Paragraph("Activités de l'enseignant(e) et des apprenant(e)s", sth),
+                     Paragraph("Résultats attendus / évaluation", sth)]]
+            # v2.2 : première colonne plus large, sans couper les mots (« PRÉLIMINAIRES » restait coupé en deux)
+            stp = ParagraphStyle("phase", parent=stb, fontSize=min(10 if dense else 12, T), leading=min(10 if dense else 12, T) * 1.2,
+                                 splitLongWords=0)
+            R_ = resserrer if dense else (lambda x: x)
+            data += [[Paragraph(txt_pdf(a_), stp), Paragraph(txt_pdf(R_(b_)), st), Paragraph(txt_pdf(R_(c_)), st)] for a_, b_, c_ in [(l + ["", "", ""])[:3] for l in lignes]]
+            l1, l3 = (32 * mm, 38 * mm) if dense else (43 * mm, 44 * mm)
+            td = Table(data, colWidths=[l1, utile - l1 - l3, l3], repeatRows=1, splitByRow=1, splitInRow=1)
+            pad = 1.5 if compact else 3
+            td.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), coul),
+                                    ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, clair]),
+                                    ("TOPPADDING", (0, 0), (-1, -1), pad), ("BOTTOMPADDING", (0, 0), (-1, -1), pad)]))
+            if colonnes:
+                # dernier recours (fiches très longues) : déroulement sur deux colonnes en page 2, sans tableau
+                h += [NextPageTemplate("deux"), PageBreak(), rubrique("deroulement", "Déroulement"), Spacer(1, 2)]
+                stph = ParagraphStyle("ph2", parent=stb, fontSize=B, leading=B * 1.2, textColor=coul, spaceBefore=3)
+                stre = ParagraphStyle("re2", parent=st, fontName=SER["italique"])
+                for a_, b_, c_ in [(l + ["", "", ""])[:3] for l in lignes]:
+                    if a_:
+                        h.append(Paragraph(txt_pdf(a_), stph))
+                    if b_:
+                        h.append(Paragraph(txt_pdf(resserrer(b_)), st))
+                    if c_:
+                        h.append(Paragraph("<i>Résultats attendus :</i> " + txt_pdf(resserrer(c_)), stre))
+                h.append(Spacer(1, 4))
+            else:
+                if rupture:
+                    h.append(PageBreak())
+                h += [rubrique("deroulement", "Déroulement"), Spacer(1, 3 * esp), td, Spacer(1, 6 * esp)]
+            for k in ("evaluation", "projection", "je_retiens", "observations"):
+                if d.get(k):
+                    h.append(KeepTogether([rubrique(k, dict(CHAMPS)[k]), Spacer(1, 2), Paragraph(txt_pdf(d[k]), stc)]))
+                    h.append(Spacer(1, 5 * esp))
+            if d.get("mention"):
+                h.append(Paragraph(txt_pdf(d["mention"]), stm))
+            if d.get("source"):
+                h.append(Paragraph(f"Source : {txt_pdf(d['source'])}", ParagraphStyle("so", parent=st, fontSize=9, leading=11, textColor=colors.grey)))
+            h += [Spacer(1, 4 * esp), KeepTogether([pdfs._BlocSignatures(sigs, utile, code=code)])]
+            return h
 
         def bandeau(c, doc):
             """Bandeau de la matière (chaque page), filigrane du titulaire, pied de page."""
@@ -1053,18 +1324,37 @@ def enregistrer(app, H):
             def afterPage(self):                      # recto verso : marges alternées (reliure à gauche du recto)
                 self.handle_nextPageTemplate("suite_g" if (self.page + 1) % 2 == 0 else "suite")
 
-        buf = io.BytesIO()
-        doc = Doc(buf, pagesize=A4, title=titre_doc, author="SCOLARIS", leftMargin=15 * mm, rightMargin=10 * mm)
         def cadre(g_, d_, haut):
             return Frame(g_, 16 * mm, W - g_ - d_, Hh - haut - 16 * mm, id="f", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-        doc.addPageTemplates([
-            PageTemplate("premiere", [cadre(15 * mm, 10 * mm, 50 * mm)], onPageEnd=bandeau),
-            PageTemplate("suite", [cadre(15 * mm, 10 * mm, 22 * mm)], onPageEnd=bandeau),
-            PageTemplate("suite_g", [cadre(10 * mm, 15 * mm, 22 * mm)], onPageEnd=bandeau)])
-        doc.build(h, canvasmaker=pdfs.GCanvasPedaNum)
-        out = buf.getvalue()
-        import pypdf
-        return out, len(pypdf.PdfReader(io.BytesIO(out)).pages)
+
+        def construire(B, rupture, compact, dense=False, colonnes=False):
+            buf = io.BytesIO()
+            doc = Doc(buf, pagesize=A4, title=titre_doc, author="SCOLARIS", leftMargin=15 * mm, rightMargin=10 * mm)
+            doc.addPageTemplates([
+                PageTemplate("premiere", [cadre(15 * mm, 10 * mm, 50 * mm)], onPageEnd=bandeau),
+                PageTemplate("suite", [cadre(15 * mm, 10 * mm, 22 * mm)], onPageEnd=bandeau),
+                PageTemplate("suite_g", [cadre(10 * mm, 15 * mm, 22 * mm)], onPageEnd=bandeau),
+                PageTemplate("deux", [Frame(12 * mm, 16 * mm, (W - 30 * mm) / 2, Hh - 38 * mm, id="g", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0),
+                                      Frame(18 * mm + (W - 30 * mm) / 2, 16 * mm, (W - 30 * mm) / 2, Hh - 38 * mm, id="d", leftPadding=0, rightPadding=0,
+                                            topPadding=0, bottomPadding=0)], onPageEnd=bandeau)])
+            doc.build(histoire(B, rupture, compact, dense, colonnes), canvasmaker=pdfs.GCanvasPedaNum)
+            return buf.getvalue(), doc.page
+
+        # v2.2 — une fiche = une feuille recto verso : page 1 en-tête et éléments de planification, page 2 déroulement et
+        # évaluation ; 14 pt, réduit pas à pas jusqu'à 12 pt seulement s'il le faut ; une fiche courte garde une seule page.
+        essais = [(14, False, False, 1, False)] + [(t, True, False, 2, False) for t in (14, 13.5, 13, 12.5, 12)] + \
+                 [(t, True, True, 2, False) for t in (13, 12.5, 12)] + [(t, False, True, 2, False) for t in (13, 12.5, 12, 11.5, 11)] + \
+                 [(t, False, True, 2, True) for t in (12, 11, 10.5, 10, 9.5, 9)]   # dernier recours : lignes courtes réunies, jusqu’à 9 pt (fiches très longues du guide CP 2022)
+        dernier = None
+        essais += [(t, True, True, 2, True, True) for t in (11, 10.5, 10, 9.5)]   # déroulement sur deux colonnes
+        for B, rupture, compact, maxi, dense, *col in essais:
+            out, n = construire(B, rupture, compact, dense, bool(col and col[0]))
+            if n <= maxi:
+                return out, n
+            if dernier is None or n < dernier[1]:
+                dernier = (out, n)
+        FICHES_DEBORDANTES.add(d.get("source_id") or d.get("id") or d.get("titre"))
+        return dernier or (out, n)
 
     def pdf_fiches(fiches, titre_doc="FICHE DE PRÉPARATION"):
         """Une ou plusieurs fiches ; chaque fiche commence sur un recto (page blanche ajoutée après une fiche d'un nombre
@@ -1084,6 +1374,11 @@ def enregistrer(app, H):
                 w.add_blank_page()
         sortie = io.BytesIO()
         w.add_metadata({"/Title": titre_doc, "/Author": "SCOLARIS"})
+        if hasattr(w, "compress_identical_objects"):   # v2.2 : images (armoiries, logo, dessins) communes une seule fois
+            try:
+                w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+            except Exception:  # noqa: BLE001
+                pass
         w.write(sortie)
         return sortie.getvalue()
 
@@ -1100,7 +1395,7 @@ def enregistrer(app, H):
 <br>{_html.escape(config.ECOLE.get('nom', ''))} · Classe : {_html.escape(cl['nom'] if cl else '')} · Date : {_html.escape(d.get('date_seance') or '……')}
 · Effectif : {('G ' + str(eff['g']) + ' / F ' + str(eff['f']) + ' / T ' + str(eff['t'])) if eff else '……'}</p>
 <p><b>Titre :</b> {txt_html(d.get('titre'))} · {txt_html(d.get('unite'))} {('SA n°' + str(d['sa'])) if d.get('sa') else ''} {('Séance n°' + str(d['seance'])) if d.get('seance') else ''} · Durée : {txt_html(d.get('duree'))}</p>
-<table>{blocs}</table><h2>Déroulement</h2><table><tr><th>Phases / étapes</th><th>Activités de l'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus / évaluation</th></tr>{lignes}</table>
+<table>{blocs}</table><h2{" style='page-break-before:always'" if len(d.get('deroulement') or []) >= 3 else ""}>Déroulement</h2><table><tr><th>Phases / étapes</th><th>Activités de l'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus / évaluation</th></tr>{lignes}</table>
 {fin}{('<p><i>' + txt_html(d['mention']) + '</i></p>') if d.get('mention') else ''}""")
         corps = "<br style='page-break-before:always'>".join(parts)
         h = ("<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='utf-8'>"
@@ -1110,8 +1405,9 @@ def enregistrer(app, H):
         return h
 
     def reponse_doc(contenu, nom):
-        return Response("﻿" + contenu, mimetype="application/msword",
-                        headers={"Content-Disposition": f"attachment; filename={nom}"})
+        """v2.2 : vrai document Word (.docx, Times New Roman 14 pt), lisible par Word, WPS et LibreOffice, sur ordinateur
+        comme sur téléphone (avant : page HTML nommée « .doc »)."""
+        return H.reponse_docx(contenu, nom, "Fiche de préparation")
 
     def nom_fichier(d, ext):
         base = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(f"fiche_{d.get('cours', '')}_{d.get('matiere', '')}_{d.get('titre', '')}"))[:80].strip("_")
@@ -1270,10 +1566,8 @@ def enregistrer(app, H):
                           title=x["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
         return H.pdf_reponse(buf.getvalue(), re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent("guide_" + x["titre"]))[:70] + ".pdf")
 
-    @app.route("/preparation/fiches")
-    @H.connexion_requise("preparation")
-    def prep_fiches():
-        a = request.args
+    def fiches_demandees(a):
+        """Fiches de la liste selon les filtres (cours, matière, SA, séance, recherche, semaine d'une classe)."""
         cours, mat, smat = a.get("cours") or "", a.get("matiere") or "", a.get("smat") or ""
         sa = a.get("sa", type=int)
         seance = a.get("seance", type=int)
@@ -1294,6 +1588,67 @@ def enregistrer(app, H):
                 liste = []
         else:
             liste = fiches_filtrees(cours or None, mat or None, smat or None, sa, seance, texte or None, statut or None)
+        return liste, semaine
+
+    LOT_MAX = 120
+
+    @app.route("/preparation/fiches-lot.<fmt>")
+    @H.connexion_requise("preparation")
+    def prep_fiches_lot(fmt):
+        """v2.2 — téléchargement groupé : fiches cochées (« ids ») ou toutes celles du filtre ; un seul PDF (livret), un seul
+        document Word, ou un ZIP d'un document Word par fiche."""
+        if fmt not in ("pdf", "docx", "zip"):
+            abort(404)
+        ids = [i for i in (request.args.get("ids") or "").split(",") if i]
+        if ids:
+            fp = corpus()["fiche_par_id"]
+            liste = [fp[i] for i in ids if i in fp]
+        else:
+            liste, _s = fiches_demandees(request.args)
+        if not liste:
+            flash("Aucune fiche à télécharger : cochez des fiches ou choisissez un filtre.", "warning")
+            return redirect(url_for("prep_fiches", **{k: v for k, v in request.args.items() if k != "ids"}))
+        if len(liste) > LOT_MAX:
+            flash(f"{len(liste)} fiches : le téléchargement groupé est limité à {LOT_MAX}. Précisez le filtre (cours, matière, SA).", "warning")
+            return redirect(url_for("prep_fiches", **{k: v for k, v in request.args.items() if k != "ids"}))
+        cid = request.args.get("classe", type=int)
+        fiches = []
+        for f in liste:
+            d = dict(f)
+            if cid and any(c["id"] == cid and NIVEAU_COURS.get(c["niveau"]) == d.get("cours") for c in classes()):
+                d["classe_id"] = cid
+            d["source_id"] = f["id"]
+            fiches.append(d)
+        base = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent("fiches_" + "_".join(x for x in (request.args.get("cours"), request.args.get("matiere"),
+                      ("SA" + request.args["sa"]) if request.args.get("sa") else "") if x)))[:70].strip("_") or "fiches"
+        H.journal("prep_fiches_lot", f"{fmt} : {len(fiches)} fiche(s)")
+        if fmt == "pdf":
+            return H.pdf_reponse(pdf_fiches(fiches), base + ".pdf")
+        if fmt == "docx":
+            return H.reponse_docx(doc_word(fiches), base + ".docx", "Fiches de préparation")
+        import export_doc as E
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            vus = set()
+            for k, d in enumerate(fiches, 1):
+                n = f"{k:03d}_{nom_fichier(d, 'docx')}"
+                if n in vus:
+                    continue
+                vus.add(n)
+                z.writestr(n, E.html_vers_docx(doc_word([d]), d.get("titre") or "Fiche"))
+        return H.reponse_fichier(out.getvalue(), base + "_word.zip", "application/zip")
+
+    @app.route("/preparation/fiches")
+    @H.connexion_requise("preparation")
+    def prep_fiches():
+        a = request.args
+        cours, mat, smat = a.get("cours") or "", a.get("matiere") or "", a.get("smat") or ""
+        sa = a.get("sa", type=int)
+        seance = a.get("seance", type=int)
+        texte = (a.get("q") or "").strip()
+        statut = a.get("statut") or ""
+        cid = a.get("classe", type=int)
+        liste, semaine = fiches_demandees(a)
         page = max(1, a.get("page", 1, type=int))
         total = len(liste)
         smats = sorted({f.get("sous_matiere") for f in fiches_filtrees(cours or None, mat or None) if f.get("sous_matiere")})
@@ -1726,6 +2081,61 @@ def enregistrer(app, H):
             lib = "Cahier de résumés " + lib
         nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resumes_") + lib))[:70] + ".pdf"
         return H.pdf_reponse(pdf_resumes(rs, eleve, lib), nom)
+
+    @app.route("/preparation/resumes/<rid>.docx")
+    @H.connexion_requise("preparation")
+    def prep_resume_docx(rid):
+        r = next((x for x in corpus().get("resumes") or [] if x["id"] == rid), None)
+        if not r:
+            abort(404)
+        r = resume_ecole(r, bool(request.args.get("original")))
+        eleve = bool(request.args.get("eleve"))
+        nom = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resume_") + r["titre"]))[:70] + ".docx"
+        return H.reponse_docx(html_resumes([r], eleve), nom, r["titre"])
+
+    @app.route("/preparation/resumes-lot.<fmt>")
+    @H.connexion_requise("preparation")
+    def prep_resumes_lot(fmt):
+        """v2.2 — résumés cochés (« ids ») ou du filtre : un PDF, un document Word ou un ZIP (un Word par résumé)."""
+        if fmt not in ("pdf", "docx", "zip"):
+            abort(404)
+        a = request.args
+        ids = [i for i in (a.get("ids") or "").split(",") if i]
+        if ids:
+            par_id = {r["id"]: r for r in corpus().get("resumes") or []}
+            rs = [par_id[i] for i in ids if i in par_id]
+        else:
+            rs = resumes_filtres(a.get("col") or "", a.get("cours") or "", a.get("matiere") or "", a.get("domaine") or "", a.get("sa", type=int))
+            if a.get("seances"):
+                rs = [r for r in rs if r.get("seance_resume")]
+        if not rs:
+            flash("Aucun résumé à télécharger : cochez des résumés ou choisissez un filtre.", "warning")
+            return redirect(url_for("prep_resumes", **{k: v for k, v in a.items() if k not in ("ids", "eleve")}))
+        if len(rs) > 300:
+            flash(f"{len(rs)} résumés : le téléchargement groupé est limité à 300. Précisez le cours ou la matière.", "warning")
+            return redirect(url_for("prep_resumes", **{k: v for k, v in a.items() if k not in ("ids", "eleve")}))
+        _loc = locaux_resumes()
+        rs = [resume_ecole(r, cache=_loc) for r in sorted(rs, key=ordre_resume)]
+        eleve = bool(a.get("eleve"))
+        lib = " ".join(x for x in [a.get("cours") or "", nom_matiere(a["matiere"]) if a.get("matiere") else "", a.get("domaine") or ""] if x) or "choisis"
+        base = re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(("eleve_" if eleve else "resumes_") + lib))[:70].strip("_")
+        H.journal("prep_resumes_lot", f"{fmt} : {len(rs)} résumé(s)")
+        if fmt == "pdf":
+            return H.pdf_reponse(pdf_resumes(rs, eleve, lib), base + ".pdf")
+        if fmt == "docx":
+            return H.reponse_docx(html_resumes(rs, eleve, lib), base + ".docx", "Résumés " + lib)
+        import export_doc as E
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            for k, r in enumerate(rs, 1):
+                n = f"{k:03d}_" + re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent(r["titre"]))[:60].strip("_") + ".docx"
+                z.writestr(n, E.html_vers_docx(html_resumes([r], eleve), r["titre"]))
+        return H.reponse_fichier(out.getvalue(), base + "_word.zip", "application/zip")
+
+    @app.route("/preparation/resumes.docx")
+    @H.connexion_requise("preparation")
+    def prep_resumes_docx():
+        return prep_resumes_lot("docx")
 
     H.prep_cette_semaine = cette_semaine
     H.prep_pdf_fiches = pdf_fiches          # v1.21 : classeurs de fiches (m_evalprep)

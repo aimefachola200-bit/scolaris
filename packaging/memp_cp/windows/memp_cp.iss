@@ -16,7 +16,7 @@
 AppId={#Id}
 AppName={#Nom}
 AppVersion={#Version}
-AppPublisher=Maître Aimé FACHE — MEMP Bénin
+AppPublisher=Maître Aimé FACHOLA — MEMP Bénin
 DefaultDirName={localappdata}\Programs\{#Nom}
 DefaultGroupName={#Nom}
 PrivilegesRequired=lowest

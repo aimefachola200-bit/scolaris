@@ -16,12 +16,15 @@
   <a class="btn sec petit" href="{{ url_for('prep_jeu_pdf', cours=cours, periode=p[0]) }}">Sujets (PDF)</a>
   <a class="btn sec petit" href="{{ url_for('prep_jeu_pdf', cours=cours, periode=p[0], partie='corrige') }}">Corrigés types (PDF)</a>
   <a class="btn sec petit" href="{{ url_for('prep_jeu_pdf', cours=cours, periode=p[0], partie='grille') }}">Grilles (PDF)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_jeu_word', fmt='docx', cours=cours, periode=p[0]) }}">Sujets (Word)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_jeu_word', fmt='docx', cours=cours, periode=p[0], partie='corrige') }}">Corrigés (Word)</a>
+  <a class="btn sec petit" href="{{ url_for('prep_jeu_word', fmt='zip', cours=cours, periode=p[0]) }}">ZIP (un Word par épreuve)</a>
   {% for c in classes %}<form method="post" action="{{ url_for('prep_eval_creer') }}" style="display:inline"><input type="hidden" name="classe" value="{{ c.id }}"><input type="hidden" name="periode" value="{{ p[0] }}"><button class="btn petit">Créer l'évaluation — {{ c.nom }}</button></form>{% endfor %}
 </div>
 <div class="tw"><table class="t"><thead><tr><th>N°</th><th>Épreuve</th><th>Durée</th><th></th><th style="width:1%"></th></tr></thead><tbody>
 {% for e in l.epreuves %}<tr><td>{{ e.ordre }}</td><td><a href="{{ url_for('prep_epreuve', cle=e.cle) }}">{{ e.discipline }}</a></td><td>{{ e.duree }}</td>
 <td>{% if modifiees.get(e.cle) %}<span class="badge ok">{{ 'modifiée' if modifiees[e.cle] == 'modifiee' else 'régénérée' }}</span>{% endif %}</td>
-<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=e.cle) }}">Sujet</a> <a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=e.cle, partie='corrige') }}">Corrigé</a></td></tr>{% endfor %}
+<td style="white-space:nowrap"><a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=e.cle, telecharger=1) }}" title="Sujet en PDF">Sujet PDF</a> <a class="btn sec petit" href="{{ url_for('prep_epreuve_doc', cle=e.cle) }}" title="Sujet en Word">Word</a> <a class="btn sec petit" href="{{ url_for('prep_epreuve_pdf', cle=e.cle, partie='corrige', telecharger=1) }}" title="Corrigé en PDF">Corrigé PDF</a> <a class="btn sec petit" href="{{ url_for('prep_epreuve_doc', cle=e.cle, partie='corrige') }}" title="Corrigé en Word">Word</a></td></tr>{% endfor %}
 </tbody></table></div>
 {% endfor %}
 {% endblock %}

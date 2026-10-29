@@ -145,11 +145,20 @@ def enregistrer(app, H):
 
     H.griffe_ecole = griffe_ecole
 
+    NOMS_EXEMPLE = {"Établissement Scolaire CPFA", "Etablissement Scolaire CPFA", ""}
+
     def appliquer_identite_ecole(e):
         """Recopie la fiche de l'école dans config.ECOLE (en-têtes des documents, matricules…)."""
         if e:
+            # v2.2 : école d'exemple d'une base neuve (fiche pas encore remplie) : « École : …… » sur les documents
+            nom = e["nom"]
+            exemple = (nom or "").strip() in NOMS_EXEMPLE
+            if exemple:
+                nom = "……………………………"   # « École : …… » sous le libellé École des en-têtes
+            # pas de cachet tant que l'école n'a pas réglé le sien (cachet créé avec l'école d'exemple)
+            cachet_exemple = exemple or (e["cachet_sup"] or "").strip().upper() in {n_.upper() for n_ in NOMS_EXEMPLE if n_}
             config.ECOLE.update({
-                "id": e["id"], "nom": e["nom"], "sigle": e["sigle"] or "", "adresse": e["adresse"] or "",
+                "id": e["id"], "nom": nom, "sigle": e["sigle"] or "", "adresse": e["adresse"] or "",
                 "telephone": e["telephone"] or "", "email": e["email"] or "", "ville": e["ville"] or e["commune"] or "",
                 "directeur": e["directeur_nom"] or "", "directeur_titre": e["directeur_titre"] or "Directeur",
                 "statut": e["statut"] or "", "departement": e["departement"] or "", "cs": e["cs"] or "",
@@ -157,9 +166,9 @@ def enregistrer(app, H):
                 "admin_titre": e["admin_titre"] or "", "admin_nom": e["admin_nom"] or "",
                 "ccs_titre": e["ccs_titre"] or "", "ccs_nom": e["ccs_nom"] or "",
                 "_cachet": (e["cachet_sup"] or "", e["cachet_inf"] or "", e["cachet_centre"] or "", e["cachet_couleur"] or "bleu")
-                if (e["cachet_sup"] or e["cachet_centre"]) else None,
+                if (e["cachet_sup"] or e["cachet_centre"]) and not cachet_exemple else None,
                 "_sig_directeur": signature(f"ecole:{e['id']}:directeur"),
-                "_griffe": griffe_de(e),
+                "_griffe": None if exemple else griffe_de(e),
                 "devise": (e["devise"] if "devise" in e.keys() else "") or "",
             })
 

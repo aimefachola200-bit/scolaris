@@ -283,11 +283,83 @@
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
   {% endwith %}
+  {% if EXPORT_BARRE %}<div class="export-barre no-print" role="toolbar" aria-label="Télécharger ou imprimer cette page">
+    <a class="btn petit" href="{{ EXPORT_BARRE.pdf }}" data-telechargement="pdf">{{ icone('document') }} Télécharger PDF</a>
+    <a class="btn petit" href="{{ EXPORT_BARRE.word }}" data-telechargement="docx">{{ icone('texte') }} Télécharger Word</a>
+    <button type="button" class="btn sec petit" onclick="scolarisImprimer()">{{ icone('imprimer') }} Imprimer</button></div>{% endif %}
   {% block contenu %}{% endblock %}
   <footer class="credit">SCOLARIS {{ VERSION }} · Conception : {{ CONCEPTEUR }}</footer>
 </main>
 {% if g.user %}</div></div>{% endif %}
 <script>
+/* v2.2 — impression et téléchargements, y compris dans les applications Android (navigateur intégré) */
+(function(){
+  var pont = window.ScolarisAutonome || window.ScolarisAndroid || null;
+  var natif = window.print ? window.print.bind(window) : null;
+  window.scolarisImprimer = function(){
+    if (pont && pont.imprimer) { try { pont.imprimer(document.title || 'SCOLARIS'); return; } catch (e) {} }
+    var b = document.querySelector('.export-barre [data-telechargement="pdf"]');
+    if (pont && b) { location.href = b.href; return; }       // pas d'impression possible : le PDF à la place
+    if (natif) natif();
+  };
+  if (pont) { window.print = window.scolarisImprimer; }
+  /* Fichier reçu par JavaScript (formulaire « POST », blob) : enregistré par l'application Android */
+  function nomDe(r, defaut){
+    var cd = r.headers.get('Content-Disposition') || '', m = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+    if (m) { try { return decodeURIComponent(m[1]); } catch (e) {} }
+    m = /filename="?([^";]+)"?/i.exec(cd); return m ? m[1] : defaut;
+  }
+  function enregistrerBlob(blob, nom){
+    var lecteur = new FileReader();
+    lecteur.onload = function(){ var b64 = String(lecteur.result).split(',')[1] || '';
+      if (pont && pont.enregistrerFichier) pont.enregistrerFichier(nom, blob.type || 'application/octet-stream', b64);
+      else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom; document.body.appendChild(a); a.click(); a.remove(); } };
+    lecteur.readAsDataURL(blob);
+  }
+  window.scolarisGarderBlob = enregistrerBlob;
+  var FICHIERS_POST = /(\.pdf|\/pdf|\.xlsx|\.docx|\.zip)(\?|$|\/)|\/cachets|\/transmissions\/envoi|\/docs-enseignant\/|\/educmaster\/notes|telecharger-maintenant/;
+  if (pont && pont.enregistrerFichier) {
+    /* le navigateur d'Android ne sait pas télécharger la réponse d'un formulaire envoyé (POST) : on l'envoie nous-mêmes */
+    document.addEventListener('submit', function(ev){
+      var f = ev.target; if (!f || (f.method || '').toLowerCase() !== 'post' || f.dataset.natif === '1' || ev.defaultPrevented) return;
+      if (f.querySelector('input[type=file]')) return;          // envoi de fichiers : formulaire normal
+      var cible = f.getAttribute('action') || location.pathname;
+      if (f.dataset.fichier !== '1' && !FICHIERS_POST.test(cible)) return;   // seulement les formulaires qui renvoient un fichier
+      ev.preventDefault();
+      var donnees = new FormData(f); if (ev.submitter && ev.submitter.name) donnees.append(ev.submitter.name, ev.submitter.value || '');
+      fetch(f.action || location.href, {method: 'POST', body: donnees, credentials: 'same-origin', headers: {'X-Scolaris-Fetch': '1'}}).then(function(r){
+        var cd = r.headers.get('Content-Disposition') || '', ct = (r.headers.get('Content-Type') || '').toLowerCase();
+        if (/attachment/i.test(cd) || (ct && ct.indexOf('text/html') < 0 && ct.indexOf('json') < 0)) {
+          return r.blob().then(function(b){ enregistrerBlob(b, nomDe(r, 'document')); });
+        }
+        if (ct.indexOf('json') >= 0) return r.json().then(function(j){ if (j && j.redirection) location.href = j.redirection; else location.reload(); });
+        if (r.redirected) { location.href = r.url; return; }
+        return r.text().then(function(t){ document.open(); document.write(t); document.close(); });
+      }).catch(function(){ f.dataset.natif = '1'; f.submit(); });
+    }, false);
+  }
+  /* Android : le clavier ne cache plus le champ en cours de saisie */
+  if (pont) document.addEventListener('focusin', function(ev){
+    var t = ev.target; if (!t || !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    setTimeout(function(){ try { t.scrollIntoView({block: 'center', behavior: 'smooth'}); } catch (e) { t.scrollIntoView(); } }, 350);
+  });
+  /* Téléchargement groupé : fiches / résumés cochés */
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t.classList) return;
+    if (t.classList.contains('lot-tout')) { document.querySelectorAll('.lot-case').forEach(function(c){ c.checked = t.checked; }); }
+    if (!t.classList.contains('lot-case') && !t.classList.contains('lot-tout')) return;
+    var ids = Array.prototype.map.call(document.querySelectorAll('.lot-case:checked'), function(c){ return c.value; });
+    document.querySelectorAll('.lot-telechargement a[data-fmt]').forEach(function(a){
+      if (!a.dataset.base) a.dataset.base = a.getAttribute('href');
+      if (!ids.length) { a.setAttribute('href', a.dataset.base); return; }
+      var u = new URL(a.dataset.base, location.href), garder = new URLSearchParams();
+      ['classe','eleve'].forEach(function(k){ if (u.searchParams.get(k)) garder.set(k, u.searchParams.get(k)); });
+      garder.set('ids', ids.join(','));
+      a.setAttribute('href', u.pathname + '?' + garder.toString());
+    });
+    document.querySelectorAll('.lot-compte').forEach(function(s){ s.textContent = ids.length ? ids.length + ' choisi(s)' : ''; });
+  });
+})();
 /* Bouton « ← Retour » : page précédente de l'application, sinon l'accueil */
 function scolarisRetour(accueil){
   var meme = false; try { meme = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}

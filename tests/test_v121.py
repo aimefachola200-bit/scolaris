@@ -78,7 +78,9 @@ def parcours(c, directeur):
     s, npg = texte_pdf(ok(c.get(f"/preparation/evaluations/e/CM1-T1-expr.pdf?partie=grille")))
     assert "Pertinence" in s and "Cohérence" in s and "Total" in s
     r = ok(c.get(f"/preparation/evaluations/e/{cle}.doc?partie=corrige"))
-    assert r.mimetype == "application/msword" and "Réponse attendue" in r.data.decode("utf-8")
+    # v2.2 : vrai document Word (.docx) au lieu d'une page HTML nommée « .doc »
+    import zipfile as _zf, io as _io
+    assert r.mimetype.endswith("wordprocessingml.document") and "Réponse attendue" in _zf.ZipFile(_io.BytesIO(r.data)).read("word/document.xml").decode("utf-8")
     s, npg = texte_pdf(ok(c.get("/preparation/evaluations/jeu.pdf?cours=CM1&periode=M1")))
     assert npg >= 5 and "Mathématique".upper() in s.upper()
     ok(c.get("/preparation/evaluations/e/CM2-FA-comp"), 404)        # pas d'évaluation de passage au CM2 (CEP)
@@ -118,7 +120,7 @@ def parcours(c, directeur):
         assert "CLASSEUR DES FICHES DE LA SEMAINE" in s and "SOMMAIRE" in s and npg >= 2
         r = ok(c.get(f"/preparation/classeur?classe={cm1}&portee=semaine&date=2026-11-09&format=zip"))
         z = zipfile.ZipFile(io.BytesIO(r.data))
-        assert any(n.endswith(".pdf") for n in z.namelist()) and any(n.endswith(".doc") for n in z.namelist())
+        assert any(n.endswith(".pdf") for n in z.namelist()) and any(n.endswith((".doc", ".docx")) for n in z.namelist())
     else:
         assert r.status_code == 302
     if not directeur:

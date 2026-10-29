@@ -3,7 +3,7 @@
 
 L'application web est embarquée (dossier « www ») et servie sur l'ordinateur lui-même (http://127.0.0.1:PORT) ;
 elle s'ouvre dans une fenêtre d'application de Microsoft Edge (ou Chrome), avec un profil propre à MEMP CP :
-les données restent sur le PC et fonctionnent sans Internet. Conception : Maître Aimé FACHE."""
+les données restent sur le PC et fonctionnent sans Internet. Conception : Maître Aimé FACHOLA."""
 import functools
 import json
 import os

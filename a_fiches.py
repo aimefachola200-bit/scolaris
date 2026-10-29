@@ -132,6 +132,11 @@ def fusionner(pdfs):
         for p in PdfReader(io.BytesIO(b)).pages:
             w.add_page(p)
     out = io.BytesIO()
+    if hasattr(w, "compress_identical_objects"):   # v2.2 : images communes une seule fois
+        try:
+            w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+        except Exception:  # noqa: BLE001
+            pass
     w.write(out)
     return out.getvalue()
 

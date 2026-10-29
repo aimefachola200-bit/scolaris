@@ -296,7 +296,14 @@ pdfs.ENREGISTREUR = lambda type_doc, libelle, cle: enregistrer_document(type_doc
 
 
 def pdf_reponse(contenu, nom):
-    return send_file(io.BytesIO(contenu), mimetype="application/pdf", download_name=nom, as_attachment=False)
+    """v2.2 : « ?telecharger=1 » (boutons « Télécharger PDF ») ou applications Android : fichier à enregistrer, pas à afficher
+    (le navigateur intégré d'Android n'affiche pas les PDF)."""
+    try:
+        telecharger = bool(request.args.get("telecharger")) or "ScolarisAutonome" in (request.headers.get("User-Agent") or "") \
+            or "ScolarisAndroid" in (request.headers.get("User-Agent") or "")
+    except RuntimeError:
+        telecharger = False
+    return send_file(io.BytesIO(contenu), mimetype="application/pdf", download_name=nom, as_attachment=telecharger)
 
 
 def fcfa(n):
@@ -413,7 +420,7 @@ MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en d
            "m_juridiction", "a_transmission", "a_tableau", "a_cep", "a_personnel", "a_structure", "a_visites", "a_fiches",
            # v1.6 : tableau synoptique, vivres et stock, comité d'évaluation et épreuves (toutes éditions) ;
            # CS / DDEMP : divisions, unités pédagogiques, modules des écoles ouverts aux applications d'administration
-           "m_synoptique", "m_partage", "m_preparation", "m_maternelle", "m_evalprep", "guide_utilisation", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
+           "m_synoptique", "m_partage", "m_preparation", "m_maternelle", "m_evalprep", "guide_utilisation", "m_export", "m_uascep", "m_stock_cantine", "m_epreuves", "m_calendrier_officiel", "m_themes_up", "a_divisions", "a_up", "a_integration", "a_synoptique",
            # v1.7 : conseillers pédagogiques — programmation, journal des activités, bilans trimestriel et annuel
            "a_cp",
            # v1.8 : Ma classe, accueil par rôle, groupes de remédiation ; alertes de pilotage (CS / DDEMP)

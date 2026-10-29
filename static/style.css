@@ -299,3 +299,9 @@ tr.prep-vide{display:none}
 .badge-vigueur{display:inline-block;margin:6px 0;padding:3px 10px;border-radius:20px;font-weight:600;background:#ECFDF3;color:#067647}
 .mat-filtres{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:10px 0}
 .mat-sem td{vertical-align:top}
+
+/* v2.2 — barre « Télécharger PDF · Télécharger Word · Imprimer » (pédagogie et pages imprimables) */
+.export-barre{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin:0 0 10px}
+.export-barre .btn{white-space:nowrap}
+@media (max-width:600px){.export-barre{justify-content:stretch}.export-barre .btn{flex:1 1 auto;text-align:center}}
+@media print{.export-barre{display:none!important}}

@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 2.1.1. 
+Version 2.2.0. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -110,13 +110,15 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 2. Ajoutez les écoles de la juridiction ou importez leurs données transmises (Excel, transmission).
 3. Les tableaux de synthèse, statistiques et documents se calculent à partir des écoles.
 
-## Imprimer et enregistrer en PDF
+## Télécharger en PDF ou en Word, imprimer
 
 *Pour : Tout le monde*
 
-1. Ouvrez le document puis « PDF » : le fichier s'ouvre ou se télécharge ; imprimez-le ou partagez-le.
-2. Pour les fiches longues, imprimez en recto verso.
-3. Une épreuve courte s'imprime deux fois par feuille A4 avec une ligne de coupe.
+1. En haut de chaque page de pédagogie (fiches, résumés, épreuves, guides, programmes, révisions…) : « Télécharger PDF », « Télécharger Word » ou « Imprimer ».
+2. Dans les listes de fiches et de résumés, chaque ligne a ses boutons PDF et Word ; cochez plusieurs lignes (ou gardez le filtre) puis « Un PDF (livret) », « Un document Word » ou « ZIP (un Word par fiche) ».
+3. Sur téléphone ou tablette Android, le fichier va dans « Téléchargements / SCOLARIS » : touchez « Ouvrir » ou « Partager » (WhatsApp, e-mail…). « Imprimer » ouvre l'impression d'Android (imprimante ou « Enregistrer au format PDF »).
+4. Une fiche de préparation tient sur une feuille recto verso : page 1, en-tête et éléments de planification ; page 2, déroulement et évaluation.
+5. Une épreuve courte s'imprime deux fois par feuille A4 avec une ligne de coupe.
 
 ## Code QR et vérification des documents
 

@@ -14,15 +14,22 @@
 </form>
 {% if semaine %}<div class="flash info">Fiches de la semaine pour <b>{{ semaine.classe.nom }}</b> d'après {{ 'la planification mensuelle (' ~ semaine.bornes[0] ~ ' → ' ~ semaine.bornes[1] ~ ')' if semaine.bornes else 'la planification annuelle (' ~ semaine.mois ~ ')' }}. <a href="{{ url_for('prep_semaine_pdf', classe=semaine.classe.id) }}" target="_blank">Tout télécharger (PDF)</a></div>{% endif %}
 <p class="sous">{{ total }} fiche(s){% if pages > 1 %} · page {{ page }} / {{ pages }}{% endif %}</p>
-{% if fiches %}
+{% if fiches %}{% set qs = request.query_string.decode() %}
+<div class="carte lot-telechargement no-print" data-lot="{{ url_for('prep_fiches_lot', fmt='FMT') }}{{ '?' ~ qs if qs else '' }}">
+  <b>Télécharger directement</b> — les fiches cochées, ou toutes celles du filtre ({{ total }}{{ ', limité à 120' if total > 120 }}) :
+  <a class="btn petit" href="{{ url_for('prep_fiches_lot', fmt='pdf') }}{{ '?' ~ qs if qs else '' }}" data-fmt="pdf">{{ icone('document') }} Un PDF (livret)</a>
+  <a class="btn petit" href="{{ url_for('prep_fiches_lot', fmt='docx') }}{{ '?' ~ qs if qs else '' }}" data-fmt="docx">{{ icone('texte') }} Un document Word</a>
+  <a class="btn sec petit" href="{{ url_for('prep_fiches_lot', fmt='zip') }}{{ '?' ~ qs if qs else '' }}" data-fmt="zip">{{ icone('archives') }} ZIP (un Word par fiche)</a>
+  <span class="aide lot-compte"></span>
+</div>
 <div class="tw"><table class="t">
-  <thead><tr><th>Cours</th><th>Matière</th><th>Unité / SA / séance</th><th>Titre</th><th>Durée</th><th></th></tr></thead>
+  <thead><tr><th class="no-print"><input type="checkbox" class="lot-tout" aria-label="Cocher toutes les fiches de la page"></th><th>Cours</th><th>Matière</th><th>Unité / SA / séance</th><th>Titre</th><th>Durée</th><th></th></tr></thead>
   <tbody>{% for f in fiches %}<tr>
-    <td>{{ f.cours }}</td><td>{{ prep_nom_matiere(f.matiere) }}{% if f.sous_matiere %}<br><span class="aide">{{ f.sous_matiere }}</span>{% endif %}</td>
+    <td class="no-print"><input type="checkbox" class="lot-case" value="{{ f.id }}" aria-label="Choisir {{ f.titre }}"></td><td>{{ f.cours }}</td><td>{{ prep_nom_matiere(f.matiere) }}{% if f.sous_matiere %}<br><span class="aide">{{ f.sous_matiere }}</span>{% endif %}</td>
     <td>{{ f.unite or '' }}{% if f.sa %} · SA {{ f.sa }}{% endif %}{% if f.seance %} · S{{ f.seance }}{% endif %}</td>
     <td><a href="{{ url_for('prep_fiche', fid=f.id) }}{{ '?classe=' ~ cid if cid else '' }}">{{ f.titre }}</a>{% if f.statut == 'concue' %} <span class="badge att" title="Conçue selon l'APC — à valider par le conseiller pédagogique">conçue</span>{% endif %}</td>
     <td>{{ f.duree or '' }}</td>
-    <td class="actions"><a class="btn sec petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid) }}" title="PDF">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}" title="Word">Word</a> <a class="btn petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">Adapter</a></td>
+    <td class="actions"><a class="btn sec petit" href="{{ url_for('prep_fiche_pdf', fid=f.id, classe=cid, telecharger=1) }}" title="Télécharger la fiche en PDF">PDF</a> <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}" title="Télécharger la fiche en Word">Word</a> <a class="btn petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">Adapter</a></td>
   </tr>{% endfor %}</tbody></table></div>
 {% if pages > 1 %}<p class="actions">{% for p in range(1, pages + 1) %}{% if p == page %}<b>{{ p }}</b>{% else %}<a href="{{ request.path }}?{{ request.query_string.decode()|replace('&page=' ~ page, '')|replace('page=' ~ page, '') }}&page={{ p }}">{{ p }}</a>{% endif %} {% endfor %}</p>{% endif %}
 {% else %}<div class="carte"><p class="aide">Aucune fiche ne correspond. <a href="{{ url_for('prep_manquants') }}">Voir les fiches manquantes</a> ou <a href="{{ url_for('prep_preparer') }}">préparer une fiche</a>.</p></div>{% endif %}

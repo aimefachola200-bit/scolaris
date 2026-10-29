@@ -22,7 +22,6 @@
       <a class="btn sec petit" href="{{ url_for('prep_fiche_doc', fid=f.id, classe=cid) }}">Word</a>
       {% if classes %}<a class="btn sec petit" href="{{ url_for('prep_preparer', depuis=f.id, classe=cid) }}">{{ icone('modifier') }} Adapter pour ma classe</a>{% endif %}
       {% endif %}
-      <button class="btn sec petit" type="button" onclick="window.print()">Imprimer</button>
     </div></div>
   {% if f.mention %}<div class="flash warning">{{ f.mention }}</div>{% endif %}
   {% if f.intitule and f.intitule != f.titre %}<p><b>Intitulé :</b> {{ f.intitule }}</p>{% endif %}

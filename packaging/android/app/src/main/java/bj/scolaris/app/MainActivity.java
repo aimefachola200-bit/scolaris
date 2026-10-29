@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
     private String telechargementEnAttente;
     private String typeEnAttente;
     private String dispositionEnAttente;
+    private String[] fichierEnAttente;
+    private static final int CODE_STOCKAGE_PAGE = 47;
 
     @Override
     protected void onCreate(Bundle etat) {
@@ -361,37 +363,56 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** PDF (bulletins, reçus, certificats), CSV, sauvegardes : via le gestionnaire de téléchargements. */
+    /** v2.2 — PDF, Word, Excel, ZIP, sauvegardes : enregistrés dans « Téléchargements / SCOLARIS » avec leur vrai nom,
+     *  puis « Ouvrir » ou « Partager ». Le fichier est lu avec la session de la page (pas de second téléchargement). */
     private void telecharger(String url, String disposition, String mime) {
-        if (Build.VERSION.SDK_INT < 29
-                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        if (Fichiers.autorisationNecessaire(this)) {
             telechargementEnAttente = url;
             dispositionEnAttente = disposition;
             typeEnAttente = mime;
             requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, CODE_STOCKAGE);
             return;
         }
-        try {
-            String nom = URLUtil.guessFileName(url, disposition, mime);
-            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            String cookies = CookieManager.getInstance().getCookie(url);
-            if (cookies != null) {
-                req.addRequestHeader("Cookie", cookies);
-            }
-            req.addRequestHeader("User-Agent", web != null ? web.getSettings().getUserAgentString() : "ScolarisAndroid");
-            req.setTitle(nom);
-            req.setDescription("SCOLARIS");
-            if (mime != null) {
-                req.setMimeType(mime);
-            }
-            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, nom);
-            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-            dm.enqueue(req);
-            Toast.makeText(this, "Téléchargement de " + nom + " (voir les notifications)", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Téléchargement impossible : " + e.getMessage(), Toast.LENGTH_LONG).show();
+        if (url != null && url.startsWith("blob:")) {
+            web.evaluateJavascript("(function(){fetch('" + url.replace("'", "\\'") + "').then(function(r){return r.blob();})"
+                    + ".then(function(b){window.scolarisGarderBlob && window.scolarisGarderBlob(b,'document');});})()", null);
+            return;
         }
+        Toast.makeText(this, "Téléchargement en cours…", Toast.LENGTH_SHORT).show();
+        Fichiers.telecharger(this, url, web != null ? web.getSettings().getUserAgentString() : null, disposition, mime, new Fichiers.Fin() {
+            @Override
+            public void fini(Uri uri, String nom, String type, String erreur) {
+                Fichiers.proposer(MainActivity.this, uri, nom, type, erreur);
+            }
+        });
+    }
+
+    /** Fichier reçu de la page (formulaire envoyé, document fabriqué dans la page), en base 64. */
+    private void enregistrerDepuisPage(final String nom, final String mime, final String base64) {
+        if (Fichiers.autorisationNecessaire(this)) {
+            fichierEnAttente = new String[]{nom, mime, base64};
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, CODE_STOCKAGE_PAGE);
+            return;
+        }
+        final byte[] octets;
+        try {
+            octets = android.util.Base64.decode(base64 == null ? "" : base64, android.util.Base64.DEFAULT);
+        } catch (IllegalArgumentException e) {
+            Toast.makeText(this, "Fichier illisible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Fichiers.enregistrer(MainActivity.this, Fichiers.nomFichier(null, nom == null || nom.isEmpty() ? "document" : nom, mime),
+                        mime, new java.io.ByteArrayInputStream(octets), new Fichiers.Fin() {
+                            @Override
+                            public void fini(Uri uri, String n, String type, String erreur) {
+                                Fichiers.proposer(MainActivity.this, uri, n, type, erreur);
+                            }
+                        });
+            }
+        }, "enregistrement").start();
     }
 
     @Override
@@ -421,6 +442,14 @@ public class MainActivity extends Activity {
                 telecharger(url, dispositionEnAttente, typeEnAttente);
             } else {
                 Toast.makeText(this, "Autorisation refusée : le document ne peut pas être enregistré.", Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        if (code == CODE_STOCKAGE_PAGE && fichierEnAttente != null) {
+            String[] t = fichierEnAttente;
+            fichierEnAttente = null;
+            if (resultats.length > 0 && resultats[0] == PackageManager.PERMISSION_GRANTED) {
+                enregistrerDepuisPage(t[0], t[1], t[2]);
             }
         }
     }
@@ -569,6 +598,28 @@ public class MainActivity extends Activity {
         public String serveur() {
             String s = lireServeur();
             return s == null ? "" : s;
+        }
+
+        /** v2.2 — « Imprimer » des pages : gestionnaire d'impression d'Android (imprimante ou PDF). */
+        @JavascriptInterface
+        public void imprimer(final String titre) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Fichiers.imprimer(MainActivity.this, web, titre);
+                }
+            });
+        }
+
+        /** v2.2 — fichier reçu par la page (réponse d'un formulaire, document fabriqué dans la page). */
+        @JavascriptInterface
+        public void enregistrerFichier(final String nom, final String mime, final String base64) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    enregistrerDepuisPage(nom, mime, base64);
+                }
+            });
         }
     }
 }
