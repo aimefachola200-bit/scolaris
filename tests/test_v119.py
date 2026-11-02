@@ -100,7 +100,9 @@ def parcours(c):
     assert "Résumés" in t and "CM1 A" in t
     for f in (geo, fr4, conte):                  # « Cette semaine » retrouve les fiches conçues par SA / unité
         t = "".join(txt(ok(c.get(f"/preparation/fiches?classe={cm1}&semaine=1&matiere={f['matiere']}&page={p}"))) for p in (1, 2, 3))
-        assert f["titre"] in t, f["titre"]
+        # la fiche retenue dans la SA / l'unité dépend du jour (séances réparties sur le mois) : une fiche de la même SA / unité
+        meme = [x for x in C["fiches"] if x["cours"] == f["cours"] and x["matiere"] == f["matiere"]]
+        assert any(x["titre"] in t for x in meme), f["titre"]
     t = txt(ok(c.get("/preparation")))
     assert "au total" in t
     t = txt(ok(c.get(f"/preparation/fiches/{geo['id']}")))

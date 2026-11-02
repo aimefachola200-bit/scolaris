@@ -68,7 +68,8 @@ def menu(t):
 def parcours(c, directeur):
     t = txt(ok(c.get("/preparation")))
     menu(t)
-    assert "CE2 P" in t and "Planification mensuelle, semaine du" in t and f_est["titre"] in t, "cette semaine"
+    # fiches de la semaine : elles dépendent du jour (séances réparties sur le mois) — une fiche de CE2 au moins
+    assert "CE2 P" in t and "Planification mensuelle, semaine du" in t and any(x["titre"] in t for x in C["fiches"] if x["cours"] == "CE2"), "cette semaine"
     assert ("CI P" in t) == directeur
     ok(c.get("/preparation/programmes"))
     t = txt(ok(c.get("/preparation/programmes?cours=CE2&matiere=maths")))
@@ -84,7 +85,7 @@ def parcours(c, directeur):
     t = txt(ok(c.get("/preparation/fiches?statut=concue")))
     assert "conçue" in t
     t = txt(ok(c.get(f"/preparation/fiches?classe={ce2}&semaine=1")))
-    assert f_est["titre"] in t
+    assert any(x["titre"] in t for x in C["fiches"] if x["cours"] == "CE2")          # dépend du jour
     t = txt(ok(c.get(f"/preparation/fiches/{f_est['id']}")))
     assert "Déroulement" in t and "Adapter pour ma classe" in t
     s, n = texte_pdf(ok(c.get(f"/preparation/fiches/{f_est['id']}.pdf?classe={ce2}")))
@@ -94,7 +95,7 @@ def parcours(c, directeur):
     import zipfile as _zf, io as _io
     assert r.mimetype.endswith("wordprocessingml.document") and "FICHE DE PRÉPARATION" in _zf.ZipFile(_io.BytesIO(r.data)).read("word/document.xml").decode("utf-8")
     s, n = texte_pdf(ok(c.get(f"/preparation/semaine.pdf?classe={ce2}")))
-    assert n >= 2 and f_est["titre"][:25] in s.replace("\n", " ")
+    assert n >= 2 and any(x["titre"][:25] in s.replace("\n", " ") for x in C["fiches"] if x["cours"] == "CE2")
     # préparer une fiche en adaptant une fiche de la bibliothèque
     t = txt(ok(c.get(f"/preparation/preparer?depuis={f_est['id']}&classe={ce2}")))
     assert f_est["titre"] in t and 'name="ph_0"' in t
