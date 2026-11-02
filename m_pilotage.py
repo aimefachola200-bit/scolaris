@@ -77,10 +77,21 @@ def cumuler_pilotage(secs):
 def infra(pat):
     """Indicateurs d'infrastructures à partir de la section « patrimoine » (H.patrimoine_synthese)."""
     pat = pat or {}
-    sc = pat.get("salles_classe") or {}
-    mob = pat.get("mobilier") or {}
-    lat = pat.get("latrines") or {}
-    eq = pat.get("equipements") or {}
+
+    def _d(v, cle):
+        """v2.3.4 : une section reçue sous forme de nombre (ex. « salles_classe »: 6, données transmises ou d'exemple)
+        compte comme son total au lieu de faire échouer le tableau de bord."""
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return {cle: v}
+        if isinstance(v, str) and v.strip().isdigit():
+            return {cle: int(v)}
+        return {}
+    sc = _d(pat.get("salles_classe"), "total")
+    mob = _d(pat.get("mobilier"), "places_assises")
+    lat = _d(pat.get("latrines"), "cabines_total")
+    eq = pat.get("equipements") if isinstance(pat.get("equipements"), dict) else {}
     return {"salles": int(sc.get("total") or 0), "salles_mauvais": int(sc.get("mauvais") or 0), "places": int(mob.get("places_assises") or 0),
             "deficit_places": int(mob.get("deficit_places") or 0), "tb_manquantes": int(mob.get("tables_bancs_manquantes") or 0),
             "cabines": int(lat.get("cabines_total") or 0), "eau": 1 if eq.get("point_eau") else 0, "electricite": 1 if eq.get("electricite") else 0,

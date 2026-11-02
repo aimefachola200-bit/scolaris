@@ -109,6 +109,9 @@ ENDPOINTS_COMMUNS = {
     # v1.22 : bureaux de l'UASCEP (école, UP, zone, CS, DDEMP) — page de la structure en édition juridiction
     "uascep", "uascep_bureau", "uascep_membre", "uascep_membre_supprimer", "uascep_reinitialiser", "uascep_reinitialiser_tous",
     "uascep_renouveler", "uascep_xlsx", "uascep_modele", "uascep_import", "uascep_pdf",
+    # v2.3.4 : « Télécharger PDF / Word » d'une page — la page rejouée applique elle-même la règle de l'école ouverte
+    # (sinon une page de la structure se téléchargeait sous la forme « Choisissez une école »)
+    "exporter_page",
 }
 # v1.25 : familles d'endpoints de la structure (sport scolaire, pilotage, moteur des registres)
 PREFIXES_EP_COMMUNS = ("listes_classe", "sport_", "pilotage", "reg_", "liaison_", "inspection_", "examens_", "examen_blanc", "uascep_")   # v1.26 : communication et alertes
