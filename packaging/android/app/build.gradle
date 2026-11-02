@@ -17,8 +17,8 @@ android {
         applicationId "bj.scolaris.app"
         minSdk 24
         targetSdk 34
-        versionCode 61
-        versionName "2.3.2"
+        versionCode 62
+        versionName "2.3.3"
     }
 
     signingConfigs {

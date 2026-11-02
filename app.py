@@ -447,7 +447,7 @@ MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en d
            "m_examen_blanc",
            # v2.3 : territoire et suivi administratif (fiche de rentrée, courrier, présence du personnel, discipline,
            # signalétique, référentiel des structures, niveau national) — avant m_sync, qui suit ses registres
-           "m_territoire", "m_cep2027",
+           "m_territoire", "m_cep2027", "m_listes_classe",
            # v2.0 : synchronisation entre niveaux (école → CS → DDEMP), après tous les modules dont elle suit les objets
            "m_sync",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules

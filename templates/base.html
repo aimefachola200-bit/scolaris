@@ -46,6 +46,7 @@
     {% elif g.user.role in ('fondateur','admin') %}{{ lien('fondateur_tableau', 'Tableau du fondateur', ep.startswith('fondateur'), 'graphique') }}{% endif %}
     {% if ENS and ep_existe('ma_classe') %}{{ lien('ma_classe', 'Ma classe', ep.startswith('ma_classe'), 'ecole') }}{% endif %}
     {% if ENS %}{{ lien('espace_enseignant', 'Mon espace (mes classes, ma signature)', ep=='espace_enseignant', 'etoile') }}{% endif %}
+    {% if g.user.role != 'observateur' %}{{ lien('listes_classe', 'Listes de classe', ep.startswith('listes_classe'), 'liste') }}{% endif %}{# v2.3.3 : accès rapide #}
     {% call groupe('sco', 'Scolarité', ep.startswith('eleve') or ep.startswith('classe') or ep.startswith('appel') or ep.startswith('absences') or ep.startswith('registre') or ep.startswith('releve') or ep.startswith('calendrier') or ep.startswith('affichage'), 'groupe') %}
       {{ lien('eleves', 'Élèves de mes classes' if ENS else 'Élèves et inscriptions', ep.startswith('eleve')) }}
       {{ lien('classes', 'Mes classes' if ENS else 'Classes', ep.startswith('classe')) }}

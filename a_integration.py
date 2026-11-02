@@ -111,10 +111,11 @@ ENDPOINTS_COMMUNS = {
     "uascep_renouveler", "uascep_xlsx", "uascep_modele", "uascep_import", "uascep_pdf",
 }
 # v1.25 : familles d'endpoints de la structure (sport scolaire, pilotage, moteur des registres)
-PREFIXES_EP_COMMUNS = ("sport_", "pilotage", "reg_", "liaison_", "inspection_", "examens_", "examen_blanc", "uascep_")   # v1.26 : communication et alertes
+PREFIXES_EP_COMMUNS = ("listes_classe", "sport_", "pilotage", "reg_", "liaison_", "inspection_", "examens_", "examen_blanc", "uascep_")   # v1.26 : communication et alertes
 # adresses accessibles sans école ouverte (structure, administration, connexion, fichiers, espaces publics et API) :
 # toute autre adresse est une page de module d'école et demande une école ouverte (page « Choisissez une école »)
 PREFIXES_STRUCTURE = (
+    "/listes-classe",   # v2.3.3 : listes de classe (école → cours → classe) au niveau de la structure
     "/juridiction", "/login", "/logout", "/static", "/verifier", "/parametres", "/utilisateurs", "/journal",
     "/administration", "/ecoles", "/sauvegarde", "/mon-compte", "/demandes-ecoles", "/communication/reglages",
     "/paiements/en-ligne/reglages", "/paie/parametres", "/manifest.webmanifest", "/sw.js", "/hors-ligne",

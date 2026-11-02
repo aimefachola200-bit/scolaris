@@ -2,6 +2,7 @@
    Uniquement le périmètre de l'enseignant : aucun module du directeur ni de l'école. #}
 {% set APP_ENS = EDITION == 'enseignant' %}
 {{ lien('ens_tableau', 'Tableau de bord', ep=='ens_tableau', 'accueil') }}
+{{ lien('listes_classe', 'Listes de mes classes', ep.startswith('listes_classe'), 'liste') }}
 {% call groupe('ens_cl', 'Ma classe', ep.startswith('ma_classe') or ep.startswith('eleve') or ep.startswith('appel') or ep.startswith('registre') or ep.startswith('releve') or ep.startswith('eval') or ep.startswith('notes') or ep in ('resultats','classes','classe_detail','ens_classes'), 'ecole') %}
   {{ lien('ma_classe', 'Ma classe (suivi du jour)', ep.startswith('ma_classe')) }}
   {{ lien('eleves', 'Mes élèves', ep.startswith('eleve')) }}

@@ -154,11 +154,14 @@ def enregistrer(app, H):
             ajout("jur_visites", "Visites", "Écoles et classes", "rechercher", "jur_visites")
             ajout("jur_transmissions", "Transmissions", "Recevoir les écoles", "⇅", "jur_transmission")
             ajout("jur_stats_ecoles", "Statistiques", "Écoles, effectifs, enseignants", "graphique", "jur_ecoles")
+            if r != "observateur":
+                ajout("listes_classe", "Listes de classe", "École, cours, classe", "liste")
         else:
             mes = H.classes_autorisees() if "ma_classe" in vf and r == "enseignant" else []
             if mes:
                 ajout("ma_classe", "Ma classe" if len(mes) == 1 else "Mes classes",
                       mes[0]["nom"] if len(mes) == 1 else f"{len(mes)} classes", "ecole")
+            ajout("listes_classe", "Listes de classe", "Par cours : PDF, Excel, impression", "liste")   # v2.3.3 : accès rapide
             ajout("appel_accueil", "Faire l'appel", "Présents, absents, retards", "valider", "appel")
             ajout("eval_accueil", "Saisir des notes", "Évaluations et bulletins", "note", "evaluations")
             if r != "enseignant":
@@ -179,7 +182,7 @@ def enregistrer(app, H):
                 else:
                     quand = "aujourd'hui" if s["jours"] == 0 else ("hier" if s["jours"] == 1 else f"il y a {s['jours']} jours")
                     ajout("en_ligne_page", "Sauvegardes", f"Dernière : {quand}", "enregistrer", alerte=s["jours"] > 2)
-        return out[:8]
+        return out[:9]   # v2.3.3 : 9 tuiles (listes de classe ajoutées)
 
     app.jinja_env.globals.update(raccourcis=raccourcis, etat_sauvegarde=etat_sauvegarde)
     H.etat_sauvegarde = etat_sauvegarde

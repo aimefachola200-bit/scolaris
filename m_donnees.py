@@ -1098,6 +1098,47 @@ def enregistrer(app, H):
                     WHERE c.ecole_id=? AND c.niveau=? AND e.statut='inscrit' ORDER BY c.nom, e.nom, e.prenoms""",
                  (H.eco(), niveau))
 
+    def ligne_modele_classe(e):
+        """Une ligne du modèle officiel EducMaster des élèves par classe (spec : outils/lots/spec-educmaster.md)."""
+        # mêmes valeurs que l'export existant « modèle des élèves par classe, rempli » (educmaster_modele_classe_rempli)
+        g_ = lambda k: (e[k] if k in e.keys() else None)   # noqa: E731
+        txt = lambda v: str(v) if v not in (None, "") else None   # noqa: E731   NPI / téléphone gardés en texte
+        return [g_("nom"), g_("prenoms"), g_("sexe"), date_fr(g_("date_naissance")) or None, g_("lieu_naissance"),
+                txt(g_("parent_telephone")), g_("nationalite") or NATIONALITE_DEFAUT, txt(g_("nip"))]
+
+    def remplir_modele_classe(wb, eleves_de_niveau, garder=None):
+        """Remplit le modèle officiel (feuilles CM2 … CI, « Marternelle 2 / 1 ») ; eleves_de_niveau(niveau) -> élèves.
+        garder : ensemble de niveaux SCOLARIS dont la feuille est remplie (None = tous) ; la première feuille remplie
+        devient la feuille active. Textes partout (date jj/mm/aaaa, téléphone et NPI au format texte « @ »)."""
+        total, active = 0, None
+        for k, ws in enumerate(wb.worksheets):
+            niveau = FEUILLES_CLASSE.get(normaliser(ws.title))
+            if not niveau or (garder is not None and niveau not in garder):
+                continue
+            for i, e in enumerate(eleves_de_niveau(niveau), 2):
+                for j, v in enumerate(ligne_modele_classe(e), 1):
+                    c = ws.cell(row=i, column=j, value=v)
+                    if j in (6, 8):
+                        c.number_format = "@"
+                total += 1
+                if active is None:
+                    active = k
+        if active is not None:
+            wb.active = active
+        return total
+
+    def educmaster_classe_xlsx(par_niveau):
+        """{niveau SCOLARIS: [élèves]} -> octets du modèle officiel EducMaster rempli (feuilles des niveaux donnés)."""
+        wb = charger_modele("classe")
+        remplir_modele_classe(wb, lambda n: par_niveau.get(n, []), set(par_niveau))
+        buf = io.BytesIO()
+        wb.save(buf)
+        wb.close()
+        return buf.getvalue()
+
+    H.educmaster_classe_xlsx = educmaster_classe_xlsx
+    H.EDUCMASTER_NIVEAUX = set(FEUILLES_CLASSE.values())
+
     @app.route("/educmaster/modeles/classe/rempli.xlsx")
     @H.connexion_requise("donnees")
     def educmaster_modele_classe_rempli():

@@ -5,6 +5,7 @@
   <div class="actions">
     <a class="btn" href="{{ url_for('personnel_form') }}">+ Ajouter</a>
     {% if carriere %}<a class="btn sec" href="{{ url_for('carriere_accueil') }}">Gestion de carrière</a>{% else %}<a class="btn sec" href="{{ url_for('paie_accueil') }}">Paie</a>{% endif %}
+    {% if ep_existe('educmaster_modele_agents_rempli') and peut('donnees') %}<a class="btn sec" href="{{ url_for('educmaster_modele_agents_rempli') }}" data-telechargement="xlsx" title="Modèle officiel EducMaster « Mes agents » rempli : à charger tel quel sur la plateforme EducMaster">{{ icone('classeur') }} Excel EducMaster (agents)</a>{% endif %}{# v2.3.3 : accès rapide #}
     <a class="btn sec" href="{{ url_for('personnel', tous='0' if tous else '1') }}">{{ 'Masquer les anciens' if tous else 'Voir aussi les anciens' }}</a>
   </div>
 </div>
