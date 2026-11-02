@@ -65,7 +65,11 @@ INDICATEURS_API = ("ecoles", "classes", "g", "f", "t", "pct_f", "ip", "ratio", "
 
 
 def norm(t):
-    return re.sub(r"\s+", " ", R._norm(t)).strip()
+    """Clé normalisée commune aux applications (pvs.js normCle) : accents retirés, minuscules, espaces simples."""
+    import unicodedata
+    t = unicodedata.normalize("NFKD", str(t if t is not None else ""))
+    t = "".join(ch for ch in t if not unicodedata.combining(ch))
+    return re.sub(r"\s+", " ", t.lower()).strip()
 
 
 def enregistrer(app, H):
@@ -858,6 +862,10 @@ def enregistrer(app, H):
                 if nv[k] and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", nv[k]):
                     nv[k] = ""
             H.doc_ecrire(f"signaletique:e{H.eco()}", nv)
+            try:
+                miroir_signaletique(nv)
+            except Exception:  # noqa: BLE001
+                pass
             H.journal("signaletique_ecole", f"école {H.eco()}")
             flash("Fiche signalétique enregistrée.", "success")
             return redirect(url_for("territoire_ecole"))
@@ -880,6 +888,30 @@ def enregistrer(app, H):
         for c in ("Enseignant", "Infrastructure", "Eau, hygiène et assainissement"):
             if c not in Gb.listes["cat_besoin"]:
                 Gb.listes["cat_besoin"].insert(len(Gb.listes["cat_besoin"]) - 1, c)
+
+    # ------------------------------------------------------------------ fiche signalétique : registre « territoire:signaletique » (montant),
+    # comme les applications JS (même nom de type et mêmes champs) ; la page de l'école l'écrit à chaque enregistrement
+    SIGN = G.registre("signaletique", "Fiche signalétique des écoles", [
+        ("latitude", "Latitude", "decimal"), ("longitude", "Longitude", "decimal"), ("statutJuridique", "Statut juridique", "texte"),
+        ("numeroAutorisation", "N° d’autorisation", "texte"), ("dateAutorisation", "Date d’autorisation", "date"),
+        ("numeroAgrement", "N° d’agrément", "texte"), ("dateAgrement", "Date d’agrément", "date"), ("salles", "Salles", "entier"),
+        ("latrines", "Latrines", "entier"), ("pointEau", "Point d’eau", "texte"), ("electricite", "Électricité", "texte")],
+        unite="fiche", oblig="entite", ordre="entite", portee="ecole", par_annee=False, feuille="Fiche signalétique", onglet="Signalétique (reçues)",
+        entite=True, niveaux=["ECOLE"], unique=("entite",), ecriture=lambda: False, doc="Fiches signalétiques des écoles",
+        aide="Fiches signalétiques reçues des écoles (synchronisation) ; chaque école remplit la sienne dans « Fiche signalétique de l'école ».")
+
+    def miroir_signaletique(nv):
+        p_ = R.cle_portee("ecole")
+        ent = R.entite_courante()[1]
+        cols = [k for k, _l, _t in SIGN.champs if k not in ("niveau", "entite")]
+        vals = [nv.get(k) if nv.get(k) not in ("",) else None for k in cols]
+        x = q("SELECT id FROM reg_territoire_signaletique WHERE portee=?", (p_,), un=True)
+        if x:
+            ex("UPDATE reg_territoire_signaletique SET entite=?, " + ", ".join(f"{k}=?" for k in cols) + ", maj=? WHERE id=?",
+               (ent, *vals, H.maintenant(), x["id"]))
+        else:
+            ex("INSERT INTO reg_territoire_signaletique (portee, annee, niveau, entite, " + ", ".join(cols) + ", cree_le, cree_par, maj) VALUES (?,?,?,?,"
+               + ",".join("?" * len(cols)) + ",?,?,?)", (p_, R.annee_active(), "ECOLE", ent, *vals, H.maintenant(), g.user["id"], H.maintenant()))
 
     # ------------------------------------------------------------------ v2.3.2 : la fiche signalétique monte (paquet de transmission)
     def section_signaletique(annee):

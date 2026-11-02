@@ -94,7 +94,21 @@ def empreinte(paquet):
     return hashlib.sha256(_canonique(paquet)).hexdigest()
 
 
+def _sans_flottants_entiers(v):
+    if isinstance(v, float) and v.is_integer() and abs(v) < 2 ** 53:
+        return int(v)
+    if isinstance(v, dict):
+        return {k: _sans_flottants_entiers(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_sans_flottants_entiers(x) for x in v]
+    return v
+
+
 def sceller(paquet):
+    # v2.3.1 : 12.0 -> 12 avant l'empreinte : le paquet joint à la synchronisation garde la même empreinte une fois signé
+    # (la signature écrit les flottants entiers comme JavaScript, cf. sync_crypto.signer)
+    for k in list(paquet):
+        paquet[k] = _sans_flottants_entiers(paquet[k])
     paquet["format"], paquet["version"] = FORMAT, VERSION
     paquet["empreinte"] = empreinte(paquet)
     return paquet

@@ -33,6 +33,7 @@ from datetime import datetime
 from flask import Response, abort, flash, g, jsonify, redirect, render_template, request, url_for
 
 import config
+import jur_pobe as JP
 import sync_crypto as SC
 
 FORMAT, V = "memp-sync", 1
@@ -42,7 +43,8 @@ TIMEOUT = 25
 RANG = {"ECOLE": 0, "UP": 1, "ZONE": 2, "CS": 3, "DDEMP": 4}
 REG_MONTANT = [("sport", "licences"), ("sport", "officiels"), ("sport", "sites"), ("examens", "candidats"), ("examens", "concours"),
                ("examens", "participants"), ("patrimoine", "besoins"), ("communication", "lectures"), ("pilotage", "indicateurs"),
-               ("territoire", "rentree"), ("communication", "courrier"), ("examens", "salles")]   # v2.3
+               ("territoire", "rentree"), ("communication", "courrier"), ("examens", "salles"),
+               ("territoire", "signaletique")]   # v2.3
 REG_DESCENDANT = [("communication", "notes"), ("communication", "echeances"), ("communication", "agenda"), ("territoire", "retours"),
                   ("territoire", "structures")]          # v2.3.2 : le référentiel des structures descend (comme les applications JS)
 # v2.3 : registres qui montent ET descendent (copie descendante sous le type « reg:<g>:<r>@bas ») : centres du CEP 2027
@@ -57,7 +59,7 @@ LIBELLES = {"uascep_bureaux": "Bureaux UASCEP", "uascep_membres": "Membres UASCE
             "reg:examens:participants": "Participants aux concours", "reg:patrimoine:besoins": "Besoins exprimés",
             "reg:pilotage:indicateurs": "Indicateurs du pilotage", "reg:territoire:rentree": "Fiches statistiques de rentrée",
             "reg:communication:courrier": "Courrier administratif", "reg:territoire:retours": "Décisions (fiches de rentrée, courrier)",
-            "reg:examens:salles": "CEP : centres et salles", "reg:territoire:structures": "Référentiel des structures", "reg:examens:salles@bas": "CEP : centres et salles (copie des écoles)"}
+            "reg:examens:salles": "CEP : centres et salles", "reg:territoire:structures": "Référentiel des structures", "reg:territoire:signaletique": "Fiches signalétiques", "reg:examens:salles@bas": "CEP : centres et salles (copie des écoles)"}
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sync_ids (type TEXT NOT NULL, local_id INTEGER NOT NULL, uuid TEXT NOT NULL, scope INTEGER NOT NULL DEFAULT 0,
     empreinte TEXT, seq INTEGER, origine TEXT NOT NULL DEFAULT 'local', base TEXT, supprime INTEGER NOT NULL DEFAULT 0, maj TEXT,
@@ -391,6 +393,16 @@ def enregistrer(app, H):
             return "portee IN (?, ?)", (H.eco(), -H.eco()), ecole_code(H.eco())
 
         def ecrire(d, code):
+            # v2.3.1 : ligne d'école échangée comme dans les applications JS — « entite » = code de l'école, « _ecoleNom » = son nom ;
+            # rangée ici sous le nom de l'école (nom de la juridiction quand le code est connu)
+            nom_ec = d.pop("_ecoleNom", None)
+            if (d.get("niveau") or "") == "ECOLE" and (nom_ec or d.get("entite")):
+                cd = str(d.get("entite") or code or "")
+                trouve = None
+                if juridiction() and cd and table_existe("jur_ecoles"):
+                    x = q("SELECT nom FROM jur_ecoles WHERE code=?", (cd.replace("NOM:", ""),), un=True)
+                    trouve = x["nom"] if x else None
+                d["entite"] = trouve or nom_ec or d.get("entite")
             if juridiction():
                 d["portee"] = portee_de_code(code) if code else 0
             else:
@@ -398,7 +410,15 @@ def enregistrer(app, H):
             return d
 
         def lecture(d, r):
-            return {k: v for k, v in d.items() if k not in champs_eleve}
+            d = {k: v for k, v in d.items() if k not in champs_eleve}
+            if (d.get("niveau") or "") == "ECOLE" and d.get("entite"):
+                try:
+                    cd = code_de_portee(r["portee"]) if juridiction() else ecole_code(H.eco())
+                except Exception:  # noqa: BLE001
+                    cd = None
+                if cd:
+                    d["_ecoleNom"], d["entite"] = d["entite"], cd
+            return d
 
         nom = nom or f"reg:{g_}:{r_}"
         type_table(nom, table, exclure=("portee", "cree_par") + tuple(champs_eleve), scope_sql=scope, avant_ecriture=ecrire,
@@ -768,12 +788,28 @@ def enregistrer(app, H):
         if p.get("transmission"):
             try:
                 tp = p["transmission"]                  # contrôlé (empreinte, format) par jur_importer_paquet
+                libres, cr_pobe = {}, None
+                if JP.est_paquet_pobe(tp):              # paquet d'école de « Mon école » (CS Pobè) : converti ici
+                    if src[0] != "ecole":
+                        raise PaquetRefuse("Un paquet d'école Mon école ne peut venir que d'une école.", 403)
+                    st = H.jur_structure() or {}
+                    tp, libres, cr_pobe = JP.convertir(tp, src[3] or em.get("code") or "", src[2] or em.get("nom") or "",
+                                                       st.get("departement") or "", st.get("cs") or "")
                 if src[0] == "ecole":
                     code_p = ((tp.get("ecoles") or [{}])[0].get("ecole") or {}).get("code", "").strip()
                     if code_p and src[3] and code_p != src[3]:
                         raise PaquetRefuse("La transmission jointe vient d'une autre école.", 403)
                 res_t = H.jur_importer_paquet(tp, "sync", f"synchronisation ({mode})", taille)
                 note_t = f" Transmission : {res_t.get('sections', 0)} rubrique(s)."
+                if cr_pobe is not None:
+                    r_e = q("SELECT id FROM jur_ecoles WHERE code=?", (tp["ecoles"][0]["ecole"]["code"],), un=True)
+                    eid = r_e["id"] if r_e else src[1]
+                    for nom_l, d_l in libres.items():
+                        if eid:
+                            H.jur_ecrire_section(eid, nom_l, d_l, tp["annee"], source="sync")
+                    if eid:
+                        H.jur_ecrire_section(eid, "import_mon_ecole", dict(cr_pobe, recu_le=H.maintenant()), tp["annee"], source="sync")
+                    note_t = f" Paquet Mon école converti — {JP.resume(cr_pobe)}."
             except PaquetRefuse:
                 raise
             except Exception as e:  # noqa: BLE001

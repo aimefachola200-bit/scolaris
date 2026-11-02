@@ -127,7 +127,10 @@ def verifier_archive(source):
                 return False, msgs + ["La base n'est pas une base SQLite."], infos
         c = sqlite3.connect(tmp)
         try:
-            tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            try:
+                tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            except sqlite3.DatabaseError as e:   # schéma illisible : base abîmée ou modifiée
+                return False, msgs + [f"Base endommagée ({e})."], infos
             if not {"utilisateurs", "eleves", "classes"} <= tables:
                 return False, msgs + ["Ce n'est pas une base SCOLARIS."], infos
             res = c.execute("PRAGMA integrity_check").fetchone()[0]

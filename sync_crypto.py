@@ -77,8 +77,22 @@ def identite():
         return {"installation": d["installation"], "graine": graine, "cle": cle_publique(graine).hex()}
 
 
+def sans_flottants_entiers(v):
+    """1.0 -> 1 (récursif) : JavaScript écrit les flottants entiers sans « .0 » ; sans cela la signature d'un paquet
+    SCOLARIS ne se vérifie pas dans les applications JS (spec.md, § 8, « Nombres »)."""
+    if isinstance(v, float) and v.is_integer() and abs(v) < 2 ** 53:
+        return int(v)
+    if isinstance(v, dict):
+        return {k: sans_flottants_entiers(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [sans_flottants_entiers(x) for x in v]
+    return v
+
+
 def signer(paquet):
-    """Ajoute la signature Ed25519 de l'installation au paquet (dict) et le renvoie."""
+    """Ajoute la signature Ed25519 de l'installation au paquet (dict) et le renvoie (flottants entiers écrits en entiers)."""
+    for k in list(paquet):
+        paquet[k] = sans_flottants_entiers(paquet[k])
     ident = identite()
     corps = {k: v for k, v in paquet.items() if k != "signature"}
     paquet["signature"] = signer_octets(ident["graine"], empreinte_canonique(corps)).hex()
