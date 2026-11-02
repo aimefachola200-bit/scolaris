@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 2.2.2. 
+Version 2.3.1. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -110,6 +110,37 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 1. Au premier démarrage, renseignez la structure (circonscription ou direction départementale), ses zones et UP, ses services.
 2. Ajoutez les écoles de la juridiction ou importez leurs données transmises (Excel, transmission).
 3. Les tableaux de synthèse, statistiques et documents se calculent à partir des écoles.
+
+## Classes jumelées et multigrades
+
+*Pour : Administrateur / fondateur, Directeur / directrice*
+
+1. Gardez une classe par cours dans « Classes » (les effectifs restent comptés par cours).
+2. Pour une classe jumelée (ex. CI-CP) ou multigrade (ex. CI-CE2-CM1) tenue dans une salle par un maître : cochez ses cours puis « Regrouper les cours cochés » ; « Séparer » les remet en classes simples.
+3. Le nombre de classes ouvertes (simples + jumelées + multigrades) est repris partout : recensement, rapports, fiche de rentrée, pilotage, tableau de bord ; les classes autorisées restent un chiffre à part (l'écart est montré).
+
+## CEP : centres et salles de composition
+
+*Pour : Circonscription scolaire, DDEMP, Administrateur / fondateur, Directeur / directrice*
+
+1. Examens et concours › « CEP — centres et salles » : « Charger les centres de la CS de Pobè » (ou ajoutez vos centres), puis saisissez par centre les candidats officiels et libres (garçons, filles, dont handicapés) et les salles de composition en bon état disponibles.
+2. « Pré-remplir les candidats officiels » reprend les candidats inscrits par centre (cases vides seulement).
+3. Choisissez « Candidats par salle » (30 à 40) : salles nécessaires, écart et « Capacité suffisante » ou « Capacité dépassée : N salle(s) manquante(s) » s'affichent ; une observation saisie remplace la situation calculée.
+4. Onglets « Tableau simple » (modèle officiel) et « Tableau détaillé » ; « Télécharger PDF » (signé, QR) ou « Télécharger Excel » (formules) pour l'envoi à la DDEMP.
+5. La DDEMP voit un bloc par circonscription (tableaux reçus par la synchronisation ou importés) et le total du département ; l'école voit son centre en lecture seule.
+
+## Territoire et suivi : fiche de rentrée, courrier, présence du personnel
+
+*Pour : Administrateur / fondateur, Directeur / directrice, Circonscription scolaire, DDEMP, Conseiller pédagogique*
+
+1. Menu « Territoire et suivi » › « Fiche statistique de rentrée » : les effectifs, le personnel, le patrimoine et la fiche signalétique sont proposés ; vérifiez, enregistrez, puis « Transmettre ». La fiche part avec la synchronisation.
+2. La circonscription ouvre « Suivi des fiches de rentrée » : « Valider » ou « Renvoyer » (motif obligatoire) ; la DDEMP valide à son tour puis « Clôturer ». La décision redescend vers l'école ; une fiche renvoyée se corrige puis se retransmet.
+3. « Fiche signalétique de l'école » : coordonnées GPS (bouton « Position actuelle » sur le téléphone, dans la cour de l'école), statut juridique, numéros d'autorisation et d'agrément (écoles privées), eau, latrines, électricité, salles.
+4. Communication › « Courrier administratif » : rapport, demande ou compte rendu vers la CS ou la DDEMP ; « Envoyer » l'inscrit au registre « départ » du secrétariat. Le destinataire l'ouvre dans « Courrier reçu » (accusé de lecture daté, registre « arrivée »), puis le marque « Traité » ou l'archive.
+5. « Présence du personnel » : appel du jour (présent, absent, retard, congé, mission, formation, maladie) et statistiques du mois avec le taux de présence de chaque agent.
+6. « Incidents de discipline » : date, description, sanction, décision, information des parents ; ces données d'élèves restent dans l'école.
+7. Inspection › Visites de classe : « Statut de la visite » (planifiée, réalisée, rapport rédigé, validée) et « Date de la prochaine visite » ; les visites en retard et les prochaines visites apparaissent dans les alertes.
+8. CS / DDEMP : « Référentiel des structures » (arbre ministère → DDEMP → services → CS → divisions, modifiable) ; « Niveau national » : agrégats en lecture seule pour un compte « Observateur » et adresse /api/stats.json protégée par un jeton (créé par le responsable, à noter à sa création).
 
 ## Télécharger en PDF ou en Word, imprimer
 

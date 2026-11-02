@@ -186,6 +186,8 @@ def agreger(lignes):
     """Synthèse d'un ensemble d'écoles (mêmes règles partout)."""
     effs = [l["eff"] for l in lignes]
     s = {k: (v or 0) for k, v in C.cumul(effs, ("g", "f", "t", "classes", "redoublants")).items()}
+    # v2.3.1 : classes ouvertes = simples + jumelées + multigrades (une jumelée / multigrade = une classe)
+    org = {k: sum(e.get(k) or 0 for e in effs) for k in ("classes_simples", "classes_jumelees", "classes_multigrades")}
     tailles = [t for e in effs for t in e["tailles"]]
     avec_eff = [l for l in lignes if l["a_effectifs"]]
     out = {
@@ -198,6 +200,7 @@ def agreger(lignes):
         "plethoriques": sum(l["plethoriques"] for l in lignes),
         "taux_redoublement": C.taux(s["redoublants"], s["t"]),
     }
+    out.update(org)
     for (t, sc, _lib) in COLONNES_ECOLES:
         out["par_type"][f"{t}_{sc or 'tous'}"] = sum(1 for l in lignes if l["type"] == t and (sc is None or l["secteur"] == sc))
     # enseignants

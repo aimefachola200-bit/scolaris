@@ -1846,7 +1846,7 @@ def enregistrer(app, H):
         if e:
             eff = J.section(e["id"], "effectifs") or {}
             v.update(ecole=e["nom"], soussigne=e["directeur_nom"] or "", directeur_titre=e["directeur_titre"] or "",
-                     localite=e["localite"] or e["commune"] or "", nb_classes=str(len(eff.get("classes") or []) or ""),
+                     localite=e["localite"] or e["commune"] or "", nb_classes=str(__import__("classes_org").compter_transmises(eff.get("classes") or [])[0]["total"] or ""),
                      ame_type=e["type"] if e["type"] in ("EP", "EM") else "", ame_ecole=e["nom"],
                      dir_nom=e["directeur_nom"] or "", dir_tel=e["directeur_tel"] or "",
                      lieu_visa=e["localite"] or e["commune"] or "")

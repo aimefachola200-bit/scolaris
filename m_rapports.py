@@ -160,8 +160,8 @@ def schema(doc):
              _champ("cantine_raison", "Si non, donnez la raison", num="1.7", larg="long"),
              {"t": "structure_ep", "k": "sp", "titre": "2.4 Structure pédagogique",
               "jumelees": ([("CI_CP", "CI-CP"), ("CP_CE1", "CP-CE1"), ("CE1_CE2", "CE1-CE2"), ("CE2_CM1", "CE2-CM1"),
-                            ("CM1_CM2", "CM1-CM2")] if fin else
-                           [("CI_CP", "CI-CP"), ("CE1_CE2", "CE1-CE2"), ("CM1_CM2", "CM1-CM2")])}]
+                            ("CM1_CM2", "CM1-CM2"), ("AUTRE", "Autre combinaison")] if fin else
+                           [("CI_CP", "CI-CP"), ("CE1_CE2", "CE1-CE2"), ("CM1_CM2", "CM1-CM2"), ("AUTRE", "Autre combinaison")])}]
         S.append({"id": "gen", "titre": "2. Informations générales", "blocs": b})
     else:
         b = [_champ("fondateur", "Nom et prénoms du fondateur/fondatrice (pour les EM privées)", num="2.1", larg="long"),
@@ -361,6 +361,9 @@ def champs_editables(doc, n_pers=None, v=None):
             elif b["t"] == "structure_ep":
                 for k, lib in cles_structure(b):
                     out.append((k, {"k": k, "lib": lib, "type": "nombre"}))
+                # v2.3.2 : « Autre combinaison » (ex. CI-CE1) — comptée comme une classe jumelée ; cours concernés en texte
+                out.append(("sp.jumelee.AUTRE_cours", {"k": "sp.jumelee.AUTRE_cours", "lib": "Structure : jumelée – autre combinaison, cours concernés",
+                                                       "type": "texte"}))
             elif b["t"] == "personnel":
                 n = n_pers if n_pers is not None else nb_lignes_personnel(doc, v or {})
                 out.append(("pers_n", {"k": "pers_n", "lib": "Nombre de lignes de l'état nominatif", "type": "nombre"}))
@@ -801,23 +804,53 @@ def calculer_auto(H, doc, annee):
         if handi:
             poser("rep.besoin", groupes, compter(lambda el: inscrit(el) and handi(el), par_niv))
     # ---------------------------------------------------------------- classes, salles, structure pédagogique
-    nb_cl = {}
+    # v2.3.1 : classes OUVERTES = classes physiques (une jumelée / multigrade compte pour une classe)
+    nb_cl = {}                                            # lignes (cours) par niveau : niveaux présents, effectifs par cours
     for c in classes:
         nb_cl[c["niveau"]] = nb_cl.get(c["niveau"], 0) + 1
+    import classes_org
+    phys = classes_org.physiques(classes)
+    nb_ouv = len(phys)
+    par_org = {"simple": 0, "jumelee": 0, "multigrade": 0}
+    for p in phys:
+        par_org[p["organisation"]] += 1
     if classes:
         if ep:
-            v["classes_ouvertes"] = str(len(classes))
-            v["salles_utilisees"] = str(len(classes))
-            for n in NIV_EP:
-                if nb_cl.get(n):
-                    v[f"sp.simple.{n}"] = str(nb_cl[n])
-            v["sp.simple.salles"] = str(len(classes))
+            v["classes_ouvertes"] = str(nb_ouv)
+            v["salles_utilisees"] = str(nb_ouv)
+            sp = {}
+            for p in phys:
+                if p["organisation"] == "simple":
+                    k = f"sp.simple.{p['cours'][0]}"
+                    sp[k] = sp.get(k, 0) + 1
+                elif p["organisation"] == "jumelee":
+                    code = classes_org.code_paire(p["cours"])
+                    connus = {"CI_CP", "CP_CE1", "CE1_CE2", "CE2_CM1", "CM1_CM2"} if fin else {"CI_CP", "CE1_CE2", "CM1_CM2"}
+                    if code not in connus:                       # v2.3.2 : autre combinaison (ex. CI-CE1)
+                        sp["sp.jumelee.AUTRE"] = sp.get("sp.jumelee.AUTRE", 0) + 1
+                        autres = v.get("sp.jumelee.AUTRE_cours")
+                        v["sp.jumelee.AUTRE_cours"] = "; ".join(x for x in [autres, "-".join(p["cours"])] if x)
+                        continue
+                    k = f"sp.jumelee.{code}"
+                    sp[k] = sp.get(k, 0) + 1
+                else:
+                    for n in p["cours"]:
+                        sp[f"sp.multi.{n}"] = sp.get(f"sp.multi.{n}", 0) + 1
+            for k, n in sp.items():
+                if not k.startswith("sp.simple.") or k.split(".")[-1] in NIV_EP:
+                    v[k] = str(n)
+            for org, lig in (("simple", "simple"), ("jumelee", "jumelee"), ("multigrade", "multi")):
+                if par_org[org]:
+                    v[f"sp.{lig}.salles"] = str(par_org[org])
         else:
-            v["sections_ouvertes"] = str(len(classes))
-            v["salles_utilisees"] = str(len(classes))
-            v["sp.simple.pet"] = str(nb_cl.get("Maternelle 1", 0))
-            v["sp.simple.gra"] = str(nb_cl.get("Maternelle 2", 0))
-            v["sp.simple.salles"] = str(len(classes))
+            v["sections_ouvertes"] = str(nb_ouv)
+            v["salles_utilisees"] = str(nb_ouv)
+            for org, lig in (("simple", "simple"), ("jumelee", "jumelee"), ("multigrade", "multi")):
+                ps = [p for p in phys if p["organisation"] == org]
+                if ps or org == "simple":
+                    v[f"sp.{lig}.pet"] = str(sum(1 for p in ps if "Maternelle 1" in p["cours"]))
+                    v[f"sp.{lig}.gra"] = str(sum(1 for p in ps if "Maternelle 2" in p["cours"]))
+                    v[f"sp.{lig}.salles"] = str(len(ps))
     try:
         patrimoine_auto(H, doc, v, classes)
     except Exception:  # noqa: BLE001  (données du module Patrimoine incomplètes : on garde la saisie)
@@ -997,7 +1030,8 @@ def calculer_auto(H, doc, annee):
     v["pers_n"] = str(max(bloc_personnel(doc)["min"], len(pers)))
     ind["personnel"] = len(pers)
     ind["eleves"] = sum(1 for el in eleves if inscrit(el))
-    ind["classes"] = len(classes)
+    ind["classes"] = nb_ouv if classes else 0            # v2.3.1 : classes ouvertes (jumelée / multigrade = 1)
+    ind.update(classes_simples=par_org["simple"], classes_jumelees=par_org["jumelee"], classes_multigrades=par_org["multigrade"])
     return v, ind
 
 
@@ -1686,6 +1720,8 @@ def page1_ep(R, doc, annee):
             for code, a, b_ in jum:
                 cx = (cols[a] + cols[b_]) / 2
                 R.cases_slash(cx - 9, y, 1, 11, f"sp.jumelee.{code}", fs)
+            if R.v.get("sp.jumelee.AUTRE"):   # v2.3.2 : autre combinaison (ex. CI-CE1)
+                R.t(cols[-1] + 18, y, f"Autre : {R.v.get('sp.jumelee.AUTRE')} ({R.v.get('sp.jumelee.AUTRE_cours') or '…'})", fs - 1.5)
         else:
             for n, cx in zip(NIV_EP, cols):
                 R.cases_slash(cx - 14, y, 1, 21, f"sp.{lig}.{n}", fs)
@@ -2627,7 +2663,8 @@ def vue_lecture(doc, v, synthese=False):
                 for lig, lib in (("simple", "Simple"), ("multi", "Multigrade")):
                     lignes.append({"lib": lib, "st": "", "cells": [_txt(v.get(f"sp.{lig}.{n}")) for n in NIV_EP]
                                    + [_txt(v.get(f"sp.{lig}.salles"))]})
-                jum = "; ".join(f"{lib} : {v.get(f'sp.jumelee.{c}')}" for c, lib in b["jumelees"] if v.get(f"sp.jumelee.{c}"))
+                jum = "; ".join(f"{lib}{(' (' + v.get('sp.jumelee.AUTRE_cours') + ')') if c == 'AUTRE' and v.get('sp.jumelee.AUTRE_cours') else ''} : "
+                                f"{v.get(f'sp.jumelee.{c}')}" for c, lib in b["jumelees"] if v.get(f"sp.jumelee.{c}"))
                 lignes.insert(1, {"lib": "Jumelée", "st": "", "cells": [jum] + [""] * 5 + [_txt(v.get("sp.jumelee.salles"))]})
                 sec["tableaux"].append({"titre": b["titre"], "entete": [[{"txt": "", "cs": 1, "rs": 1}] +
                                         [{"txt": c, "cs": 1, "rs": 1} for c in cols]], "colonnes": cols,
@@ -2730,8 +2767,8 @@ def generer_excel(doc, annee, v, origine_auto):
                 for lig, lib in (("simple", "Simple"), ("jumelee", "Jumelée"), ("multi", "Multigrade")):
                     ws.cell(r, 1, lib).border = bord
                     if lig == "jumelee":
-                        ws.cell(r, 2, "; ".join(f"{jum[c]} : {v.get(f'sp.jumelee.{c}')}" for c in jum
-                                                if v.get(f"sp.jumelee.{c}")))
+                        ws.cell(r, 2, "; ".join(f"{jum[c]}{(' (' + v.get('sp.jumelee.AUTRE_cours') + ')') if c == 'AUTRE' and v.get('sp.jumelee.AUTRE_cours') else ''} : "
+                                                f"{v.get(f'sp.jumelee.{c}')}" for c in jum if v.get(f"sp.jumelee.{c}")))
                         ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=7)
                     else:
                         for j, n in enumerate(NIV_EP, 2):

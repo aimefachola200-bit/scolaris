@@ -43,13 +43,18 @@ def effectifs(sec):
         g, f = entier(c.get("garcons")), entier(c.get("filles"))
         out["g"] += g
         out["f"] += f
-        out["classes"] += 1
         out["redoublants"] += entier(c.get("redoublants_g")) + entier(c.get("redoublants_f"))
         n = out["par_niveau"].setdefault(c.get("niveau") or "?", [0, 0])
         n[0] += g
         n[1] += f
-        out["tailles"].append(g + f)
     out["t"] = out["g"] + out["f"]
+    # v2.3.1 : classes OUVERTES — une classe jumelée ou multigrade (même groupe_id) compte pour une classe ;
+    # effectif de chaque classe physique (élèves / classe, classes pléthoriques)
+    import classes_org
+    d, tailles = classes_org.compter_transmises(sec.get("classes") or [])
+    out["classes"] = d["total"]
+    out.update(classes_simples=d["simples"], classes_jumelees=d["jumelees"], classes_multigrades=d["multigrades"])
+    out["tailles"] = tailles
     return out
 
 

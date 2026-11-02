@@ -36,13 +36,15 @@ ROLES = {
     "cp": "Conseiller pédagogique",
     "chef_service": "Chef de division / de service",
     "agent": "Agent",
+    # v2.3 : niveau national / ministère — lecture seule des agrégats (applications CS et DDEMP)
+    "observateur": "Observateur (niveau national, lecture seule)",
 }
 # rôles proposés selon l'application
 ROLES_ECOLE = ("fondateur", "admin", "directeur", "secretaire", "comptable", "enseignant")
 ROLES_JURIDICTION = ("admin", "responsable", "cp", "chef_service", "agent",
                      # v1.6 : comptes directeur / enseignant d'une école de la juridiction (école via
                      # utilisateurs.ecole_id, classes via affectations) – mêmes droits que dans SCOLARIS
-                     "directeur", "enseignant")
+                     "directeur", "enseignant", "observateur")
 # v1.6 : dans SCOLARIS Circonscription / DDEMP, les modules des écoles sont ouverts aux rôles de la juridiction.
 # Un rôle de juridiction non autorisé par DROITS[module] hérite des droits « école » du rôle équivalent :
 EQUIV_ROLES_JUR = {"responsable": "admin", "chef_service": "directeur", "cp": "directeur", "agent": "secretaire"}
@@ -407,7 +409,7 @@ def appliquer_parametres():
 MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en dernier sur la réponse), index de la base
            "m_acces",  # v1.9 : codes d'accès personnels (contrôle avant tous les autres modules)
            "m_securite",  # v1.33 : règle des mots de passe, blocage par compte, fin de session
-           "m_en_ligne", "m_ecoles", "m_parents", "m_paiement_en_ligne", "m_appel", "m_paie", "m_tresorerie", "m_secretariat",
+           "m_en_ligne", "m_ecoles", "classes_org", "m_parents", "m_paiement_en_ligne", "m_appel", "m_paie", "m_tresorerie", "m_secretariat",
            # v1.3
            "m_inscriptions", "m_evaluations", "m_resultats", "m_registre", "m_affichage", "m_cep", "m_synthese",
            "m_cantine", "m_donnees",
@@ -443,6 +445,9 @@ MODULES = ["m_performance",  # v1.33 : compression gzip (en premier : passe en d
            "m_inspection", "m_patrimoine_pvs", "m_examens",
            # v1.28 : examen blanc du CEP, modèle commun (CS Pobè)
            "m_examen_blanc",
+           # v2.3 : territoire et suivi administratif (fiche de rentrée, courrier, présence du personnel, discipline,
+           # signalétique, référentiel des structures, niveau national) — avant m_sync, qui suit ses registres
+           "m_territoire", "m_cep2027",
            # v2.0 : synchronisation entre niveaux (école → CS → DDEMP), après tous les modules dont elle suit les objets
            "m_sync",
            # v1.6 : périmètre de l'enseignant (ses classes), en dernier : son before_request contrôle les routes de tous les modules
@@ -622,7 +627,8 @@ def create_app(test_config=None):
         stats = {
             "eleves": q("SELECT COUNT(*) n " + EL, un=True)["n"],
             "filles": q("SELECT COUNT(*) n " + EL + " AND e.sexe='F'", un=True)["n"],
-            "classes": q("SELECT COUNT(*) n FROM classes WHERE ecole_id=?", (e_,), un=True)["n"],
+            "classes": H.classes_ouvertes(e_)["total"] if getattr(H, "classes_ouvertes", None) else
+            q("SELECT COUNT(*) n FROM classes WHERE ecole_id=?", (e_,), un=True)["n"],      # v2.3.1 : classes ouvertes
             "attendu": q("SELECT COALESCE(SUM(c.frais_scolarite),0) s " + EL, un=True)["s"],
             "encaisse": q("SELECT COALESCE(SUM(p.montant),0) s " + PA + " AND p.annee=?", (a,), un=True)["s"],
             "aujourdhui": q("SELECT COALESCE(SUM(p.montant),0) s " + PA + " AND date(p.date_paiement)=date('now','localtime')",

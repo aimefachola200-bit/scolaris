@@ -266,7 +266,7 @@ def enregistrer(app, H):
             if 0 <= n <= 7:
                 out.append(("convocation", "Convocation", f"{libelle_note(x)} — {R.jjmmaaaa(x['dateReunion'])} {x.get('heureReunion') or ''} "
                                                          f"{x.get('lieuReunion') or ''}".strip(), url_for("liaison_boite")))
-        for f in (getattr(H, "sante_alertes", None), getattr(H, "sport_alertes", None)):
+        for f in (getattr(H, "sante_alertes", None), getattr(H, "sport_alertes", None), getattr(H, "territoire_alertes", None)):
             if callable(f):
                 try:
                     out += f() or []

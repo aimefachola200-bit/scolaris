@@ -370,6 +370,8 @@ def enregistrer(app, H):
         return {"ind": indicateurs([t[0] for t in tt], [t[1] for t in tt], [t[2] for t in tt]), "groupes": gr, "classes": [], "niveaux": [],
                 "source": "juridiction", "nb_ecoles": len(lignes)}
 
+    H.pilotage_calculer = calculer          # v2.3 : niveau national et /api/stats.json (m_territoire)
+
     def filtres():
         f = {}
         for k in ("cs_id", "zone_id"):
@@ -400,7 +402,9 @@ def enregistrer(app, H):
                 d = d.get(k) if isinstance(d, dict) else None
             return d
         out = [("Écoles", "ecoles", 0, ""), ("Élèves (total)", "t", 0, ""), ("Garçons", "g", 0, ""), ("Filles", "f", 0, ""),
-               ("Part des filles", "pct_f", 0, " %"), ("Indice de parité F/G", "ip", 0, ""), ("Classes (groupes pédagogiques)", "classes", 0, ""),
+               ("Part des filles", "pct_f", 0, " %"), ("Indice de parité F/G", "ip", 0, ""), ("Classes ouvertes (une jumelée / multigrade = 1)", "classes", 0, ""),
+               ("dont classes simples", "classes_simples", 0, ""), ("dont classes jumelées", "classes_jumelees", 0, ""),
+               ("dont classes multigrades", "classes_multigrades", 0, ""),
                ("Élèves par classe (moyenne)", "moy_classe", -1, ""), ("Classes pléthoriques", "plethoriques", -1, ""),
                ("Enseignants", ("ens", "t"), 0, ""), ("dont femmes", ("ens", "f"), 0, ""), ("Ratio élèves / maître", ("ens", "ratio"), -1, ""),
                ("Enseignants manquants", ("ens", "manque"), -1, ""), ("Redoublants", "redoublants", -1, ""), ("Taux de redoublement", "taux_redoublement", -1, " %"),

@@ -888,7 +888,8 @@ def enregistrer(app, H):
             enc = q("""SELECT COALESCE(SUM(p.montant),0) s FROM paiements p JOIN eleves e ON e.id=p.eleve_id
                        JOIN classes c ON c.id=e.classe_id WHERE c.ecole_id=? AND p.annee=? AND p.annule=0""",
                     (i, a), un=True)["s"]
-            nb_cl = q("SELECT COUNT(*) n FROM classes WHERE ecole_id=?", (i,), un=True)["n"]
+            nb_cl = H.classes_ouvertes(i)["total"] if getattr(H, "classes_ouvertes", None) else \
+                q("SELECT COUNT(*) n FROM classes WHERE ecole_id=?", (i,), un=True)["n"]      # v2.3.1 : classes ouvertes
             absents = q("""SELECT COUNT(DISTINCT e.id) n FROM eleves e JOIN classes c ON c.id=e.classe_id
                            WHERE c.ecole_id=? AND e.statut='inscrit' AND (
                              e.id IN (SELECT eleve_id FROM presences WHERE date=? AND statut='absent')

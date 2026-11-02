@@ -330,8 +330,11 @@ def enregistrer(app, H):
         for p in personnel_lignes():
             sexes[norm_code(f"{p.get('nom') or ''}{p.get('prenoms') or ''}")] = (p.get("sexe") or "").upper()[:1]
         lst = []
+        import classes_org
+        phys = {cc["id"]: p for p in classes_org.physiques([dict(x) for x in prim]) for cc in p["classes"]}
         for c in prim:
             k = par_cl[c["id"]]
+            p_ = phys.get(c["id"]) or {"organisation": "simple", "cle": "", "cours": [c["niveau"]]}
             tit = (c.get("titulaire_nom") or "").strip()
             cle_t = norm_code(tit)
             sexe = sexes.get(cle_t, "")
@@ -340,7 +343,9 @@ def enregistrer(app, H):
                 sexe = "F" if tt.startswith("la ") or "maîtresse" in tt else ("M" if tt.startswith("le ") else "")
             lst.append({"nom": c["nom"], "niveau": c["niveau"], "garcons": k["g"], "filles": k["f"],
                         "redoublants_g": k["rg"], "redoublants_f": k["rf"], "titulaire_nom": tit,
-                        "titulaire_sexe": sexe, "groupe": "simple"})
+                        "titulaire_sexe": sexe, "groupe": classes_org.ORG_TRANSMISSION[p_["organisation"]],
+                        "groupe_id": p_["cle"] if p_["organisation"] != "simple" else "",
+                        "cours_groupe": "-".join(p_["cours"]) if p_["organisation"] != "simple" else ""})
         sec = {"classes": lst, "ages": ages, "nouveaux_ci": nouveaux_ci}
         pat = patrimoine()
         if pat and isinstance(pat.get("salles_classe"), dict) and pat["salles_classe"].get("total"):
@@ -447,6 +452,21 @@ def enregistrer(app, H):
                           "date_naissance": e["date_naissance"] or "", "lieu_naissance": e["lieu_naissance"] or "",
                           "numero_table": (e["numero_table"] if "numero_table" in e.keys() else "") or "",
                           "admis": None} for e in cand]}
+        # v2.3.1 : centre de composition de chaque candidat (fiche d'inscription au CEP) et effectifs par centre G / F,
+        # repris par la CS dans « CEP — centres et salles » (pré-remplissage)
+        centres = {}
+        if table_existe("cep_fiches") and cand:
+            ids = [e["id"] for e in cand]
+            centres = {r["eleve_id"]: (r["centre"] or "").strip() for r in q(
+                "SELECT eleve_id, centre FROM cep_fiches WHERE eleve_id IN (" + ",".join("?" * len(ids)) + ")", ids)}
+        par_centre = {}
+        for e, item in zip(cand, sec["liste"]):
+            ce = centres.get(e["id"], "")
+            item["centre"] = ce
+            if ce:
+                pc = par_centre.setdefault(ce, {"g": 0, "f": 0})
+                pc["f" if f_(e) else "g"] += 1
+        sec["par_centre"] = par_centre
         note = f"{len(cand)} candidat(s) ({origine})."
         if sec["admis_g"] is None and sec["admis_f"] is None:
             note += " Résultats officiels non saisis (formulaire ci-dessous)."

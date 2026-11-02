@@ -358,7 +358,7 @@ SCHEMA_PRIMAIRE = {
             ind=4),
           C2([L("3.15.", "Nombre de classes et de salles de classes"),
               L("", "i. Nombre de classes autorisées :", NB("classes_autorisees", n=2), ind=6),
-              L("", "ii. Nombre de classes existantes :", NB("classes_existantes", n=2), ind=6),
+              L("", "ii. Nombre de classes existantes (jumelées et multigrades comptées une fois) :", NB("classes_existantes", n=2), ind=6),
               L("", "iii. Nombre de salles de classes existantes :", NB("salles_existantes", n=2), ind=6),
               L("", "iv. Nombre de salles de classes utilisées :", NB("salles_utilisees", n=2), ind=6)],
              [L("3.16.", "L'enseignement est-il dispensé en :"),
@@ -1351,14 +1351,25 @@ def calculs(H, typ, annee):
         auto[k] = fmt((nombre(auto.get(k)) or 0) + n)
 
     # --- classes / sections (structure pédagogique : chaque classe = un cours simple dans son local)
+    # v2.3.1 : une classe jumelée (2 cours) ou multigrade (3 cours et plus) compte pour UNE classe existante (ouverte) ;
+    # chaque cours concerné est coché dans la ligne de son organisation ; « salles » = classes physiques de la ligne
     if mes_classes:
-        for c in mes_classes:
-            inc(f"t314.simples.{c['niveau'].lower()}" if typ == "primaire" else f"t4.simple.{cycle_de(c['niveau'])[1]}")
-        n = fmt(len(mes_classes))
+        import classes_org
+        phys = classes_org.physiques(mes_classes)
+        lig_p = {"simple": "simples", "jumelee": "jumeles", "multigrade": "multi"}
+        lig_m = {"simple": "simple", "jumelee": "jumelee", "multigrade": "multi"}
+        for p in phys:
+            for niv in p["cours"]:
+                if typ == "primaire":
+                    inc(f"t314.{lig_p[p['organisation']]}.{niv.lower()}")
+                elif not (p["organisation"] == "multigrade" and cycle_de(niv)[1] == "gr"):
+                    inc(f"t4.{lig_m[p['organisation']]}.{cycle_de(niv)[1]}")
+            inc(f"t314.{lig_p[p['organisation']]}.salles" if typ == "primaire" else f"t4.{lig_m[p['organisation']]}.salles")
+        n = fmt(len(phys))
         if typ == "primaire":
-            auto.update({"t314.simples.salles": n, "classes_existantes": n, "salles_utilisees": n})
+            auto.update({"classes_existantes": n, "salles_utilisees": n})
         else:
-            auto.update({"t4.simple.salles": n, "sections_existantes": n, "salles_utilisees": n})
+            auto.update({"sections_existantes": n, "salles_utilisees": n})
     # --- cantine (module Cantine : configuration validée pour au moins une classe du cycle)
     try:
         rows = H.q("SELECT c.niveau FROM cantine_config cc JOIN classes c ON c.id=cc.classe_id "

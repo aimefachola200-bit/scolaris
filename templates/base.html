@@ -87,6 +87,18 @@
       {{ lien('liaison_alertes', 'Alertes', ep=='liaison_alertes') }}
       <a href="{{ url_for('reg_page', gcle='communication', rcle='messages') }}">Messages aux parents</a>
       <a href="{{ url_for('reg_page', gcle='communication', rcle='agenda') }}">Agenda partagé</a>
+      {% if ep_existe('territoire_courrier_recu') %}<a href="{{ url_for('reg_page', gcle='communication', rcle='courrier') }}">Courrier administratif</a>
+      {{ lien('territoire_courrier_recu', 'Courrier reçu', ep.startswith('territoire_courrier')) }}{% endif %}
+    {% endcall %}{% endif %}
+    {% if peut('territoire') and ep_existe('territoire_ecole') and not ENS %}{# v2.3 : territoire et suivi administratif #}
+    {% set JUR = EDITION in ('cs', 'ddemp') %}{% call groupe('territ', 'Territoire et suivi', (ep.startswith('territoire_') and not ep.startswith('territoire_courrier')) or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') in ('territoire', 'presences', 'discipline')), 'structure') %}
+      <a href="{{ url_for('reg_page', gcle='territoire', rcle='rentree') }}">Fiche statistique de rentrée</a>
+      {% if JUR %}{{ lien('territoire_rentree_suivi', 'Suivi des fiches de rentrée', ep=='territoire_rentree_suivi') }}{% endif %}
+      {% if not JUR or g.ecole %}{{ lien('territoire_ecole', "Fiche signalétique de l'école", ep=='territoire_ecole') }}{% endif %}
+      {{ lien('territoire_presence_appel', 'Présence du personnel', ep.startswith('territoire_presence') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'presences')) }}
+      {% if not JUR or g.ecole %}<a href="{{ url_for('reg_page', gcle='discipline', rcle='incidents') }}">Incidents de discipline</a>{% endif %}
+      {{ lien('territoire_arbre', 'Référentiel des structures', ep=='territoire_arbre') }}
+      {% if JUR and peut('territoire_national') %}{{ lien('territoire_national', 'Niveau national', ep=='territoire_national') }}{% endif %}
     {% endcall %}{% endif %}
     {% if peut('sante_scolaire') and ep_existe('sante_scolaire_absences') %}
     {% call groupe('santesc', 'Santé, cantine et inclusion', ep.startswith('sante_scolaire') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'sante'), 'sante') %}
@@ -119,6 +131,7 @@
     {% if peut('examens_pvs') and ep_existe('examens_session') and not ENS %}
     {% call groupe('examc', 'Examens et concours', ep.startswith('examen') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens'), 'examen') %}
       {{ lien('examens_session', 'Session CEP', ep=='examens_session') }}
+      {% if ep_existe('examens_cep2027') %}{{ lien('examens_cep2027', 'CEP — centres et salles', ep.startswith('examens_cep2027') or (ep.startswith('reg_') and request.view_args and request.view_args.get('gcle') == 'examens' and request.view_args.get('rcle') == 'salles')) }}{% endif %}
       <a href="{{ url_for('reg_page', gcle='examens', rcle='candidats') }}">Candidats</a>
       {{ lien('examens_notes', 'Saisie des notes', ep=='examens_notes') }}
       {{ lien('examens_deliberation', 'Délibération et résultats', ep=='examens_deliberation') }}
@@ -144,6 +157,7 @@
     {% call groupe('cep', 'Examens (CEP)', ep.startswith('cep') or ep.startswith('carte'), 'diplome') %}
       {{ lien('cep_accueil', "Fiches d'inscription au CEP", ep.startswith('cep_fiche') or ep=='cep_accueil') }}
       {{ lien('carte_editeur', 'Carte scolaire du candidat', ep.startswith('carte')) }}
+      {% if ep_existe('examens_cep2027') and not ENS and not (peut('examens_pvs') and ep_existe('examens_session')) %}{{ lien('examens_cep2027', 'Centre et salles du CEP', ep.startswith('examens_cep2027')) }}{% endif %}
       {% if not (peut('examens_pvs') and ep_existe('examens_session') and ep_existe('examen_blanc') and peut('examen_blanc') and not ENS) %}{{ lien('cep_blanc_accueil', 'Examen blanc du CEP', ep.startswith('cep_blanc')) }}{% endif %}
     {% endcall %}{% endif %}
     {% if peut('cantine') %}

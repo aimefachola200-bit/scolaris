@@ -1051,7 +1051,7 @@ def enregistrer(app, H):
     @H.connexion_requise()
     def synoptique_accueil():
         d = identite()
-        stats = {"personnel": len(personnel()), "classes": len(classes_ecole()),
+        stats = {"personnel": len(personnel()), "classes": H.classes_ouvertes()["total"] if getattr(H, "classes_ouvertes", None) else len(classes_ecole()),
                  "comites": {c: q("SELECT COUNT(*) n FROM synoptique_membres WHERE ecole_id=? AND comite=?", (H.eco(), c), un=True)["n"]
                              for c in COMITES}}
         return render_template("synoptique_identite.html", **ctx("identite", d=d, champs=CHAMPS_IDENTITE, stats=stats,

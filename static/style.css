@@ -305,3 +305,7 @@ tr.prep-vide{display:none}
 .export-barre .btn{white-space:nowrap}
 @media (max-width:600px){.export-barre{justify-content:stretch}.export-barre .btn{flex:1 1 auto;text-align:center}}
 @media print{.export-barre{display:none!important}}
+/* v2.3 — territoire : formulaire en grille, arbre des structures */
+.grille-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-items:end}
+ul.arbre,ul.arbre ul{list-style:none;margin:0;padding-left:18px;border-left:1px dashed #98A2B3}
+ul.arbre li{margin:4px 0}

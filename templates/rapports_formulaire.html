@@ -70,11 +70,11 @@ table.rp-p input.nom{min-width:170px;text-align:left}
   <a class="btn sec petit" href="{{ J.enregistrer if J else url_for('rapports_formulaire', doc=doc, annee=annee) }}" title="Recharger la version enregistrée (abandonne les modifications non sauvegardées)">{{ icone('dossier') }} Charger</a>
   <button type="submit" name="action" value="reinit" class="btn sec petit" data-confirmer="Effacer toutes les corrections manuelles de ce rapport et revenir aux valeurs calculées par SCOLARIS ?">↺ Réinitialiser</button>
   <span class="sep"></span>
-  <button type="submit" name="action" value="pdf" class="btn petit" formtarget="_blank">{{ icone('document') }} Enregistrer et PDF</button>
+  <button type="submit" name="action" value="pdf" class="btn petit" formtarget="_blank">{{ icone('document') }} Enregistrer et télécharger (PDF)</button>
   {% if J %}<a class="btn sec petit" href="{{ J.pdf_vierge }}" target="_blank">{{ icone('document') }} PDF vierge</a>{% else %}
   <button type="submit" name="action" value="pdf_annexe" class="btn sec petit" formtarget="_blank" title="PDF officiel + page d'annexe SCOLARIS (résultats, présence, âges, cantine)">{{ icone('document') }} PDF + annexe</button>
   <a class="btn sec petit" href="{{ url_for('rapports_pdf', doc=doc, vierge=1) }}" target="_blank">{{ icone('document') }} PDF vierge</a>
-  <a class="btn sec petit" href="{{ url_for('rapports_excel', doc=doc, annee=annee) }}">{{ icone('graphique') }} Excel</a>
+  <a class="btn sec petit" href="{{ url_for('rapports_excel', doc=doc, annee=annee) }}">{{ icone('graphique') }} Télécharger le rapport rempli (Excel)</a>
   <a class="btn sec petit" href="#televersement">{{ icone('importer') }} Téléverser</a>{% endif %}
 {% endcall %}
 
@@ -111,7 +111,7 @@ table.rp-p input.nom{min-width:170px;text-align:left}
         <thead><tr><th></th>{% for n in niv_ep %}<th>{{ n }}</th>{% endfor %}<th>Nombre de salles utilisées</th></tr></thead>
         <tbody>
           <tr><td class="lib">Simple</td>{% for n in niv_ep %}<td>{{ val_in('sp.simple.' ~ n, 'nombre') }}</td>{% endfor %}<td>{{ val_in('sp.simple.salles', 'nombre') }}</td></tr>
-          <tr><td class="lib">Jumelée</td><td colspan="6" style="text-align:left">{% for c, lib in b.jumelees %}<label style="display:inline-block;margin:2px 6px;font-size:12px">{{ lib }} <span style="display:inline-block;width:60px">{{ val_in('sp.jumelee.' ~ c, 'nombre') }}</span></label>{% endfor %}</td><td>{{ val_in('sp.jumelee.salles', 'nombre') }}</td></tr>
+          <tr><td class="lib">Jumelée</td><td colspan="6" style="text-align:left">{% for c, lib in b.jumelees %}<label style="display:inline-block;margin:2px 6px;font-size:12px">{{ lib }} <span style="display:inline-block;width:60px">{{ val_in('sp.jumelee.' ~ c, 'nombre') }}</span></label>{% endfor %}<label style="display:inline-block;margin:2px 6px;font-size:12px">cours concernés (ex. CI-CE1) <span style="display:inline-block;width:110px">{{ val_in('sp.jumelee.AUTRE_cours', 'texte') }}</span></label></td><td>{{ val_in('sp.jumelee.salles', 'nombre') }}</td></tr>
           <tr><td class="lib">Multigrade</td>{% for n in niv_ep %}<td>{{ val_in('sp.multi.' ~ n, 'nombre') }}</td>{% endfor %}<td>{{ val_in('sp.multi.salles', 'nombre') }}</td></tr>
         </tbody></table></div></div>
     {% elif b.t == 'personnel' %}

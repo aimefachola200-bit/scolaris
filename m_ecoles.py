@@ -239,6 +239,8 @@ def enregistrer(app, H):
                    (SELECT COUNT(*) FROM eleves x JOIN classes c ON c.id=x.classe_id WHERE c.ecole_id=e.id AND x.statut='inscrit') nb_eleves
                    FROM ecoles e WHERE ? OR e.id IN (SELECT id FROM ecoles WHERE id=?) ORDER BY e.actif DESC, e.nom""",
                 (H.peut("parametres"), ecole_id()))
+        if getattr(H, "classes_ouvertes", None):          # v2.3.1 : classes ouvertes (jumelée / multigrade = 1)
+            lst = [dict(e, nb_classes=H.classes_ouvertes(e["id"])["total"]) for e in lst]
         return render_template("ecoles.html", lst=sans_exemple(lst))
 
     @app.route("/ecoles/nouvelle", methods=["GET", "POST"])

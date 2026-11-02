@@ -41,8 +41,13 @@ DECOMP_MAX = 60 * 1024 * 1024
 TIMEOUT = 25
 RANG = {"ECOLE": 0, "UP": 1, "ZONE": 2, "CS": 3, "DDEMP": 4}
 REG_MONTANT = [("sport", "licences"), ("sport", "officiels"), ("sport", "sites"), ("examens", "candidats"), ("examens", "concours"),
-               ("examens", "participants"), ("patrimoine", "besoins"), ("communication", "lectures"), ("pilotage", "indicateurs")]
-REG_DESCENDANT = [("communication", "notes"), ("communication", "echeances"), ("communication", "agenda")]
+               ("examens", "participants"), ("patrimoine", "besoins"), ("communication", "lectures"), ("pilotage", "indicateurs"),
+               ("territoire", "rentree"), ("communication", "courrier"), ("examens", "salles")]   # v2.3
+REG_DESCENDANT = [("communication", "notes"), ("communication", "echeances"), ("communication", "agenda"), ("territoire", "retours"),
+                  ("territoire", "structures")]          # v2.3.2 : le référentiel des structures descend (comme les applications JS)
+# v2.3 : registres qui montent ET descendent (copie descendante sous le type « reg:<g>:<r>@bas ») : centres du CEP 2027
+# (la CS les envoie à la DDEMP et à ses écoles, qui les consultent en lecture seule)
+REG_AUSSI_DESCENDANT = [("examens", "salles")]
 LIBELLES = {"uascep_bureaux": "Bureaux UASCEP", "uascep_membres": "Membres UASCEP", "uascep_rapports": "Rapports de saison UASCEP",
             "eb_centres": "Examen blanc : centres", "eb_candidats": "Examen blanc : candidats et notes", "version": "Versions proposées",
             "reg:communication:notes": "Notes, circulaires, convocations", "reg:communication:echeances": "Échéances et rappels",
@@ -50,7 +55,9 @@ LIBELLES = {"uascep_bureaux": "Bureaux UASCEP", "uascep_membres": "Membres UASCE
             "reg:sport:licences": "Licences sportives", "reg:sport:officiels": "Officiels du sport", "reg:sport:sites": "Sites sportifs",
             "reg:examens:candidats": "Candidats (examens)", "reg:examens:concours": "Concours scolaires",
             "reg:examens:participants": "Participants aux concours", "reg:patrimoine:besoins": "Besoins exprimés",
-            "reg:pilotage:indicateurs": "Indicateurs du pilotage"}
+            "reg:pilotage:indicateurs": "Indicateurs du pilotage", "reg:territoire:rentree": "Fiches statistiques de rentrée",
+            "reg:communication:courrier": "Courrier administratif", "reg:territoire:retours": "Décisions (fiches de rentrée, courrier)",
+            "reg:examens:salles": "CEP : centres et salles", "reg:territoire:structures": "Référentiel des structures", "reg:examens:salles@bas": "CEP : centres et salles (copie des écoles)"}
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sync_ids (type TEXT NOT NULL, local_id INTEGER NOT NULL, uuid TEXT NOT NULL, scope INTEGER NOT NULL DEFAULT 0,
     empreinte TEXT, seq INTEGER, origine TEXT NOT NULL DEFAULT 'local', base TEXT, supprime INTEGER NOT NULL DEFAULT 0, maj TEXT,
@@ -364,7 +371,7 @@ def enregistrer(app, H):
     type_table("eb_candidats", "eb_candidats", scope_sql=scope_lie("eb_centres", "centre_id", scope_eb), lien=("centre_id", "eb_centres", "centre"))
 
     # ---- registres (champs de l'Excel commun ; identifiants d'élèves et d'utilisateurs retirés)
-    def type_registre(g_, r_, sens):
+    def type_registre(g_, r_, sens, nom=None):
         table = f"reg_{g_}_{r_}"
         champs_eleve = set()
         try:
@@ -377,6 +384,8 @@ def enregistrer(app, H):
         def scope(cible):
             if cible == "descendant":
                 return "portee=0", (), None
+            if not juridiction() and (g_, r_) in REG_AUSSI_DESCENDANT:      # copie reçue de la CS : ne remonte pas
+                return "0=1", (), ecole_code(H.eco())
             if juridiction():
                 return "1=1", (), (lambda r: code_de_portee(r["portee"]))
             return "portee IN (?, ?)", (H.eco(), -H.eco()), ecole_code(H.eco())
@@ -391,14 +400,17 @@ def enregistrer(app, H):
         def lecture(d, r):
             return {k: v for k, v in d.items() if k not in champs_eleve}
 
-        type_table(f"reg:{g_}:{r_}", table, exclure=("portee", "cree_par") + tuple(champs_eleve), scope_sql=scope, avant_ecriture=ecrire,
+        nom = nom or f"reg:{g_}:{r_}"
+        type_table(nom, table, exclure=("portee", "cree_par") + tuple(champs_eleve), scope_sql=scope, avant_ecriture=ecrire,
                    apres_lecture=lecture)
-        TYPES[f"reg:{g_}:{r_}"]["sens"] = sens
+        TYPES[nom]["sens"] = sens
 
     for g_, r_ in REG_MONTANT:
         type_registre(g_, r_, "montant")
     for g_, r_ in REG_DESCENDANT:
         type_registre(g_, r_, "descendant")
+    for g_, r_ in REG_AUSSI_DESCENDANT:
+        type_registre(g_, r_, "descendant", nom=f"reg:{g_}:{r_}@bas")
 
     # ---- versions proposées (épreuves, fiches, résumés)
     def scope_versions(cible):
@@ -444,9 +456,10 @@ def enregistrer(app, H):
     TYPES["version"]["ecrire"] = ecrire_version
 
     ORDRE = (["uascep_bureaux", "uascep_membres"] + [t for t in TYPES if t.startswith("uascep_vie:")] + ["uascep_rapports", "eb_centres",
-             "eb_candidats"] + [f"reg:{a}:{b}" for a, b in REG_DESCENDANT + REG_MONTANT] + ["version"])
+             "eb_candidats"] + [f"reg:{a}:{b}" for a, b in REG_DESCENDANT + REG_MONTANT] + [f"reg:{a}:{b}@bas" for a, b in REG_AUSSI_DESCENDANT]
+             + ["version"])
     MONTANT = [t for t in ORDRE if not (t.startswith("reg:") and TYPES[t].get("sens") == "descendant")]
-    DESCENDANT = [f"reg:{a}:{b}" for a, b in REG_DESCENDANT] + ["version"]
+    DESCENDANT = [f"reg:{a}:{b}" for a, b in REG_DESCENDANT] + [f"reg:{a}:{b}@bas" for a, b in REG_AUSSI_DESCENDANT] + ["version"]
 
     # ================================================================== correspondances uuid
     def uuid_de(typ, lid):
