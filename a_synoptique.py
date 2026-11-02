@@ -19,7 +19,7 @@ l'école (m_synoptique) mais pour la structure elle-même. Rubriques (onglets de
    retraite, dernière formation, diplômes académique et professionnel, visite d'aptitude, note, contact). Les champs
    propres au synoptique (`promotion`, `date_derniere_formation`) sont rangés dans le JSON `donnees` (m_juridiction et
    a_personnel ne sont pas modifiés). Les anciennetés et la retraite sont calculées par m_carriere via a_personnel.fiche
-   (jamais saisies) : anciennetés au 31/12 de la première année de l'année scolaire active, jour inclus ; retraite à
+   (jamais saisies) : anciennetés au 31/12 de la seconde année de l'année scolaire active, jour inclus ; retraite à
    60 ans (grade A), 58 ans (B), 55 ans (C), le 1er jour du trimestre qui suit le trimestre de naissance.
    Formulaire propre au synoptique (ajout / modification), retrait (actif = 0, fiche conservée), PDF paysage, Excel,
    import Excel (modèle téléchargeable).

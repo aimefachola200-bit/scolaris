@@ -205,6 +205,13 @@ for f in c["fiches"]:
         for t in ligne:
             if isinstance(t, str) and BAVURE.search(t):
                 bavures.append(f["id"])
+# signature des filigranes éclatés : au moins 3 lignes successives de 1 à 3 lettres, ou un morceau caractéristique seul sur sa ligne
+SUITE = re.compile(r"(?:\n[ \t]*[A-Za-zÀ-ÿ]{1,3}[ \t]*\n(?:[ \t]*\n)*){3,}")
+SEUL = re.compile(r"(?m)^[ \t]*(?:TO|GA|FF|IL|GO|ITO|GOIT|OM|Ma|thi|at h i a)[ \t]*$")
+for f in c["fiches"]:
+    for t in chaines(f):
+        if SUITE.search("\n" + t + "\n") or SEUL.search(t):
+            trouves.append(("fragments", f["id"], t[:60]))
 assert not trouves, trouves[:10]
 assert not bavures, bavures[:10]
 assert "intonation du débit et de\"" not in json.dumps(c, ensure_ascii=False)
@@ -230,7 +237,7 @@ for i in ids:
         trop.append((i, len(rd.pages)))
     assert "localhost" not in t, i
     assert "CPFA" not in t, i
-assert len(trop) <= max(1, len(ids) // 10), trop
+assert not trop, trop
 print("OK propreté", len(ids), trop)
 '''
 

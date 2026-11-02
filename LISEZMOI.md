@@ -1,6 +1,6 @@
 # SCOLARIS — Guide d'utilisation (LISEZ-MOI)
 
-Version 2.2.1. 
+Version 2.2.2. 
 Ce guide explique, en quelques étapes simples, comment utiliser chaque partie de l'application. Chaque rubrique indique pour qui elle est utile.
 
 ## Premiers pas
@@ -94,6 +94,7 @@ SCOLARIS gère l'école au quotidien : élèves, présences, notes et bulletins,
 3. Communication : notes de service, circulaires et convocations avec accusé de lecture, échéances, messages aux parents, agenda.
 4. Inspection et formation : visites de classe (grille APC), suivi des recommandations, plans de formation, animations pédagogiques.
 5. Patrimoine : bâtiments, tables-bancs, manuels, matériel, besoins et dotations.
+6. Personnel et carrière : les anciennetés se calculent au 31 décembre de la seconde année de l'année scolaire (« 2026-2027 » : 31/12/2027), jour inclus ; la date de départ à la retraite selon le grade et la date de naissance. Ces valeurs ne se saisissent pas.
 
 ## Tableau de bord du pilotage
 

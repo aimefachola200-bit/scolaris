@@ -8,8 +8,8 @@ Sources des données (lecture) :
 * en DDEMP, agents des CS : section « agents » des paquets des CS (H.jur_cs_section), en lecture seule.
 
 Règles de calcul (identiques à m_carriere, dont les fonctions sont réutilisées par import) :
-* anciennetés au 31/12 de l'année civile en cours (31/12 inclus), en années et mois révolus ; pour une
-  année scolaire passée « AAAA-BBBB » : au 31/12/AAAA ;
+* anciennetés au 31/12 de la seconde année de l'année scolaire active (31/12 inclus), en années et mois révolus ;
+  pour une année scolaire passée « AAAA-BBBB » : au 31/12/BBBB ;
 * départ probable à la retraite : naissance + 60 ans (grade A), 58 ans (B), 55 ans (C) ; né(e) un 29/02 :
   28/02 si l'année de départ n'est pas bissextile ; année de naissance seule : 31/12 de l'année.
 
@@ -135,10 +135,10 @@ def fmt_n(v, suffixe=""):
 
 
 def reference(annee_):
-    """Date de calcul des anciennetés : 31/12 de l'année en cours (année active) ou 31/12/AAAA (année passée)."""
+    """Date de calcul des anciennetés : 31/12 de la seconde année de l'année scolaire (« AAAA-BBBB » -> 31/12/BBBB)."""
     if annee_ == config.ANNEE_ACTIVE or not re.match(r"^\d{4}", annee_ or ""):
         return MC.date_reference()
-    return date(int(annee_[:4]), 12, 31)
+    return MC.date_reference(annee=annee_)
 
 
 # ======================================================================== fiche calculée d'une personne

@@ -10,11 +10,11 @@ Gestion de carrière des enseignants (édition « École publique ») et tableau
   ses diplômes (académique, CEAP, CAP) : le directeur valide ou rejette la proposition.
 
 Règles de calcul (documentées aussi à l'écran) :
-* Date de référence des anciennetés : le 31 décembre de la PREMIÈRE année de l'année scolaire en cours
-  (année active « 2026-2027 » → 31/12/2026 ; si l'année active est illisible : 31/12 de l'année civile courante).
+* Date de référence des anciennetés : le 31 décembre de la SECONDE année de l'année scolaire en cours
+  (année active « 2026-2027 » → 31/12/2027 ; si l'année active est illisible : année scolaire du jour).
 * Anciennetés (générale, département, commune, école) : de la date de prise de service dans chaque lieu
   jusqu'à la date de référence, en années et mois révolus, en comptant le 31/12 inclus
-  (du 01/01/2020 au 31/12/2026 = 7 ans 0 mois ; du 29/02/2024 = 2 ans 10 mois).
+  (du 01/01/2020 au 31/12/2027 = 8 ans 0 mois ; du 29/02/2024 = 3 ans 10 mois).
 * Date de départ à la retraite : selon le grade et l'année de naissance — âge limite A = 60 ans, B = 58 ans,
   C = 55 ans (la lettre du grade donne la catégorie : A1-5 → A). Le départ a lieu le PREMIER JOUR DU MOIS
   DU TRIMESTRE QUI SUIT le trimestre de naissance : né(e) de janvier à mars → 1er avril ; d'avril à juin →
@@ -168,9 +168,13 @@ def annee_scolaire_debut(annee=None, auj=None):
 
 
 def date_reference(auj=None, annee=None):
-    """Anciennetés arrêtées au 31 décembre de la première année de l'année scolaire active
-    (« 2026-2027 » -> 31/12/2026) ; si l'année active est illisible : 31/12 de l'année civile en cours."""
-    return date(annee_scolaire_debut(annee, auj), 12, 31)
+    """v2.2.2 — Anciennetés arrêtées au 31 décembre de la SECONDE année de l'année scolaire active
+    (« 2026-2027 » -> 31/12/2027) ; si l'année active est illisible : année scolaire de `auj` (rentrée en septembre)."""
+    m = re.match(r"\s*(\d{4})", str(annee if annee is not None else getattr(config, "ANNEE_ACTIVE", "") or ""))
+    if m and 1990 <= int(m.group(1)) <= 2100:
+        return date(int(m.group(1)) + 1, 12, 31)
+    auj = auj or date.today()
+    return date(auj.year + 1 if auj.month >= 9 else auj.year, 12, 31)
 
 
 def mois_ecoules(debut, fin):
@@ -654,7 +658,7 @@ def enregistrer(app, H):
         return [("DDEMP", e["ddemp"] or "—"), ("CS", e["cs"] or "—"), ("ÉCOLE", e["ecole"] or "—")]
 
     NOTES_BAS = [
-        "Anciennetés arrêtées au 31 décembre de la première année de l'année scolaire en cours (31/12 inclus), "
+        "Anciennetés arrêtées au 31 décembre de la seconde année de l'année scolaire en cours (31/12 inclus), "
         "en années (a) et mois (m) révolus, à partir de la date de prise de service dans chaque lieu. PS = prise de service.",
         "Retraite : âge limite 60 ans (grade A), 58 ans (grade B), 55 ans (grade C) ; départ le 1er jour du trimestre "
         "qui suit le trimestre de naissance (né de janvier à mars : 1er avril ; avril–juin : 1er juillet ; "
@@ -758,7 +762,7 @@ def enregistrer(app, H):
             cases = [[lib, val or "……………………"] for lib, val in champs]
             for i in range(0, len(cases), 2):
                 lignes.append(cases[i] + (cases[i + 1] if i + 1 < len(cases) else ["", ""]))
-        notes = [f"Anciennetés au {f['reference'].strftime('%d/%m/%Y')} (31/12 de la première année de l'année scolaire, "
+        notes = [f"Anciennetés au {f['reference'].strftime('%d/%m/%Y')} (31/12 de la seconde année de l'année scolaire, "
                  "jour inclus), en années et mois révolus. Retraite : 60 ans (grade A), 58 ans (B), 55 ans (C), départ le "
                  "1er jour du trimestre qui suit le trimestre de naissance (janv.–mars : 1er avril ; avril–juin : 1er juillet ; "
                  "juil.–sept. : 1er octobre ; oct.–déc. : 1er janvier suivant) ; année de naissance seule : 1er janvier "

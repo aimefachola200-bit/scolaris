@@ -119,11 +119,11 @@ class TestSynoptique(unittest.TestCase):
             self.assertEqual(p["date_derniere_formation"], "2024-03-15")
             self.assertEqual(p["date_naissance"], "1969-02-28")
             pid = p["id"]
-            # calculs : né le 28/02/1969, grade B (58 ans) -> 01/04/2027 ; anciennetés au 31/12 de la 1re année scolaire
+            # calculs : né le 28/02/1969, grade B (58 ans) -> 01/04/2027 ; anciennetés au 31/12 de la 2e année scolaire
             f = MC.calculer_fiche(dict(p), auj=date(2026, 10, 7))
             self.assertEqual(f["retraite_txt"], "01/04/2027")
-            self.assertEqual(f["reference"], date(int(config.ANNEE_ACTIVE[:4]), 12, 31))
-            ref_annee = int(config.ANNEE_ACTIVE[:4])
+            self.assertEqual(f["reference"], date(int(config.ANNEE_ACTIVE[:4]) + 1, 12, 31))
+            ref_annee = int(config.ANNEE_ACTIVE[:4]) + 1
             self.assertEqual(f["anc"]["generale"], (ref_annee - 2000, 3))
             self.assertEqual(f["anc"]["departement"], (ref_annee - 2010, 3))
             self.assertEqual(f["anc"]["ecole"], (ref_annee - 2019, 3))

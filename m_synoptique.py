@@ -14,8 +14,8 @@ par le MEMP et les directions départementales :
   de m_carriere, complétées ici des colonnes `promotion`, `cours_tenus`, `date_derniere_formation`,
   `visites_directeur`). Les anciennetés et la date de départ à la retraite sont CALCULÉES par
   m_carriere (jamais saisies) :
-  - anciennetés : de la date de prise de service dans chaque lieu jusqu'au 31 décembre de la première
-    année de l'année scolaire active (« 2026-2027 » → 31/12/2026), jour inclus ;
+  - anciennetés : de la date de prise de service dans chaque lieu jusqu'au 31 décembre de la seconde
+    année de l'année scolaire active (« 2026-2027 » → 31/12/2027), jour inclus ;
   - retraite : 60 ans (grade A), 58 ans (B), 55 ans (C), départ le 1er jour du trimestre qui suit le
     trimestre de naissance (janv.–mars → 1er avril ; avril–juin → 1er juillet ; juil.–sept. → 1er octobre ;
     oct.–déc. → 1er janvier suivant).
@@ -1720,7 +1720,7 @@ def enregistrer(app, H):
         corps = [ligne_personnel(i, f) for i, f in enumerate(lst, 1)] or [["", "Aucun agent"] + [""] * (len(COLS_PERSONNEL) - 1)]
         surl = {i: "#FDEAD7" for i, f in enumerate(lst) if f["alerte_retraite"]}
         notes = P.paragraphe(
-            f"Anciennetés au {MC.date_reference().strftime('%d/%m/%Y')} (31/12 de la première année de l'année scolaire, jour "
+            f"Anciennetés au {MC.date_reference().strftime('%d/%m/%Y')} (31/12 de la seconde année de l'année scolaire, jour "
             "inclus), en années (a) et mois (m), à partir de la prise de service dans chaque lieu. Retraite : 60 ans (grade A), "
             "58 ans (B), 55 ans (C), départ le 1er jour du trimestre qui suit le trimestre de naissance. Lignes orangées : départ "
             "dans 2 ans ou moins. PS = prise de service.", 6.5)

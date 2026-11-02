@@ -201,7 +201,8 @@ def _sans_filigrane(t):
             i += 1
     out = "\n".join(l for l, g_ in zip(lignes, garder) if g_)
     # morceaux isolés du nom (« at h i a ») et en-têtes de tableau restés dans le texte (« CONSIGNES », « RÉSULTATS ATTENDUS »)
-    out2 = re.sub(r"(?m)^[ \t]*(?:a\s?t\s?h\s?i\s?a(?:\s?s)?|GOIT|GOHITO|G\s?O\s?H\s?I\s?T\s?O|CONSIGNES|R[ÉE]SULTATS\s+ATTENDUS)[ \t]*$\n?", "", out)
+    out2 = re.sub(r"(?m)^[ \t]*(?:a\s?t\s?h\s?i\s?a(?:\s?s)?|GOIT|GOHITO|G\s?O\s?H\s?I\s?T\s?O|CONSIGNES|R[ÉE]SULTATS\s+ATTENDUS|"
+                  r"TO|GA|FF|IL|GO|ITO|OM|Ma|thi)[ \t]*$\n?", "", out)
     if out2 != out:
         REPARATIONS["filigrane"] += 1
         out = out2
@@ -303,6 +304,90 @@ def _case_deroulement(t, phase, titre=None):
 _DEROULEMENT_COLLE = re.compile(r"\s(?:1\.\s*Calcul mental|STRAT[ÉE]GIES\s+DESCRIPTION|3\.1\.\s*INTRODUCTION|D[ÉE]ROULEMENT\b)")
 
 
+# v2.2.2 — fiches du guide CP 2022 abîmées à l'extraction : allégées pour tenir sur une feuille recto verso
+_CHAMP_POLLUE = re.compile(r"(?:^|\s)(?:(?:\d\.\s*)?Objectifs de la s[ée]quence|\d\.\s*Mat[ée]riel\b|Support\s*:|T[âa]che\s*:|"
+                           r"« Aujourd.hui|\*{0,2}(?:Je fais|Nous faisons|Tu fais)\*{0,2}\s*[|\[A-ZÉÀ«]|\d\.\d\.\s*R[ÉE]ALISATION|I[lI1]\.\s*COMP[ÉE]TENCES)")
+_ETIQUETTE = re.compile(r"^\s*\*\*(?:Je fais|Nous faisons|Tu fais)\*\*\s*$")
+_PLANIF_DEBUT = re.compile(r"^\s*(?:SA\s*\d|FICHE\s+N|.*[ÉE]L[ÉE]MENTS DE PLANIFICATION|\d\.\s*Dur[ée]e\b)", re.I)
+_PLANIF_FIN = re.compile(r"^\s*\d\.\s*(?:Calcul mental|Rappel|R[ée]vision|V[ée]rification)", re.I)
+_INTEGRATION_SUIVANTE = re.compile(r"\n\s*(?:Situation d.int[ée]gration\s*\n\s*)?SA couvertes\s*:")
+_TABLEAU_INTEGRATION = re.compile(r"(?:Situations?\s+SA couvertes|I[lI1]\.\s*COMP[ÉE]TENCES ET CONTENUS)")
+CD_ILLISIBLE = "Compétences disciplinaires n° 1, 2 et 3 (voir le guide de l'enseignant)."
+
+
+def _alleger_case(t, premiere=False, derniere=False):
+    if not isinstance(t, str):
+        return t
+    t = re.sub(r"(\*\*(?:Je fais|Nous faisons|Tu fais)\*\*)\s*[|\[]\s*", r"\1 ", t)
+    t = re.sub(r"(?m)^(\s*)[|\[]\s*", r"\1", t)
+    lignes = t.split("\n")
+    if premiere:                                   # bloc « éléments de planification » recopié dans les préliminaires
+        i = next((k for k, l in enumerate(lignes) if _PLANIF_DEBUT.match(l)), None)
+        j = next((k for k in range(i + 1, len(lignes)) if _PLANIF_FIN.match(lignes[k])), None) if i is not None else None
+        if j is not None:
+            lignes = lignes[:i] + lignes[j:]
+    # tableau d'intégration mêlé (deux colonnes du PDF) jusqu'à « Fiches N° … » / « Titre : »
+    t = "\n".join(lignes)
+    m = _TABLEAU_INTEGRATION.search(t)
+    if m:
+        f_ = re.search(r"(?m)^\s*(?:Fiches?\s*N\s*°|Titre\s*:)", t[m.end():])
+        if f_:
+            t = t[:m.start()] + t[m.end() + f_.start():]
+    if derniere:                                   # début de la semaine d'intégration suivante recopié en fin de fiche
+        m = _INTEGRATION_SUIVANTE.search(t)
+        if m and m.start() > 150:
+            t = t[:m.start()]
+    out = []
+    for l in t.split("\n"):                        # étiquettes orphelines successives (colonnes séparées) : la dernière reste
+        if out and _ETIQUETTE.match(l) and _ETIQUETTE.match(out[-1]):
+            out[-1] = l
+        else:
+            out.append(l)
+    t = "\n".join(out)
+    t = re.sub(r"(?<![.:;!?»\n*])\n(?=[a-zàâçéèêëîïôûùœ])", " ", t)     # retours à la ligne de l'OCR au milieu d'une phrase
+    t = re.sub(r"\n{3,}", "\n\n", t).strip()
+    return t
+
+
+def _alleger_resultats(t):
+    if not isinstance(t, str) or "\n" not in t:
+        return t
+    vus, out = set(), []
+    for l in t.split("\n"):
+        c = re.sub(r"\W+", " ", l).strip().lower()
+        if not c or c in vus or re.match(r"^\s*\u25aa\s*\u2022", l) or re.match(r"^\s*\u25aa\s*L.enseignant\b", l):
+            continue
+        vus.add(c)
+        out.append(l)
+    return "\n".join(out) or t
+
+
+def _alleger_fiche(f):
+    avant = len(json.dumps(f, ensure_ascii=False))
+    for k in ("strategies", "objectifs", "materiel", "cd", "contenus", "ct"):
+        v = f.get(k)
+        if isinstance(v, str) and len(v) > 120:
+            m = _CHAMP_POLLUE.search(v)
+            if m:
+                f[k] = v[:m.start()].rstrip(" ;,.") + ("." if v[:m.start()].strip() else "")
+                f[k] = "" if f[k] == "." else f[k]
+    if f.get("strategies") and f.get("materiel") and f["strategies"].rstrip(". ") == f["materiel"].rstrip(". "):
+        f["strategies"] = ""
+    elif f.get("strategies") and not f.get("materiel") and re.match(r"^[^.;:]*(?:bâtonnets|cailloux|étiquettes|pipettes|ardoise|craie)", f["strategies"]) \
+            and not re.search(r"travail|résolution|démarche", f["strategies"], re.I):
+        f["materiel"], f["strategies"] = f["strategies"], ""          # liste du matériel rangée dans « stratégies »
+    if isinstance(f.get("cd"), str) and len(f["cd"]) > 600 and (case_illisible(f["cd"]) or re.search(
+            r"Comp[ée]tences? disciplinaires? n° ?\d\s+Comp[ée]tences? disciplinaires? n° ?\d", f["cd"])):
+        f["cd"] = CD_ILLISIBLE
+    d = f.get("deroulement")
+    if isinstance(d, list):
+        n = len(d)
+        f["deroulement"] = [[(_alleger_case(x, i == 0, i == n - 1) if k == 1 else _alleger_resultats(x) if k == 2 else x)
+                             for k, x in enumerate(l)] if isinstance(l, list) else l for i, l in enumerate(d)]
+    if len(json.dumps(f, ensure_ascii=False)) < avant:
+        REPARATIONS["allegees"] = REPARATIONS.get("allegees", 0) + 1
+
+
 def _reparer_fiches(c):
     for f in c.get("fiches") or []:
         # v2.2 : déroulement entier recopié dans « stratégies » / « objectifs » à l'extraction (guide CP 2022…) : coupé
@@ -330,6 +415,7 @@ def _reparer_fiches(c):
             f["deroulement"] = [[(_case_deroulement(x, (ligne or [""])[0], f.get("titre")) if k else _sans_filigrane(x)) if isinstance(x, str) else x
                                  for k, x in enumerate(ligne)]
                                 if isinstance(ligne, list) else ligne for ligne in f["deroulement"]]
+        _alleger_fiche(f)
     for cle in ("guides", "modeles", "resumes", "programmes", "manuels", "mesures_correctives", "revisions"):
         for x in c.get(cle) or []:
             if isinstance(x, dict):
@@ -1261,7 +1347,7 @@ def enregistrer(app, H):
                 out.append(" ; ".join(tampon))
             return "\n".join(out)
 
-        def histoire(B, rupture, compact, dense=False, colonnes=False):
+        def histoire(B, rupture, compact, dense=False, colonnes=False, fusion=False):
             """B : taille du corps (14 pt, réduite jusqu'à 12 pt seulement s'il le faut pour tenir sur deux pages) ;
             rupture : le déroulement commence la page 2 ; compact : espacements et tableau resserrés."""
             T = B - 1                                  # tableaux : un point de moins que le texte
@@ -1316,7 +1402,22 @@ def enregistrer(app, H):
             R_ = resserrer if dense else (lambda x: x)
             data += [[Paragraph(txt_pdf(a_), stp), Paragraph(txt_pdf(R_(b_)), st), Paragraph(txt_pdf(R_(c_)), st)] for a_, b_, c_ in [(l + ["", "", ""])[:3] for l in lignes]]
             l1, l3 = (32 * mm, 38 * mm) if dense else (43 * mm, 44 * mm)
-            td = Table(data, colWidths=[l1, utile - l1 - l3, l3], repeatRows=1, splitByRow=1, splitInRow=1)
+            if fusion:
+                # v2.2.2 — déroulement resserré : colonne des phases étroite, résultats attendus sous les activités
+                stp2 = ParagraphStyle("phf", parent=stp, fontSize=min(9, T), leading=min(9, T) * 1.15)
+                stre2 = ParagraphStyle("ref", parent=st, fontName=SER["italique"])
+                data = [[Paragraph("Phases", sth), Paragraph("Activités de l'enseignant(e) et des apprenant(e)s — <i>résultats attendus</i>", sth)]]
+                for a_, b_, c_ in [(l + ["", "", ""])[:3] for l in lignes]:
+                    cel = [Paragraph(txt_pdf(resserrer(b_)), st)]
+                    if (c_ or "").strip():
+                        cel.append(Paragraph("<i>Résultats attendus :</i> " + txt_pdf(resserrer(c_).replace("\n", " ")), stre2))
+                    data.append([Paragraph(txt_pdf(a_), stp2), cel])
+                from reportlab.pdfbase.pdfmetrics import stringWidth
+                mots = [m_ for a_ in lignes for m_ in re.sub(r"<[^>]+>|\*\*", " ", str((a_ or [""])[0])).split()]
+                l1 = max(24 * mm, min(36 * mm, max([stringWidth(m_, SER["gras"], stp2.fontSize) for m_ in mots] or [0]) + 8))
+                td = Table(data, colWidths=[l1, utile - l1], repeatRows=1, splitByRow=1, splitInRow=1)
+            else:
+                td = Table(data, colWidths=[l1, utile - l1 - l3, l3], repeatRows=1, splitByRow=1, splitInRow=1)
             pad = 1.5 if compact else 3
             td.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#667085")), ("BACKGROUND", (0, 0), (-1, 0), coul),
                                     ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, clair]),
@@ -1362,7 +1463,13 @@ def enregistrer(app, H):
                 c.setFont(SER["gras"], 12)
                 c.drawString(gauche + 11 * mm, y - 5.6 * mm, f"Fiche de préparation — {mat}")
                 c.setFont(SER["normal"], 10)
-                c.drawRightString(W - doc.rightMargin - 3 * mm, y - 5.6 * mm, (d.get("titre") or "")[:70])
+                gauche_t = f"Fiche de préparation — {mat}"
+                place = W - doc.leftMargin - doc.rightMargin - 17 * mm - c.stringWidth(gauche_t, SER["gras"], 12)
+                tt = d.get("titre") or ""
+                while tt and c.stringWidth(tt, SER["normal"], 10) > place:
+                    tt = tt[:-2].rstrip() + "…" if len(tt) > 2 else ""
+                    tt = tt.replace("……", "…")
+                c.drawRightString(W - doc.rightMargin - 3 * mm, y - 5.6 * mm, tt)
             else:
                 pdfs._entete_primaire(c, W, Hh, doc.leftMargin, None, "maternelle" if d.get("cours") == "MAT" else None)
                 c.setFillColor(coul)
@@ -1392,7 +1499,7 @@ def enregistrer(app, H):
         def cadre(g_, d_, haut):
             return Frame(g_, 16 * mm, W - g_ - d_, Hh - haut - 16 * mm, id="f", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
 
-        def construire(B, rupture, compact, dense=False, colonnes=False):
+        def construire(B, rupture, compact, dense=False, colonnes=False, fusion=False):
             buf = io.BytesIO()
             doc = Doc(buf, pagesize=A4, title=titre_doc, author="SCOLARIS", leftMargin=15 * mm, rightMargin=10 * mm)
             doc.addPageTemplates([
@@ -1402,18 +1509,28 @@ def enregistrer(app, H):
                 PageTemplate("deux", [Frame(12 * mm, 16 * mm, (W - 30 * mm) / 2, Hh - 38 * mm, id="g", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0),
                                       Frame(18 * mm + (W - 30 * mm) / 2, 16 * mm, (W - 30 * mm) / 2, Hh - 38 * mm, id="d", leftPadding=0, rightPadding=0,
                                             topPadding=0, bottomPadding=0)], onPageEnd=bandeau)])
-            doc.build(histoire(B, rupture, compact, dense, colonnes), canvasmaker=pdfs.GCanvasPedaNum)
+            doc.build(histoire(B, rupture, compact, dense, colonnes, fusion), canvasmaker=pdfs.GCanvasPedaNum)
             return buf.getvalue(), doc.page
 
         # v2.2 — une fiche = une feuille recto verso : page 1 en-tête et éléments de planification, page 2 déroulement et
         # évaluation ; 14 pt, réduit pas à pas jusqu'à 12 pt seulement s'il le faut ; une fiche courte garde une seule page.
-        essais = [(14, False, False, 1, False)] + [(t, True, False, 2, False) for t in (14, 13.5, 13, 12.5, 12)] + \
-                 [(t, True, True, 2, False) for t in (13, 12.5, 12)] + [(t, False, True, 2, False) for t in (13, 12.5, 12, 11.5, 11)] + \
-                 [(t, False, True, 2, True) for t in (12, 11, 10.5, 10, 9.5, 9)]   # dernier recours : lignes courtes réunies, jusqu’à 9 pt (fiches très longues du guide CP 2022)
+        # v2.2.2 — cascade : 1 page à 14 pt ; planification p. 1 / déroulement p. 2 de 14 à 12 pt (normal puis resserré) ;
+        # déroulement dès la page 1 de 12 à 10 pt ; lignes courtes réunies ; déroulement resserré (phases étroites, résultats
+        # sous les activités) jusqu'à 9 pt ; déroulement sur deux colonnes en dernier recours.
+        # (taille, rupture, compact, pages maxi, dense, colonnes, fusion)
+        essais = [(14, False, False, 1, False, False, False)] + \
+                 [(t, True, False, 2, False, False, False) for t in (14, 13.5, 13, 12.5, 12)] + \
+                 [(t, True, True, 2, False, False, False) for t in (13, 12.5, 12)] + \
+                 [(t, False, True, 2, False, False, False) for t in (12, 11.5, 11, 10.5, 10)] + \
+                 [(t, False, True, 2, True, False, False) for t in (11, 10.5, 10)] + \
+                 [(t, r_, True, 2, True, False, True) for t in (11, 10.5, 10, 9.5, 9) for r_ in (True, False)] + \
+                 [(t, True, True, 2, True, True, False) for t in (10, 9.5, 9)] + \
+                 [(t, False, True, 2, True, False, True) for t in (8.5, 8)]
         dernier = None
-        essais += [(t, True, True, 2, True, True) for t in (11, 10.5, 10, 9.5)]   # déroulement sur deux colonnes
-        for B, rupture, compact, maxi, dense, *col in essais:
-            out, n = construire(B, rupture, compact, dense, bool(col and col[0]))
+        for B, rupture, compact, maxi, dense, col, fus in essais:
+            out, n = construire(B, rupture, compact, dense, col, fus)
+            if os.environ.get("FICHE_DEBUG"):
+                print("ESSAI", B, rupture, compact, dense, col, fus, n)
             if n <= maxi:
                 return out, n
             if dernier is None or n < dernier[1]:
