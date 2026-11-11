@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Format du « paquet de transmission » SCOLARIS : école → Circonscription scolaire (CS) → DDEMP.
+"""Format du « paquet de transmission » GESCOL : école → Circonscription scolaire (CS) → DDEMP.
 
-Un paquet est un document JSON (fichier « .scolaris », compressé gzip) ou le corps d'un POST en ligne.
+Un paquet est un document JSON (fichier « .gescol », compressé gzip) ou le corps d'un POST en ligne.
 Il est produit par l'école (module m_transmission) ou par la CS (a_transmission, à destination de la DDEMP)
 et lu par m_juridiction.importer_paquet.
 
     paquet = {
-      "format": "scolaris-transmission", "version": 1,
+      "format": "gescol-transmission", "version": 1,
       "emetteur": {"type": "ecole" | "cs", "code": str, "nom": str, "departement": str, "cs": str,
-                   "logiciel": "SCOLARIS 1.4.0", "edition": "privee" | "publique" | "cs"},
+                   "logiciel": "GESCOL 1.4.0", "edition": "privee" | "publique" | "cs"},
       "annee": "2026-2027", "genere_le": "2026-10-04 10:00:00",
       "ecoles": [ {"ecole": IDENTITE_ECOLE, "sections": {nom_section: donnees, ...}}, ... ],
       "cs": None | {"identite": IDENTITE_CS, "sections": {"agents": [...], "visites": [...], "cep": {...}, ...}},
@@ -61,8 +61,7 @@ import gzip
 import hashlib
 import json
 
-FORMAT = "scolaris-transmission"
-FORMATS_ACCEPTES = (FORMAT, "gescol-transmission")  # LEGACY-GESCOL : anciens paquets .gescol
+FORMAT = "gescol-transmission"
 VERSION = 1
 TYPES_ECOLE = {"EP": "École primaire", "EM": "École maternelle", "EE": "Espace enfance"}
 SECTEURS = {"public": "Public", "prive": "Privé"}
@@ -115,12 +114,12 @@ def sceller(paquet):
 
 
 def vers_fichier(paquet):
-    """Octets du fichier .scolaris (JSON compressé)."""
+    """Octets du fichier .gescol (JSON compressé)."""
     return gzip.compress(json.dumps(paquet, ensure_ascii=False, default=str).encode("utf-8"))
 
 
 def lire(octets):
-    """Fichier .scolaris (gzip) ou JSON brut → paquet vérifié. Lève PaquetInvalide."""
+    """Fichier .gescol (gzip) ou JSON brut → paquet vérifié. Lève PaquetInvalide."""
     if not octets:
         raise PaquetInvalide("Fichier vide.")
     if len(octets) > TAILLE_MAX * 4:
@@ -130,15 +129,15 @@ def lire(octets):
             octets = gzip.decompress(octets)
         paquet = json.loads(octets.decode("utf-8"))
     except Exception as e:  # noqa: BLE001
-        raise PaquetInvalide("Ce fichier n'est pas un fichier de transmission SCOLARIS.") from e
+        raise PaquetInvalide("Ce fichier n'est pas un fichier de transmission GESCOL.") from e
     return verifier(paquet)
 
 
 def verifier(paquet):
-    if not isinstance(paquet, dict) or paquet.get("format") not in FORMATS_ACCEPTES:
-        raise PaquetInvalide("Ce fichier n'est pas un fichier de transmission SCOLARIS.")
+    if not isinstance(paquet, dict) or paquet.get("format") != FORMAT:
+        raise PaquetInvalide("Ce fichier n'est pas un fichier de transmission GESCOL.")
     if int(paquet.get("version") or 0) > VERSION:
-        raise PaquetInvalide("Fichier produit par une version plus récente de SCOLARIS : mettez l'application à jour.")
+        raise PaquetInvalide("Fichier produit par une version plus récente de GESCOL : mettez l'application à jour.")
     if paquet.get("empreinte") != empreinte(paquet):
         raise PaquetInvalide("Fichier abîmé ou modifié après sa création (empreinte incorrecte).")
     em = paquet.get("emetteur") or {}
@@ -159,7 +158,7 @@ def verifier(paquet):
     return paquet
 
 
-def nouveau(type_emetteur, code, nom, annee, departement="", cs="", edition="", logiciel="SCOLARIS"):
+def nouveau(type_emetteur, code, nom, annee, departement="", cs="", edition="", logiciel="GESCOL"):
     """Squelette de paquet à remplir puis à sceller()."""
     return {"format": FORMAT, "version": VERSION,
             "emetteur": {"type": type_emetteur, "code": code, "nom": nom, "departement": departement, "cs": cs,

@@ -91,7 +91,18 @@ def svg(sup="", inf="", centre="", couleur="bleu", taille=180):
     return "".join(parts)
 
 
+def masques():
+    """v2.4.6 : vrai si l'utilisateur a choisi de masquer les cachets (bouton « Cachets », cookie sans_cachet=1 ou ?sans_cachet=1)."""
+    try:
+        from flask import request
+        return request.args.get("sans_cachet") == "1" or request.cookies.get("sans_cachet") == "1"
+    except Exception:  # noqa: BLE001 - hors requête (tâche, test) : on dessine
+        return False
+
+
 def dessiner(c, cx, cy, rayon, sup="", inf="", centre="", couleur="bleu"):
+    if masques():
+        return
     """Dessine le cachet sur un canvas ReportLab (centre cx, cy ; rayon en points)."""
     from reportlab.lib import colors
     col = colors.HexColor(COULEURS.get(couleur, COULEURS["bleu"]))
@@ -233,6 +244,8 @@ def svg_nom(lignes, couleur="bleu", largeur=260):
 
 
 def dessiner_nom(c, cx, cy, lignes, couleur="bleu", largeur=GRIFFE_LARGEUR, hauteur=None):
+    if masques():
+        return 0
     """Dessine la griffe sur un canvas ReportLab, centrée en (cx, cy) ; largeur et hauteur en points.
     Retourne la hauteur dessinée."""
     from reportlab.lib import colors

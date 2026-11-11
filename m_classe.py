@@ -174,7 +174,7 @@ def enregistrer(app, H):
                 ajout("paiement_nouveau", "Encaisser", "Paiement de scolarité", "argent", "paiements")
                 ajout("impayes", "Impayés", "Relances aux parents", "annonce", "paiements")
             ajout("communication", "Messages aux parents", "SMS / WhatsApp", "message", "communication")
-            ajout("cep_accueil", "CEP", "Fiches d'inscription", "diplome", "cep")
+            if not config.secondaire(): ajout("cep_accueil", "CEP", "Fiches d'inscription", "diplome", "cep")
             if r in ("admin", "fondateur", "directeur") and "en_ligne_page" in vf and H.peut("parametres"):
                 s = etat_sauvegarde()
                 if s["date"] is None:

@@ -27,6 +27,8 @@
   {% endif %}
 </div>
 
+{% if graphiques_accueil is defined %}{% include "accueil_graphiques.html" %}{% endif %}
+
 {% if peut('communication') and (messages_non_lus() or whatsapp_en_attente() or s.courrier) %}
 <div class="flash info">
   {% if messages_non_lus() %}<a href="{{ url_for('communication', onglet='recus') }}"><b>{{ messages_non_lus() }} message(s) de parents</b></a> à lire. {% endif %}

@@ -18,9 +18,12 @@
 <form method="post" action="{{ url_for('diffuser') }}" class="f">
   <label>Destinataires</label>
   <select name="cible"><option value="tous">Tous les parents</option>
+    {% if g.user.role != 'enseignant' and ep_existe('annonces_accueil') %}<option value="enseignants">Enseignants (annonce interne)</option>{% endif %}
     {% for c in classes %}<option value="classe:{{ c.id }}">Parents de {{ c.nom }}</option>{% endfor %}</select>
   <label>Sujet</label><input name="sujet" required maxlength="150" placeholder="ex. Réunion des parents d'élèves">
   <label>Message</label><textarea name="texte" rows="5" required maxlength="1000" placeholder="ex. La réunion des parents aura lieu samedi 10 octobre à 9 h dans la cour de l'école."></textarea>
+  <div class="aide" id="cpt-msg" aria-live="polite">0 / 1000 caractères</div>
+  <script>(function(){var t=document.querySelector('textarea[name="texte"]'),c=document.getElementById("cpt-msg");if(t&&c){var f=function(){c.textContent=t.value.length+" / "+(t.maxLength>0?t.maxLength:1000)+" caractères"};t.addEventListener("input",f);f()}})()</script>
   <label>Envoyer par</label>
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 12px">
     <label style="font-weight:400;display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" name="canaux" value="portail" checked> Espace parents</label>

@@ -12,6 +12,7 @@
 {% if peut_ecrire %}<form method="post" enctype="multipart/form-data" action="{{ url_for('reg_import', gcle=G.cle, rcle=r.cle, annee=annee) }}" style="display:inline"><label class="btn sec petit" style="cursor:pointer">{{ icone('importer') }} Importer<input type="file" name="fichier" accept=".xlsx" hidden onchange="this.form.submit()"></label></form>
 {% if lignes %}<form method="post" action="{{ url_for('reg_reinitialiser', gcle=G.cle, rcle=r.cle, annee=annee) }}" style="display:inline" onsubmit="return confirm('Supprimer toutes les lignes de « {{ r.titre }} »{{ ' pour ' ~ annee if r.par_annee }} ?')"><button class="btn sec petit">{{ icone('reinitialiser') }} Réinitialiser</button></form>{% endif %}{% endif %}
 </div></div>
+{% if G.cle == 'sec' %}{% include "sec_barre.html" %}{% endif %}
 <form method="get" class="filtres actions" style="margin:6px 0 10px">
 {% if r.par_annee %}<label>Année <select name="annee" onchange="this.form.submit()">{% for a in annees %}<option {{ 'selected' if a == annee }}>{{ a }}</option>{% endfor %}</select></label>{% endif %}
 {% for k in r.filtres %}{% set t = r.typ[k] %}{% set opts = listes.get(t.split(':', 1)[1]) if ':' in t else [] %}

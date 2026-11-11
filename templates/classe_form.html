@@ -4,13 +4,13 @@
 <div class="carte" style="max-width:520px">
 <form method="post" class="f">
   <label>Nom de la classe</label>
-  <input name="nom" required value="{{ request.form.nom or (cl.nom if cl else '') }}" placeholder="ex. CM2 A, 4ème B">
+  <input name="nom" required value="{{ request.form.nom or (cl.nom if cl else '') }}" placeholder="{{ 'ex. 6ème A, 3ème B' if SECONDAIRE else 'ex. CM2 A, 4ème B' }}">
   <label>Niveau</label>
   {% set niv = request.form.niveau or (cl.niveau if cl else '') %}
   <select name="niveau" required>
     <option value="">— choisir —</option>
-    <optgroup label="Maternelle">{% for n in maternelle %}<option {{ 'selected' if n==niv }}>{{ n }}</option>{% endfor %}</optgroup>
-    <optgroup label="Primaire">{% for n in primaire %}<option {{ 'selected' if n==niv }}>{{ n }}</option>{% endfor %}</optgroup>
+    {% if maternelle %}<optgroup label="Maternelle">{% for n in maternelle %}<option {{ 'selected' if n==niv }}>{{ n }}</option>{% endfor %}</optgroup>{% endif %}
+    {% if primaire %}<optgroup label="Primaire">{% for n in primaire %}<option {{ 'selected' if n==niv }}>{{ n }}</option>{% endfor %}</optgroup>{% endif %}
     <optgroup label="Secondaire">{% for n in secondaire %}<option {{ 'selected' if n==niv }}>{{ n }}</option>{% endfor %}</optgroup>
   </select>
   <label>Frais de scolarité annuels ({{ 'FCFA' }})</label>
