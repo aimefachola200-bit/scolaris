@@ -3,21 +3,21 @@ plugins {
 }
 
 // Clé de signature : variables d'environnement (secrets GitHub) si présentes,
-// sinon la clé fournie avec le projet (même clé à chaque fabrication = mises à jour possibles).
-def cleFichier = System.getenv("GESCOL_KEYSTORE") ?: "gescol-release.keystore"
-def cleMdp = System.getenv("GESCOL_KEYSTORE_PASSWORD") ?: "gescol-benin"
-def cleAlias = System.getenv("GESCOL_KEY_ALIAS") ?: "gescol"
-def cleAliasMdp = System.getenv("GESCOL_KEY_PASSWORD") ?: "gescol-benin"
+// Clé scolaris-signature.keystore fournie avec le projet ; son mot de passe vient des secrets GitHub.
+def cleFichier = System.getenv("SCOLARIS_KEYSTORE") ?: "scolaris-signature.keystore"  // dans le dépôt, protégé par le mot de passe des secrets
+def cleMdp = System.getenv("SCOLARIS_KEYSTORE_PASSWORD") ?: ""
+def cleAlias = System.getenv("SCOLARIS_KEY_ALIAS") ?: "scolaris"
+def cleAliasMdp = System.getenv("SCOLARIS_KEY_PASSWORD") ?: cleMdp
 
 android {
-    namespace "bj.gescol.app"
+    namespace "bj.scolaris.app"
     compileSdk 34
 
     defaultConfig {
-        applicationId "bj.gescol.app"
+        applicationId "bj.scolaris.app"
         minSdk 24
         targetSdk 34
-        versionCode 64
+        versionCode 63
         versionName "2.4.4"
     }
 
