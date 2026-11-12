@@ -17,7 +17,12 @@ import webbrowser
 def _port_defaut():
     """5100 SCOLARIS (privé), 5101 SCOLARIS Public, 5102 Circonscription, 5103 DDEMP : tous peuvent tourner sur le même PC."""
     try:
-        import config
+        try:                       # v2.4.9 : code mis à jour automatiquement (prioritaire sur celui de l'installation)
+        import amorcage
+        amorcage.appliquer()
+    except Exception:  # noqa: BLE001
+        pass
+    import config
         return str(config.PORTS.get(config.EDITION_IMPOSEE, 5100))
     except Exception:  # noqa: BLE001
         return "5100"

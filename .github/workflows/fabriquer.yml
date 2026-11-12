@@ -15,7 +15,7 @@ on:
       - ".github/workflows/applications-web.yml"
 
 env:
-  VERSION: "2.4.8"
+  VERSION: "2.4.9"
 
 jobs:
   tests:
@@ -234,6 +234,15 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+      - name: Décompresser le code source (scolaris_source.zip)
+        shell: python
+        run: |
+          import os, zipfile
+          if os.path.exists("scolaris_source.zip"):
+              zipfile.ZipFile("scolaris_source.zip").extractall(".")
+      - name: Mise à jour automatique (MAJ-CODE.zip et MAJ-CODE.json)
+        run: python3 packaging/fabriquer_maj.py fichiers_maj
       - uses: actions/download-artifact@v4
         with:
           path: fichiers
@@ -266,7 +275,9 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: SCOLARIS ${{ env.VERSION }}
           make_latest: "true"
-          files: fichiers/*
+          files: |
+            fichiers/*
+            fichiers_maj/*
           body: |
             **Android autonome** : SCOLARIS-Autonome.apk fonctionne seul sur le téléphone ou la tablette, sans PC ni Internet.
             **SCOLARIS Public (écoles publiques)** : SCOLARIS-Public.apk (Android) et SCOLARIS-Public-Installation.exe (Windows).
