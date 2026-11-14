@@ -221,6 +221,31 @@ _MOTS_COLLES = re.compile(r"[a-zàâçéèêëîïôûù]{3,}[A-ZÉÈÀ][a-zàâ
 _DIALOGUE = re.compile(r"^(?:[ÉE]l[èe]ve|Ma[iî]tre|Enseignant|Apprenant|Tous|Groupe|Question|R[ée]ponse)", re.I)
 
 
+_REP_APPRENANT = re.compile(r"^[\s\u25aa\u2022\-\u2013*]*(?:les\s+|chaque\s+)?(?:[ée]l[èe]ves?|apprenant(?:\(e\))?(?:\(e\)s|s|e|es)?|r[ée]ponses?)\b", re.I)
+
+
+def repartir_ligne(l):
+    """v2.5.5 — colonne « Activités » : actions de l'enseignant(e) et consignes ; les réponses des apprenant(e)s vont dans la
+    colonne « Résultats attendus » (lignes commençant par Élève(s), Apprenant(e)(s), Réponse(s))."""
+    l = list(l or []) + ["", "", ""]
+    a, b, c = l[0], l[1], l[2]
+    if not isinstance(b, str) or not b.strip():
+        return [a, b, c]
+    gardees, deplacees = [], []
+    for ligne in b.split("\n"):
+        (deplacees if _REP_APPRENANT.match(ligne) else gardees).append(ligne)
+    if not deplacees or not any(x.strip() for x in gardees):
+        return [a, b, c]                       # tout est réponse d'élèves ou rien à déplacer : on ne touche à rien
+    c = str(c or "")
+    ajout = [x for x in deplacees if x.strip() and x.strip() not in c]
+    c2 = ("\n".join(ajout) + ("\n" + c if c.strip() else "")) if ajout else c
+    return [a, "\n".join(gardees).strip("\n"), c2]
+
+
+def repartir(lignes):
+    return [repartir_ligne(l) for l in (lignes or [])]
+
+
 def case_illisible(t):
     """v2.2.1 — case de déroulement abîmée à l'extraction : deux colonnes du PDF mêlées ligne à ligne (sous-titres répétés,
     mots collés d'une colonne à l'autre)."""
@@ -943,7 +968,7 @@ def pdf_resumes(rs, eleve=False, titre_lot=None):
         c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                      title=titre_lot or rs[0]["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
+                      title=titre_lot or rs[0]["titre"], author="GESCOL").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
     return buf.getvalue()
 
 
@@ -1099,7 +1124,7 @@ def pdf_revision(rv, eleve=False, partie=None, sujet=None):
         c.drawRightString(W - marge, 7 * mm, f"{rv['cours']} — révision d'éveil — page {doc.page}")
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                      title=rv["titre"], author="SCOLARIS").build(H_, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
+                      title=rv["titre"], author="GESCOL").build(H_, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
     return buf.getvalue()
 
 
@@ -1111,8 +1136,10 @@ def enregistrer(app, H):
                 maj TEXT, maj_par INTEGER, PRIMARY KEY (ecole_id, rid));""")
     # v1.31.1 : téléphone / tablette ; v1.33 : toutes les installations (la première page de la préparation ne paie plus
     # le chargement du corpus) — sauf pendant les tests, où l'on mesure aussi le premier chargement
-    if config.AUTONOME or not (app.config.get("TESTING") or os.environ.get("SCOLARIS_SANS_PRECHARGEMENT")):
+    if config.AUTONOME or not (app.config.get("TESTING") or os.environ.get("GESCOL_SANS_PRECHARGEMENT")):
         threading.Thread(target=corpus, name="corpus-pedagogique", daemon=True).start()
+
+    app.template_filter("prep_repartir")(repartir)
 
     @app.template_filter("prep_txt")
     def _f_txt(t):
@@ -1331,7 +1358,7 @@ def enregistrer(app, H):
         bande = " · ".join(x for x in [COURS_LIB.get(d.get("cours"), d.get("cours") or ""), mat, d.get("sous_matiere") or "",
                                         f"SA {d['sa']}" if d.get("sa") else "", f"séance {d['seance']}" if d.get("seance") else "",
                                         d.get("duree") or ""] if x)
-        lignes = d.get("deroulement") or []
+        lignes = repartir(d.get("deroulement"))
         u = q("SELECT * FROM utilisateurs WHERE id=?", (d.get("user_id"),), un=True) if d.get("user_id") else None
         s_ens = pdfs.image_data_url(H.signature_enseignant(u["id"]) if u else (H.signature_titulaire(cl["id"]) if cl else None))
         sigs = [("L'enseignant(e)", (u["nom"] if u else filigrane), s_ens, False), ("Visa du directeur / de la directrice", "", s_dir, True)]
@@ -1513,7 +1540,7 @@ def enregistrer(app, H):
 
         def construire(B, rupture, compact, dense=False, colonnes=False, fusion=False):
             buf = io.BytesIO()
-            doc = Doc(buf, pagesize=A4, title=titre_doc, author="SCOLARIS", leftMargin=15 * mm, rightMargin=10 * mm)
+            doc = Doc(buf, pagesize=A4, title=titre_doc, author="GESCOL", leftMargin=15 * mm, rightMargin=10 * mm)
             doc.addPageTemplates([
                 PageTemplate("premiere", [cadre(15 * mm, 10 * mm, 50 * mm)], onPageEnd=bandeau),
                 PageTemplate("suite", [cadre(15 * mm, 10 * mm, 22 * mm)], onPageEnd=bandeau),
@@ -1567,7 +1594,7 @@ def enregistrer(app, H):
             if nb % 2 and n < len(fiches) - 1:
                 w.add_blank_page()
         sortie = io.BytesIO()
-        w.add_metadata({"/Title": titre_doc, "/Author": "SCOLARIS"})
+        w.add_metadata({"/Title": titre_doc, "/Author": "GESCOL"})
         if hasattr(w, "compress_identical_objects"):   # v2.2 : images (armoiries, logo, dessins) communes une seule fois
             try:
                 w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
@@ -1581,7 +1608,7 @@ def enregistrer(app, H):
         for d in fiches:
             cl, eff = entete_classe(d)
             lignes = "".join(f"<tr><td><b>{txt_html(a)}</b></td><td>{txt_html(b)}</td><td>{txt_html(c)}</td></tr>"
-                             for a, b, c in [(l + ['', '', ''])[:3] for l in d.get("deroulement") or []])
+                             for a, b, c in repartir(d.get("deroulement")))
             blocs = "".join(f"<tr><th>{lib}</th><td>{txt_html(d.get(k))}</td></tr>" for k, lib in CHAMPS
                             if k in ("cd", "ct", "contenus", "objectifs", "strategies", "materiel") and d.get(k))
             fin = "".join(f"<p><b>{dict(CHAMPS)[k]} :</b><br>{txt_html(d[k])}</p>" for k in ("evaluation", "projection", "je_retiens", "observations") if d.get(k))
@@ -1707,7 +1734,7 @@ def enregistrer(app, H):
         h += [PageBreak(), Paragraph("Dispenses, adaptations et sécurité", sh)] + [Paragraph("• " + _html.escape(a), st) for a in BEE.ADAPTATIONS]
         buf = io.BytesIO()
         SimpleDocTemplate(buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=16 * mm,
-                          title="Barèmes EPS", author="SCOLARIS").build(h, canvasmaker=pdfs.GCanvasPeda)
+                          title="Barèmes EPS", author="GESCOL").build(h, canvasmaker=pdfs.GCanvasPeda)
         return H.pdf_reponse(buf.getvalue(), "baremes_eps" + (f"_{cours}" if cours else "") + ".pdf")
 
     @app.route("/preparation/guides/<gid>")
@@ -1757,7 +1784,7 @@ def enregistrer(app, H):
             c.drawRightString(W - marge, 7 * mm, f"Page {doc.page}")
         buf = io.BytesIO()
         SimpleDocTemplate(buf, pagesize=A4, leftMargin=marge, rightMargin=marge, topMargin=marge + 30 * mm, bottomMargin=13 * mm,
-                          title=x["titre"], author="SCOLARIS").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
+                          title=x["titre"], author="GESCOL").build(histoire, onFirstPage=deco, onLaterPages=deco, canvasmaker=pdfs.GCanvasPeda)
         return H.pdf_reponse(buf.getvalue(), re.sub(r"[^A-Za-z0-9]+", "_", _sans_accent("guide_" + x["titre"]))[:70] + ".pdf")
 
     def fiches_demandees(a):
