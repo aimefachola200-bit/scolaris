@@ -15,7 +15,7 @@ on:
       - ".github/workflows/applications-web.yml"
 
 env:
-  VERSION: "2.7.5"
+  VERSION: "2.8.1"
 
 jobs:
   tests:
