@@ -31,6 +31,7 @@ jobs:
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe }
+          - { depot: monecole-benin, dossier: ".", exclure: "", id: bj.memp.ecole.benin, nom: "Mon école Bénin", fichier: Ecole-Benin }
           - { depot: EdugestionPro, dossier: ".", exclure: "", id: bj.memp.edugestion, nom: "ÉduGestion Pro", fichier: EduGestion-Pro }
           - { depot: EdugestionProV5, dossier: ".", exclure: "", id: bj.memp.edugestion.master, nom: "ÉduGestion Pro Master", fichier: EduGestion-Pro-Master }
     steps:
@@ -87,6 +88,7 @@ jobs:
           - { depot: memp-cp-pobe, dossier: ".", exclure: "", id: bj.memp.cp.pobe, nom: "MEMP CP Pobè", fichier: MEMP-CP-Pobe, port: 8872 }
           - { depot: cs-pobe, dossier: ".", exclure: "ecole", id: bj.memp.cs.pobe, nom: "CS Pobè", fichier: CS-Pobe, port: 8873 }
           - { depot: cs-pobe, dossier: "ecole", exclure: "", id: bj.memp.ecole.pobe, nom: "Mon école Pobè", fichier: Ecole-Pobe, port: 8874 }
+          - { depot: monecole-benin, dossier: ".", exclure: "", id: bj.memp.ecole.benin, nom: "Mon école Bénin", fichier: Ecole-Benin, port: 8878 }
           - { depot: EdugestionPro, dossier: ".", exclure: "", id: bj.memp.edugestion, nom: "ÉduGestion Pro", fichier: EduGestion-Pro, port: 8875 }
           - { depot: EdugestionProV5, dossier: ".", exclure: "", id: bj.memp.edugestion.master, nom: "ÉduGestion Pro Master", fichier: EduGestion-Pro-Master, port: 8876 }
     steps:
@@ -146,7 +148,7 @@ jobs:
           subprocess.run([sys.executable, "-m", "pip", "install", "-q", "qrcode[pil]"], check=True)
           import qrcode
           base = "https://github.com/${{ github.repository }}/releases/download"
-          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe", "DOSP"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"]), ("edugestion", ["EduGestion-Pro", "EduGestion-Pro-Master"])):
+          for page, fichiers in (("memp-cp", ["MEMP-CP", "MEMP-CP-Pobe", "DOSP"]), ("cs-pobe", ["CS-Pobe", "Ecole-Pobe"]), ("monecole-benin", ["Ecole-Benin"]), ("edugestion", ["EduGestion-Pro", "EduGestion-Pro-Master"])):
               os.makedirs(page, exist_ok=True)
               for f in fichiers:
                   for nom, suffixe in ((f + ".apk", "android"), (f + "-Installation.exe", "windows")):
@@ -155,7 +157,7 @@ jobs:
                           continue
                       os.replace(src, os.path.join(page, nom))
                       qrcode.make(f"{base}/{page}/{nom}", box_size=8, border=2).save(os.path.join(page, f"QR-{f}-{suffixe}.png"))
-          print(os.listdir("memp-cp"), os.listdir("cs-pobe"), os.listdir("edugestion"))
+          print(os.listdir("memp-cp"), os.listdir("cs-pobe"), os.listdir("monecole-benin"), os.listdir("edugestion"))
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: memp-cp
@@ -185,6 +187,19 @@ jobs:
             | **Mon école** (écoles de la CS) | [Ecole-Pobe.apk](https://github.com/${{ github.repository }}/releases/download/cs-pobe/Ecole-Pobe.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-Ecole-Pobe-android.png) | [Ecole-Pobe-Installation.exe](https://github.com/${{ github.repository }}/releases/download/cs-pobe/Ecole-Pobe-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/cs-pobe/QR-Ecole-Pobe-windows.png) |
 
             Scannez le QR code avec l'appareil photo du téléphone. Fabriquées chaque nuit avec la dernière version.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: monecole-benin
+          name: "Mon école Bénin (Android et Windows)"
+          make_latest: "false"
+          files: monecole-benin/*
+          body: |
+            **Mon école Bénin** — gestion d'une école (tout le Bénin) : l'assistant propose département, commune, arrondissement, village et école. Fonctionne sans Internet.
+            | | Android | Windows |
+            |---|---|---|
+            | **Mon école Bénin** | [Ecole-Benin.apk](https://github.com/${{ github.repository }}/releases/download/monecole-benin/Ecole-Benin.apk)<br>![QR](https://github.com/${{ github.repository }}/releases/download/monecole-benin/QR-Ecole-Benin-android.png) | [Ecole-Benin-Installation.exe](https://github.com/${{ github.repository }}/releases/download/monecole-benin/Ecole-Benin-Installation.exe)<br>![QR](https://github.com/${{ github.repository }}/releases/download/monecole-benin/QR-Ecole-Benin-windows.png) |
+
+            Scannez le QR code avec l'appareil photo de la tablette ou du téléphone. Fabriquée chaque nuit avec la dernière version.
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: edugestion
