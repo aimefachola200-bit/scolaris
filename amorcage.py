@@ -21,7 +21,7 @@ import threading
 import time
 
 MARQUE = "SCOLARIS"
-BASE_VERSION = "2.9.7"          # version contenue dans cette installation (tests : égale à config.VERSION)
+BASE_VERSION = "2.9.8"          # version contenue dans cette installation (tests : égale à config.VERSION)
 ESSAIS_MAX = 4
 _etat = {"actif": None}
 
